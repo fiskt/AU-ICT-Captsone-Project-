@@ -1,5 +1,11 @@
-function CoachCalendar() {
-    return <h1>Welcome to the coach calendar</h1>;
-}
+import { COACH_SIDEBAR, TOPBAR, MAIN_CONTENT } from '../Components/SharedComponents.jsx';
 
-export default CoachCalendar
+export default function CoachCalendar() {
+    return (
+        <div>
+            <COACH_SIDEBAR />
+            <TOPBAR />
+            <MAIN_CONTENT />
+        </div>
+    );
+}

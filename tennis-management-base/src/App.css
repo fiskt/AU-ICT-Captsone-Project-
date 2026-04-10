@@ -1,3 +1,31 @@
+:root {
+  --sidebar-bg-color: #1A1917;
+  --sidebar-body-color: #FFFFFF80;
+  --sidebar-subhead-color: #6B6760;
+
+  --topbar-bg-color: #FFFFFF;
+  --topbar-body-color: #000000;
+  --topbar-accent-color: #EEECE9;
+
+  --main-bg-color: #FAF9F7;
+  --content-bg-color: #FFFFFF;
+  --content-head-color: #000000;
+  --content-subhead-color: #6B6760;
+  --content-body-color: #000000;
+
+  --btn-color: #EC7842;
+  --accent-color: #EC7842;
+
+  --danger-bg-color: #FEE2E2;
+  --danger-border-color: #FCA5A5;
+  --danger-body-color: #DC2626;
+}
+
+@font-face {
+  font-family: 'DM Sans Light';
+  src: url(../fonts/DMSans-Light.ttf);
+}
+
 .counter {
   font-size: 16px;
   padding: 5px 10px;
