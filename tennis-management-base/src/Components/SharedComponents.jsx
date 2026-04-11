@@ -1,28 +1,44 @@
-import './SharedComponents.css';
+import '../App.css';
+import { useNavigate, useLocation } from 'react-router-dom';
+import Login from '../pages/Login'
+import Register from '../pages/Register'
+
+import CoachDashboard from '../pages/CoachDashboard'
+import CoachCalendar from '../pages/CoachCalendar'
+import PlayerProfile from '../pages/PlayerProfile'
+import DrillLibrary from '../pages/DrillLibrary'
+import LoadTracking from '../pages/LoadTracking'
+import Testing from '../pages/Testing'
+
+import PlayerCalendar from '../pages/PlayerCalendar'
+import PlayerDashboard from '../pages/PlayerDashboard'
+
+function SIDEBAR_BUTTON({ label, path }) {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const isActive = location.pathname === path;
+
+    return (
+        <div 
+            className={`sidebar-nav-btn ${isActive ? 'btn-active' : ''}`} 
+            onClick={()=>navigate(path)}
+        >
+            <span class="sidebar-nav-btn-txt">{label}</span>
+        </div>
+    );
+}
 
 export function COACH_SIDEBAR() {
     return (
         <div id="sidebar">
             <div id="sidebar-logo"></div>
             <div id="sidebar-nav">
-                <div id="sidebar-dashboard" class="sidebar-nav-btn txt-btn">
-                    <span class="sidebar-nav-btn-txt">Dashboard</span>
-                </div>
-                <div id="sidebar-calendar" class="sidebar-nav-btn txt-btn">
-                    <span class="sidebar-nav-btn-txt">Calendar</span>
-                </div>
-                <div id="sidebar-players" class="sidebar-nav-btn txt-btn">
-                    <span class="sidebar-nav-btn-txt">Players</span>
-                </div>
-                <div id="sidebar-drill-library" class="sidebar-nav-btn txt-btn">
-                    <span class="sidebar-nav-btn-txt">Drill Library</span>
-                </div>
-                <div id="sidebar-load-tracking" class="sidebar-nav-btn txt-btn">
-                    <span class="sidebar-nav-btn-txt">Load Tracking</span>
-                </div>
-                <div id="sidebar-testing" class="sidebar-nav-btn txt-btn">
-                    <span class="sidebar-nav-btn-txt">Testing</span>
-                </div>
+                <SIDEBAR_BUTTON label="Dashboard" path="/CoachDashboard" />
+                <SIDEBAR_BUTTON label="Calendar" path="/CoachCalendar" />
+                <SIDEBAR_BUTTON label="Players" path="/PlayerProfile" />
+                <SIDEBAR_BUTTON label="Drill Library" path="/DrillLibrary" />
+                <SIDEBAR_BUTTON label="Load Tracking" path="/LoadTracking" />
+                <SIDEBAR_BUTTON label="Testing" path="/Testing" />
             </div>
             <div id="sidebar-bottom"></div>
         </div>
@@ -34,10 +50,8 @@ export function PLAYER_SIDEBAR() {
         <div id="sidebar">
             <div id="sidebar-logo"></div>
             <div id="sidebar-nav">
-                <div id="sidebar-dashboard"></div>
-                <div id="sidebar-calendar"></div>
-                <div id="sidebar-load-tracking"></div>
-                <div id="sidebar-testing"></div>
+                <SIDEBAR_BUTTON label="Dashboard" path="/PlayerDashboard" />
+                <SIDEBAR_BUTTON label="Calendar" path="/PlayerCalendar" />
             </div>
             <div id="sidebar-bottom"></div>
         </div>
@@ -51,8 +65,28 @@ export function TOPBAR() {
     );
 }
 
-export function MAIN_CONTENT() {
+export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h }) {
+    const multiline = num_rows > 1;
+    const size = {width: box_w, height: box_h};
     return (
-        <div id="main-content"></div>
-    )
+        <div class="typing-input">
+            <span class="typing-input-label">{label}</span>
+            <div class="typing-input-wrapper" style={size}>
+                {multiline ?
+                    (
+                        <textarea 
+                            class="typing-textarea-box" 
+                            id={input_id}
+                            rows={num_rows}
+                        />
+                    ) : (
+                        <input
+                            class="typing-input-box"
+                            id={input_id}
+                        />
+                    )
+                }
+            </div>
+        </div>
+    );
 }

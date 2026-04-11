@@ -1,0 +1,9 @@
+@import url(../App.css);
+
+#calendar-box {
+    width: 75%;
+}
+
+.editor-box {
+    width: 25%;
+}

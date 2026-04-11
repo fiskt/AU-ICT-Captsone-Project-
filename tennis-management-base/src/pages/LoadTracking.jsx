@@ -1,4 +1,4 @@
-export default function PlayerProfile() {
+export default function LoadTracking() {
     return (
         <>
   
