@@ -65,24 +65,26 @@ export function TOPBAR() {
     );
 }
 
-export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h }) {
+export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_txt }) {
     const multiline = num_rows > 1;
     const size = {width: box_w, height: box_h};
     return (
-        <div class="typing-input">
-            <span class="typing-input-label">{label}</span>
-            <div class="typing-input-wrapper" style={size}>
+        <div class="input-container">
+            <span class="input-container-label">{label}</span>
+            <div class="input-box-wrapper" style={size}>
                 {multiline ?
                     (
                         <textarea 
                             class="typing-textarea-box" 
                             id={input_id}
                             rows={num_rows}
+                            placeholder={sample_txt}
                         />
                     ) : (
                         <input
                             class="typing-input-box"
                             id={input_id}
+                            placeholder={sample_txt}
                         />
                     )
                 }

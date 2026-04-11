@@ -12,6 +12,8 @@
   --content-head-color: #000000;
   --content-subhead-color: #6B6760;
   --content-body-color: #000000;
+  --content-input-border-color: #DDDBD6;
+  --content-input-placeholder-color: #A09D96;
 
   --btn-color: #EC7842;
   --accent-color: #EC7842;
@@ -29,6 +31,11 @@
 @font-face {
   font-family: 'DM Mono Light';
   src: url(../fonts/DMMono-Light.ttf);
+}
+
+@font-face {
+  font-family: 'Bebas';
+  src: url(../fonts/BebasNeue-Regular.ttf);
 }
 
 * {
@@ -165,30 +172,48 @@ body {
     border: 2px solid var(--topbar-accent-color);
     border-radius: 8px;
     min-height: 100px;
+    padding: 5px;
 }
 
-.typing-input {
+.input-container {
   display: flex;
   flex-direction: column;
   padding: 5px;
   justify-content: left;
 }
 
-.typing-input-label {
+.input-container-label {
   color: var(--content-subhead-color);
   text-align: left;
   width: 100%;
   font-family: 'DM Mono Light', sans-serif;
 }
 
-.typing-input-wrapper {
+.input-box-wrapper {
   display: flex;
-  border-radius: 8px;
   justify-content: left;
-  background-color: gray;
 }
 
-.typing-textarea-box .typing-input-box {
+.typing-textarea-box, .typing-input-box {
   text-align: left;
   font-family: 'DM Sans Light', sans-serif;
+  background-color: white;
+  
+  border: 2px solid var(--content-input-border-color);
+  padding: 8px;
+  border-radius: 8px;
+  width: 100%;
+  color: var(--content-input-placeholder-color);
+  font-size: small;
+}
+
+.typing-textarea-box {
+  resize: none;
+}
+
+.content-header {
+  color: var(--content-head-color);
+  font-family: 'Bebas', sans-serif;
+  text-align: left;
+  padding: 10px;
 }

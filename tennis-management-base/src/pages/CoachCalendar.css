@@ -1,9 +1,32 @@
 @import url(../App.css);
 
 #calendar-box {
-    width: 75%;
+    width: 80%;
 }
 
 .editor-box {
-    width: 25%;
+    width: 20%;
+}
+
+#session-editor, #drill-library {
+    display: none;
+}
+
+#calendar-date {
+    color: var(--content-head-color);
+    font-family: 'Bebas';
+    text-align: left;
+    padding: 10px;
+}
+
+#session-people {
+    width: 100%;
+    height: 220px;
+  background-color: white;
+  
+  border: 2px solid var(--content-input-border-color);
+  padding: 8px;
+  border-radius: 8px;
+  width: 100%;
+  overflow-y: auto;
 }
