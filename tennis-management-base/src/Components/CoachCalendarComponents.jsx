@@ -1,10 +1,11 @@
 import '../App.css'
 import '../pages/CoachCalendar.css'
 import { DateTime, Info, Interval } from 'luxon'
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid' 
 import timeGridPlugin from '@fullcalendar/timegrid' 
+import { Draggable } from '@fullcalendar/interaction'
 
 function CALENDAR_DATE({ firstDayOfActiveWeek, daysInWeek }) {
     const weekStart = firstDayOfActiveWeek.toFormat('MMM d');
@@ -28,6 +29,37 @@ function CALENDAR_GRID() {
         }}
     />
   )
+}
+
+export function DRAGGABLE_SESSION({ sessionSettings }) {
+    const sessionRef = useRef(null);
+
+    useEffect(() => {
+        let session = new Draggable(sessionRef.current, {
+            eventData: () => {
+                return {
+                    sessionName: sessionSettings.sessionName,
+                    sessionDuration: sessionSettings.sessionDuration,
+                    sessionNotes: sessionSettings.sessionNotes,
+                    sessionPeople: sessionSettings.sessionPeople
+                };
+            }
+        })
+        return () => session.destroy();
+    }, [sessionSettings]);
+
+    return (
+        <div class="input-container">
+            <span class="input-container-label">SESSION</span>
+            <div class="input-box-wrapper" id="draggable-session-container">
+                <div ref={sessionRef} class="draggable-icon session-icon">
+                    <span>{sessionSettings.sessionName}</span>
+                    <span>{sessionSettings.sessionDuration}</span>
+                </div>
+            </div>
+
+        </div>
+    );
 }
 
 export function CALENDAR() {

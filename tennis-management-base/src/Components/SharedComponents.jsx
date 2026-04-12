@@ -65,7 +65,7 @@ export function TOPBAR() {
     );
 }
 
-export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_txt }) {
+export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_txt, value, onChange }) {
     const multiline = num_rows > 1;
     const size = {width: box_w, height: box_h};
     return (
@@ -79,12 +79,16 @@ export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_t
                             id={input_id}
                             rows={num_rows}
                             placeholder={sample_txt}
+                            value={value}
+                            onChange={(e) => onChange(e.target.value)}
                         />
                     ) : (
                         <input
                             class="typing-input-box"
                             id={input_id}
                             placeholder={sample_txt}
+                            value={value}
+                            onChange={(e) => onChange(e.target.value)}
                         />
                     )
                 }
