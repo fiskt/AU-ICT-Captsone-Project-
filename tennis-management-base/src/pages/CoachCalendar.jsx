@@ -1,12 +1,12 @@
-import { TYPING_INPUT } from '../Components/SharedComponents';
-import './CoachCalendar.css'
+import { TYPING_INPUT } from '../Components/SharedComponents.jsx';
+import { CALENDAR } from '../Components/CoachCalendarComponents.jsx';
 
 export default function CoachCalendar() {
     return (
         <>
             <div class="content-box" id="calendar-box">
                 <div id="calendar-top">
-                    <h1 id="calendar-date">5-11 April, 2026</h1>
+                    <CALENDAR />
                 </div>
                 <div id="calendar"></div>
             </div>
