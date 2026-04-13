@@ -9,10 +9,6 @@
     width: 20%;
 }
 
-#session-editor, #drill-library {
-    display: none;
-}
-
 #calendar-date {
     color: var(--content-head-color);
     font-family: 'Bebas';
@@ -72,9 +68,30 @@
     border-radius: 8px;
     height: 100%;
     width: 100%;
+
+    cursor: grab;
 }
 
 #session-creator-input-container {
     height: 75%;
     overflow-y: auto;
 }
+
+#session-editor-input-container {
+    height: 100%;
+    overflow-y: auto;
+}
+
+#drill-library-container {
+    width: 100%;
+    min-height: 200px;
+    max-height: 70vh;
+    padding: 10px;
+    background-color: white;
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+

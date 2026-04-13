@@ -62,6 +62,33 @@ export function DRAGGABLE_SESSION({ sessionSettings }) {
     );
 }
 
+export function DRAGGABLE_DRILL({ drillSettings }) {
+    const drillRef = useRef(null);
+
+    useEffect(() => {
+        let drill = new Draggable(drillRef.current, {
+            eventData: () => {
+                return {
+                    drillName: drillSettings.drillName,
+                    drillDuration: drillSettings.drillDuration,
+                    drillDescription: drillSettings.drillDescription,
+                    drillTags: drillSettings.drillTags
+                };
+            }
+        })
+        return () => drill.destroy();
+    }, [drillSettings]);
+
+    return (
+        <div class="input-container">
+            <div ref={drillRef} class="draggable-icon session-icon">
+                <span>{drillSettings.drillName}</span>
+                <span>{drillSettings.drillDuration}</span>
+            </div>
+        </div>
+    );
+}
+
 export function CALENDAR() {
     const today = DateTime.now();
     const [firstDayOfActiveWeek, setFirstDayOfActiveWeek] = useState(
