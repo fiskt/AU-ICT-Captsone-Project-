@@ -6,6 +6,9 @@
     "@fullcalendar/react": "^6.1.20",
     "@fullcalendar/timegrid": "^6.1.20",
     "@supabase/supabase-js": "^2.103.0",
-    "recharts": "^3.8.1"
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "eslint-plugin-react-hooks": "^7.0.1"
   }
 }
