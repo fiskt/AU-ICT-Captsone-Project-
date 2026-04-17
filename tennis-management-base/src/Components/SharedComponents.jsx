@@ -23,7 +23,7 @@ function SIDEBAR_BUTTON({ label, path }) {
             className={`sidebar-nav-btn ${isActive ? 'btn-active' : ''}`} 
             onClick={()=>navigate(path)}
         >
-            <span class="sidebar-nav-btn-txt">{label}</span>
+            <span className="sidebar-nav-btn-txt">{label}</span>
         </div>
     );
 }
