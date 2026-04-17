@@ -37,7 +37,6 @@ export function COACH_SIDEBAR() {
                 <SIDEBAR_BUTTON label="Calendar" path="/CoachCalendar" />
                 <SIDEBAR_BUTTON label="Players" path="/PlayerProfile" />
                 <SIDEBAR_BUTTON label="Drill Library" path="/DrillLibrary" />
-                <SIDEBAR_BUTTON label="Load Tracking" path="/LoadTracking" />
                 <SIDEBAR_BUTTON label="Testing" path="/Testing" />
             </div>
             <div id="sidebar-bottom"></div>

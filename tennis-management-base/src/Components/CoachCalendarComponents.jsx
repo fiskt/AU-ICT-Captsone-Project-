@@ -6,6 +6,7 @@ import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid' 
 import timeGridPlugin from '@fullcalendar/timegrid' 
 import { Draggable } from '@fullcalendar/interaction'
+import interactionPlugin from '@fullcalendar/interaction'
 
 function CALENDAR_DATE({ firstDayOfActiveWeek, daysInWeek }) {
     const weekStart = firstDayOfActiveWeek.toFormat('MMM d');
@@ -18,11 +19,14 @@ function CALENDAR_DATE({ firstDayOfActiveWeek, daysInWeek }) {
     );
 }
 
-function CALENDAR_GRID() {
+function CALENDAR_GRID({ onSessionClick }) {
   return (
     <FullCalendar
-        plugins={[ dayGridPlugin, timeGridPlugin ]}
+        plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
         initialView="timeGridWeek"
+        eventClick={(info) => {
+            onSessionClick(info.event);
+        }}
         headerToolbar={{
             start: 'prev,next', 
             end: 'dayGridMonth,timeGridWeek'
@@ -57,7 +61,6 @@ export function DRAGGABLE_SESSION({ sessionSettings }) {
                     <span>{sessionSettings.sessionDuration}</span>
                 </div>
             </div>
-
         </div>
     );
 }
@@ -89,7 +92,7 @@ export function DRAGGABLE_DRILL({ drillSettings }) {
     );
 }
 
-export function CALENDAR() {
+export function CALENDAR({ onSessionClick }) {
     const today = DateTime.now();
     const [firstDayOfActiveWeek, setFirstDayOfActiveWeek] = useState(
         today.startOf('week')
@@ -106,7 +109,19 @@ export function CALENDAR() {
                 firstDayOfActiveWeek={firstDayOfActiveWeek} 
                 daysInWeek={daysInWeek} 
             />
-            <CALENDAR_GRID />
+            <CALENDAR_GRID 
+                onSessionClick={onSessionClick}
+            />
+        </div>
+    );
+}
+
+export function CREATE_SESSION({ onAddClick }) {
+    return (
+        <div class="input-container">
+            <div class="add-new-btn" id="add-session" onClick={onAddClick}>
+                <span>New Session</span>
+            </div>
         </div>
     );
 }

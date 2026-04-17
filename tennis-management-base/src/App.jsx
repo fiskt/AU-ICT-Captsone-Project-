@@ -27,7 +27,6 @@ function App() {
               <Route path="/CoachCalendar" element={<CoachCalendar />} />
               <Route path="/PlayerProfile" element={<PlayerProfile />} />
               <Route path="/DrillLibrary" element={<DrillLibrary />} />
-              <Route path="/LoadTracking" element={<LoadTracking />} />
               <Route path="/Testing" element={<Testing />} />
             </Routes>
           </main>
