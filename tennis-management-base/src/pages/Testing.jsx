@@ -1,4 +1,3 @@
-console.log("Supabase URL Test:", import.meta.env.VITE_SUPABASE_URL);
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 

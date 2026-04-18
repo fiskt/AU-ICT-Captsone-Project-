@@ -63,7 +63,7 @@ body {
     left: 0;
     top: 0;
     height: 100%;
-    width: 18%;
+    width: 14%;
     display: flex;
     flex-shrink: 0;
 
@@ -139,8 +139,8 @@ body {
     border-bottom: 2px solid var(--topbar-accent-color);
     position: fixed;
     top: 0;
-    left: 18%;
-    width: 82%;
+    left: 14%;
+    width: 86%;
     height: 70px;
     flex-shrink: 0;
 }
@@ -148,7 +148,7 @@ body {
 #main-content-wrapper {
   position: fixed;
   top: 70px;
-  left: 18%;
+  left: 14%;
   bottom: 0;
   right: 0;
   display: flex;
@@ -179,7 +179,6 @@ body {
   display: flex;
   flex-direction: column;
   padding: 5px;
-  justify-content: left;
 }
 
 .input-container-label {
@@ -194,7 +193,7 @@ body {
   justify-content: left;
 }
 
-.typing-textarea-box, .typing-input-box {
+.typing-textarea-box, .typing-input-box, .select-input-box {
   text-align: left;
   font-family: 'DM Sans Light', sans-serif;
   background-color: white;
@@ -217,3 +216,4 @@ body {
   text-align: left;
   padding: 10px;
 }
+

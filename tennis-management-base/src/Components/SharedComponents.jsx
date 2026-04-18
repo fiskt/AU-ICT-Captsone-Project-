@@ -95,3 +95,26 @@ export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_t
         </div>
     );
 }
+
+export function DROPDOWN_INPUT({ label, input_id, box_w, box_h, options, value, onChange }) {
+    const size = {width: box_w, height: box_h};
+    return (
+        <div class="input-container">
+            <span class="input-container-label">{label}</span>
+            <div class="input-box-wrapper" style={size}>
+                <select
+                    class="select-input-box"
+                    id={input_id}
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                >
+                    {options.map((op) => (
+                        <option key={op.val} value={op.val}>
+                            {op.label}
+                        </option>
+                    ))}
+                </select>
+            </div>
+        </div>
+    );
+}

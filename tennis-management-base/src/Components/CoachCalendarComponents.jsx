@@ -1,12 +1,15 @@
 import '../App.css'
 import '../pages/CoachCalendar.css'
 import { DateTime, Info, Interval } from 'luxon'
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef } from 'react';
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid' 
 import timeGridPlugin from '@fullcalendar/timegrid' 
 import { Draggable } from '@fullcalendar/interaction'
 import interactionPlugin from '@fullcalendar/interaction'
+
+import { createClient } from '@supabase/supabase-js';
+const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 function CALENDAR_DATE({ firstDayOfActiveWeek, daysInWeek }) {
     const weekStart = firstDayOfActiveWeek.toFormat('MMM d');
@@ -19,22 +22,6 @@ function CALENDAR_DATE({ firstDayOfActiveWeek, daysInWeek }) {
     );
 }
 
-function CALENDAR_GRID({ onSessionClick }) {
-  return (
-    <FullCalendar
-        plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
-        initialView="timeGridWeek"
-        eventClick={(info) => {
-            onSessionClick(info.event);
-        }}
-        headerToolbar={{
-            start: 'prev,next', 
-            end: 'dayGridMonth,timeGridWeek'
-        }}
-    />
-  )
-}
-
 export function DRAGGABLE_SESSION({ sessionSettings }) {
     const sessionRef = useRef(null);
 
@@ -42,10 +29,12 @@ export function DRAGGABLE_SESSION({ sessionSettings }) {
         let session = new Draggable(sessionRef.current, {
             eventData: () => {
                 return {
-                    sessionName: sessionSettings.sessionName,
-                    sessionDuration: sessionSettings.sessionDuration,
-                    sessionNotes: sessionSettings.sessionNotes,
-                    sessionPeople: sessionSettings.sessionPeople
+                    title: sessionSettings.sessionName,
+                    duration: sessionSettings.sessionDuration,
+                    extendedProps: {
+                        notes: sessionSettings.sessionNotes,
+                        people: sessionSettings.sessionPeople
+                    }
                 };
             }
         })
@@ -92,7 +81,59 @@ export function DRAGGABLE_DRILL({ drillSettings }) {
     );
 }
 
-export function CALENDAR({ onSessionClick }) {
+export function CREATE_SESSION({ onAddClick }) {
+    return (
+        <div class="input-container">
+            <div class="add-new-btn" id="add-session" onClick={onAddClick}>
+                <span>New Session</span>
+            </div>
+        </div>
+    );
+}
+
+// 1. Wrap CALENDAR_GRID in forwardRef
+const CALENDAR_GRID = forwardRef(({ onSessionClick, events }, ref) => {
+    async function pushSession({ name, duration, notes, time }) {
+        const { data, error } = await supabase
+            .from('sessions')
+            .insert([{ name: name, duration: duration, notes: notes, time: time }]);
+        console.log(data, error);
+    }
+  return (
+    <FullCalendar
+        plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
+        ref={ref}
+        events={events}
+        initialView="timeGridWeek"
+        eventClick={(info) => {
+            onSessionClick(info.event);
+        }}
+        headerToolbar={{
+            start: 'prev,next', 
+            end: 'dayGridMonth,timeGridWeek'
+        }}
+        displayEventTime={true}
+        displayEventEnd={true}
+        editable={true}
+        eventReceive = {(info) => {
+            console.log(info.event.start)
+
+            const startTime = info.event.start.toISOString();
+            const sessionData = {
+                name: info.event.title,
+                duration: Interval.fromDateTimes(info.event.start, info.event.end).toDuration().toFormat('hh:mm'),
+                notes: info.event.extendedProps.notes || "",
+                time: startTime
+            }
+            console.log(startTime);
+            pushSession(sessionData);
+        }}
+    />
+  )
+});
+
+// 3. Wrap CALENDAR in forwardRef
+export const CALENDAR = forwardRef(({ onSessionClick, events }, ref) => {
     const today = DateTime.now();
     const [firstDayOfActiveWeek, setFirstDayOfActiveWeek] = useState(
         today.startOf('week')
@@ -110,18 +151,10 @@ export function CALENDAR({ onSessionClick }) {
                 daysInWeek={daysInWeek} 
             />
             <CALENDAR_GRID 
+                ref={ref} 
+                events={events}
                 onSessionClick={onSessionClick}
             />
         </div>
     );
-}
-
-export function CREATE_SESSION({ onAddClick }) {
-    return (
-        <div class="input-container">
-            <div class="add-new-btn" id="add-session" onClick={onAddClick}>
-                <span>New Session</span>
-            </div>
-        </div>
-    );
-}
+});

@@ -1,17 +1,66 @@
-import { TYPING_INPUT } from '../Components/SharedComponents.jsx';
+import { DROPDOWN_INPUT, TYPING_INPUT } from '../Components/SharedComponents.jsx';
 import { CALENDAR, CREATE_SESSION, DRAGGABLE_DRILL, DRAGGABLE_SESSION } from '../Components/CoachCalendarComponents.jsx';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+
+import { createClient } from '@supabase/supabase-js';
+import { DateTime, Duration } from 'luxon';
+const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
+    const calendarRef = useRef(null);
     const [showSessionCreator, setShowSessionCreator] = useState(true);
     const [selectedSession, setSelectedSession] = useState(null);
 
+    const [calendarEvents, setCalendarEvents] = useState([]);
+
+    useEffect(() => {
+        fetchSessions();
+    }, []);
+
+    async function fetchSessions() {
+        const { data, error } = await supabase
+            .from('sessions')
+            .select('*');
+        
+        if (error) {
+            console.log("Error fetching session data: ", error.message);
+        } else {
+            console.log(data);
+            const formattedEvents = data.map(session => {
+                const startTime = DateTime.fromISO(session.time);
+                const duration = Duration.fromISOTime(session.duration);
+
+                return {
+                    id: session.id,
+                    title: session.name,
+                    start: session.time,
+                    end: startTime.plus(duration).toISO(),
+                    extendedProps: {
+                        duration: session.duration,
+                        notes: session.notes
+                    }
+                };
+            });
+            setCalendarEvents(formattedEvents);   
+        }
+    }
+
+    const durationOptions = [
+        { label: "30 mins", val: "00:30:00" },
+        { label: "60 mins", val: "00:60:00" },
+        { label: "90 mins", val: "01:30:00" },
+        { label: "120 mins", val: "02:00:00" },
+        { label: "150 mins", val: "02:30:00" },
+        { label: "180 mins", val: "03:00:00" },
+    ];
+
     const [sessionSettings, setSessionSettings] = useState({
-        sessionName: "",
-        sessionDuration: "",
+        sessionName: "Session Name",
+        sessionDuration: durationOptions[0].val,
         sessionNotes: "",
         sessionPeople: []
     });
+
 
     const [drillSettings, setDrillSettings] = useState({
         drillName: "Right hand serve",
@@ -27,11 +76,25 @@ export default function CoachCalendar() {
         });
     }
 
+    const updateCalendarSession = (field, value) => {
+        if (!calendarRef.current) return;
+        const calendarApi = calendarRef.current.getApi();
+        const event = calendarApi.getEventById(selectedSession.id);
+        if (event) {
+            if (field === 'sessionName') {
+                event.setProp('title', value);
+            } else if (field === 'sessionDuration') {
+                event.setProp('duration', value);
+            }
+        }
+    }
+
     return (
         <>
             <div class="content-box" id="calendar-box">
                 <div id="calendar-top">
                     <CALENDAR 
+                        events={calendarEvents}
                         onSessionClick = {(eventData) => {
                             setSelectedSession(eventData);
                             setShowSessionCreator(false);
@@ -39,6 +102,8 @@ export default function CoachCalendar() {
                     />
                 </div>
             </div>
+
+            {/* Session creator */}
             {showSessionCreator && (
                 <div class="content-box editor-box" id="session-creator">
                     <h2 class="content-header">Session Creator</h2>
@@ -46,25 +111,28 @@ export default function CoachCalendar() {
                         <TYPING_INPUT 
                             label="NAME" 
                             num_rows="1" 
-                            input_id="session-name" 
+                            input_id="session-name-creator" 
                             box_w="100%" box_h="30px" 
                             sample_txt="Session name"
                             value={sessionSettings.sessionName}
-                            onChange={(val) => updateField('sessionName', val)}
+                            onChange={(val) => {
+                                updateField('sessionName', val);
+                            }}
                         />
-                        <TYPING_INPUT 
+                        <DROPDOWN_INPUT 
                             label="DURATION" 
-                            num_rows="1" 
-                            input_id="session-duration" 
+                            input_id="session-duration-creator" 
                             box_w="100%" box_h="30px" 
-                            sample_txt="Session duration"
+                            options={durationOptions}
                             value={sessionSettings.sessionDuration}
-                            onChange={(val) => updateField('sessionDuration', val)}
+                            onChange={(val) => {
+                                updateField('sessionDuration', val);
+                            }}
                         />
                         <TYPING_INPUT 
                             label="NOTES" 
                             num_rows="6" 
-                            input_id="session-name" 
+                            input_id="session-notes-creator" 
                             box_w="100%" box_h="80px" 
                             sample_txt="Session notes" 
                             value={sessionSettings.sessionNotes}
@@ -85,6 +153,7 @@ export default function CoachCalendar() {
                 </div>
             )}
 
+            {/* Session editor */}
             { selectedSession && (
                 <div class="content-box editor-box" id="session-editor">
                     <h2 class="content-header">Session Editor</h2>
@@ -92,25 +161,30 @@ export default function CoachCalendar() {
                         <TYPING_INPUT 
                             label="NAME" 
                             num_rows="1" 
-                            input_id="session-name" 
+                            input_id="session-name-editor" 
                             box_w="100%" box_h="30px" 
                             sample_txt="Session name"
                             value={sessionSettings.sessionName}
-                            onChange={(val) => updateField('sessionName', val)}
+                            onChange={(val) => {
+                                updateField('sessionName', val);
+                                updateCalendarSession('sessionName', val);
+                            }}
                         />
-                        <TYPING_INPUT 
+                        <DROPDOWN_INPUT 
                             label="DURATION" 
-                            num_rows="1" 
-                            input_id="session-duration" 
+                            input_id="session-duration-editor" 
                             box_w="100%" box_h="30px" 
-                            sample_txt="Session duration"
+                            options={durationOptions}
                             value={sessionSettings.sessionDuration}
-                            onChange={(val) => updateField('sessionDuration', val)}
+                            onChange={(val) => {
+                                updateField('sessionDuration', val);
+                                updateCalendarSession('sessionDuration', val);
+                            }}
                         />
                         <TYPING_INPUT 
                             label="NOTES" 
                             num_rows="6" 
-                            input_id="session-name" 
+                            input_id="session-notes-editor" 
                             box_w="100%" box_h="80px" 
                             sample_txt="Session notes" 
                             value={sessionSettings.sessionNotes}
