@@ -1,12 +1,17 @@
 import '../App.css'
 import '../pages/CoachCalendar.css'
+
 import { DateTime, Info, Interval } from 'luxon'
 import { useState, useEffect, useRef, forwardRef } from 'react';
+
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid' 
 import timeGridPlugin from '@fullcalendar/timegrid' 
 import { Draggable } from '@fullcalendar/interaction'
 import interactionPlugin from '@fullcalendar/interaction'
+
+import 'tippy.js/dist/tippy.css'
+import tippy from 'tippy.js';
 
 import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
@@ -100,35 +105,50 @@ const CALENDAR_GRID = forwardRef(({ onSessionClick, events }, ref) => {
         console.log(data, error);
     }
   return (
-    <FullCalendar
-        plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
-        ref={ref}
-        events={events}
-        initialView="timeGridWeek"
-        eventClick={(info) => {
-            onSessionClick(info.event);
-        }}
-        headerToolbar={{
-            start: 'prev,next', 
-            end: 'dayGridMonth,timeGridWeek'
-        }}
-        displayEventTime={true}
-        displayEventEnd={true}
-        editable={true}
-        eventReceive = {(info) => {
-            console.log(info.event.start)
+        <FullCalendar
+            plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
+            ref={ref}
+            events={events}
+            initialView="timeGridWeek"
+            eventClick={(info) => {
+                onSessionClick(info.event);
+            }}
+            headerToolbar={{
+                start: 'prev,next', 
+                end: 'dayGridMonth,timeGridWeek'
+            }}
+            eventDidMount={(info) => {
+                const duration = info.event.extendedProps.duration || "-"
+                const notes = info.event.extendedProps.notes || "No notes"
 
-            const startTime = info.event.start.toISOString();
-            const sessionData = {
-                name: info.event.title,
-                duration: Interval.fromDateTimes(info.event.start, info.event.end).toDuration().toFormat('hh:mm'),
-                notes: info.event.extendedProps.notes || "",
-                time: startTime
-            }
-            console.log(startTime);
-            pushSession(sessionData);
-        }}
-    />
+                tippy(info.el, {
+                    content: `
+                        <div>
+                            <span>${info.event.title}</span>
+                            <span>Duration ${duration}</span>
+                            <span>Notes ${notes}</span>
+                        </div>
+                    `,
+                    allowHTML: true,
+                    placement: 'top-start',
+                    theme: 'light'
+                })
+            }}
+            displayEventTime={true}
+            displayEventEnd={true}
+            editable={true}
+            eventReceive = {(info) => {    
+                const startTime = info.event.start.toISOString();
+                const sessionData = {
+                    name: info.event.title,
+                    duration: Interval.fromDateTimes(info.event.start, info.event.end).toDuration().toFormat('hh:mm'),
+                    notes: info.event.extendedProps.notes || "",
+                    time: startTime
+                }
+                console.log(startTime);
+                pushSession(sessionData);
+            }}
+        />
   )
 });
 
