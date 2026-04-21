@@ -1,5 +1,5 @@
 import { DROPDOWN_INPUT, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, CREATE_SESSION, DRAGGABLE_DRILL, DRAGGABLE_SESSION } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, CREATE_SESSION, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
@@ -12,6 +12,15 @@ export default function CoachCalendar() {
     const [selectedSession, setSelectedSession] = useState(null);
 
     const [calendarEvents, setCalendarEvents] = useState([]);
+
+    const [weekStart, setWeekStart] = useState(DateTime.now().startOf('week'));
+    const [weekEnd, setWeekEnd] = useState(DateTime.now().endOf('week'));
+
+    const handleDateChange = (start, end) => { 
+        setWeekStart(DateTime.fromJSDate(start));
+        setWeekEnd(DateTime.fromJSDate(end));
+
+    };
 
     useEffect(() => {
         fetchSessions();
@@ -54,6 +63,9 @@ export default function CoachCalendar() {
         { label: "180 mins", val: "03:00:00" },
     ];
 
+    const coaches = ["coach 1", "coach 2", "coach 3", "coach 4", "coach 5"];
+    const players = ["player 1", "player 2", "player 3", "player 4", "player 5"];
+
     const [sessionSettings, setSessionSettings] = useState({
         sessionName: "Session Name",
         sessionDuration: durationOptions[0].val,
@@ -92,15 +104,19 @@ export default function CoachCalendar() {
     return (
         <>
             <div class="content-box" id="calendar-box">
-                <div id="calendar-top">
-                    <CALENDAR 
-                        events={calendarEvents}
-                        onSessionClick = {(eventData) => {
-                            setSelectedSession(eventData);
-                            setShowSessionCreator(false);
-                        }}
-                    />
-                </div>
+                <CALENDAR 
+                    events={calendarEvents}
+                    activeStart={weekStart}
+                    activeEnd={weekEnd}
+                    onTodayClick={() => {
+                        if (calendarRef.current) calendarRef.current.getApi().today();
+                    }}
+                    onDateChange={handleDateChange}
+                    onSessionClick = {(eventData) => {
+                        setSelectedSession(eventData);
+                        setShowSessionCreator(false);
+                    }}
+                />
             </div>
 
             {/* Session creator */}
@@ -141,6 +157,8 @@ export default function CoachCalendar() {
                         <div class="input-container">
                             <span class="input-container-label">PEOPLE</span>
                             <div class="input-box-wrapper" id="session-people">
+                                <PEOPLE_SELECTOR role="COACHES" names={coaches} />
+                                <PEOPLE_SELECTOR role="PLAYERS" names={players} />
                             </div>
                         </div>
                         <div class="input-container">
@@ -193,6 +211,7 @@ export default function CoachCalendar() {
                         <div class="input-container">
                             <span class="input-container-label">PEOPLE</span>
                             <div class="input-box-wrapper" id="session-people">
+                                
                             </div>
                         </div>
                         <div class="input-container">

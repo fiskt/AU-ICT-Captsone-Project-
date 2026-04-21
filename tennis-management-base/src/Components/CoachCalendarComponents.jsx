@@ -16,14 +16,44 @@ import tippy from 'tippy.js';
 import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
-function CALENDAR_DATE({ firstDayOfActiveWeek, daysInWeek }) {
-    const weekStart = firstDayOfActiveWeek.toFormat('MMM d');
-    const weekEnd = (daysInWeek[0].month == daysInWeek[6].month) ?
-        firstDayOfActiveWeek.endOf('week').toFormat('d, yyyy') :
-        firstDayOfActiveWeek.endOf('week').toFormat('MMM d, yyyy');
-
+function TICKBOX_SELECTOR({ names, selectedPeople, onToggle }) {
     return (
-        <h1 id="calendar-date">{weekStart} - {weekEnd}</h1>
+        <div>
+            {names.map((name) => (
+                <div class="people-selector-tickbox" key={name}>
+                        <input
+                            class="people-tickbox"
+                            type="checkbox"
+                            value={name}
+                            checked={selectedPeople.includes(name)}
+                            onChange={() => onToggle(name)}
+                        />
+                        <span>{name}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+export function PEOPLE_SELECTOR({ role, names }) {
+    const [selectedPeople, setSelectedPeople] = useState([]);
+
+    const handleToggle = (name) => {
+        setSelectedPeople((prev) =>
+            prev.includes(name) 
+                ? prev.filter((p) => p !== name) 
+                : [...prev, name]
+        )
+    }
+    return (
+        <div class="people-selector">
+            <span class="people-selector-title">{role}</span>
+            <TICKBOX_SELECTOR 
+                names={names}
+                selectedPeople={selectedPeople}
+                onToggle={handleToggle}
+            />
+        </div>
     );
 }
 
@@ -96,84 +126,78 @@ export function CREATE_SESSION({ onAddClick }) {
     );
 }
 
-// 1. Wrap CALENDAR_GRID in forwardRef
-const CALENDAR_GRID = forwardRef(({ onSessionClick, events }, ref) => {
+export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDateChange, activeStart, activeEnd }, ref) => {
+    const currentWeekStart = activeStart || DateTime.now().startOf('week');
+    const currentWeekEnd = activeEnd.minus({ days: 1 }) || DateTime.now().endOf('week');
+    console.log("current week", currentWeekStart);
+    
+    const weekStartStr = currentWeekStart.toFormat('MMM d');
+    const weekEndStr = (currentWeekStart.month === currentWeekEnd.month) 
+        ? currentWeekEnd.toFormat('d, yyyy') 
+        : currentWeekEnd.toFormat('MMM d, yyyy');
+
     async function pushSession({ name, duration, notes, time }) {
         const { data, error } = await supabase
             .from('sessions')
             .insert([{ name: name, duration: duration, notes: notes, time: time }]);
         console.log(data, error);
     }
-  return (
-        <FullCalendar
-            plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
-            ref={ref}
-            events={events}
-            initialView="timeGridWeek"
-            eventClick={(info) => {
-                onSessionClick(info.event);
-            }}
-            headerToolbar={{
-                start: 'prev,next', 
-                end: 'dayGridMonth,timeGridWeek'
-            }}
-            eventDidMount={(info) => {
-                const duration = info.event.extendedProps.duration || "-"
-                const notes = info.event.extendedProps.notes || "No notes"
 
-                tippy(info.el, {
-                    content: `
-                        <div>
-                            <span>${info.event.title}</span>
-                            <span>Duration ${duration}</span>
-                            <span>Notes ${notes}</span>
-                        </div>
-                    `,
-                    allowHTML: true,
-                    placement: 'top-start',
-                    theme: 'light'
-                })
-            }}
-            displayEventTime={true}
-            displayEventEnd={true}
-            editable={true}
-            eventReceive = {(info) => {    
-                const startTime = info.event.start.toISOString();
-                const sessionData = {
-                    name: info.event.title,
-                    duration: Interval.fromDateTimes(info.event.start, info.event.end).toDuration().toFormat('hh:mm'),
-                    notes: info.event.extendedProps.notes || "",
-                    time: startTime
-                }
-                console.log(startTime);
-                pushSession(sessionData);
-            }}
-        />
-  )
-});
-
-// 3. Wrap CALENDAR in forwardRef
-export const CALENDAR = forwardRef(({ onSessionClick, events }, ref) => {
-    const today = DateTime.now();
-    const [firstDayOfActiveWeek, setFirstDayOfActiveWeek] = useState(
-        today.startOf('week')
-    );
-
-    const weekInterval = Interval.fromDateTimes(
-        firstDayOfActiveWeek, firstDayOfActiveWeek.endOf('week')
-    );
-    const daysInWeek = weekInterval.splitBy({ days: 1 }).map(d => d.start);
-    
     return (
         <div id="calendar-grid-container">
-            <CALENDAR_DATE 
-                firstDayOfActiveWeek={firstDayOfActiveWeek} 
-                daysInWeek={daysInWeek} 
-            />
-            <CALENDAR_GRID 
-                ref={ref} 
+            <div id="calendar-date-container">
+                <h1 id="calendar-date">{weekStartStr} - {weekEndStr}</h1>
+                <button onClick={onTodayClick}>Back to current week</button>
+            </div>
+            <FullCalendar
+                plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
+                ref={ref}
                 events={events}
-                onSessionClick={onSessionClick}
+                initialView="timeGridWeek"
+                eventClick={(info) => {
+                    onSessionClick(info.event);
+                }}
+                headerToolbar={{
+                    start: 'prev,next', 
+                    end: 'dayGridMonth,timeGridWeek'
+                }}
+                datesSet={(dateInfo) => {
+                    console.log("current date: ", dateInfo.start, "-", dateInfo.end);
+                    onDateChange(dateInfo.start, dateInfo.end);
+                }}
+                eventDidMount={(info) => {
+                    const duration = info.event.extendedProps.duration || "-";
+                    const notes = info.event.extendedProps.notes || "No notes";
+
+                    tippy(info.el, {
+                        content: `
+                            <div class="calendar-event-tooltip">
+                                <span class="calendar-event-tooltip-title">${info.event.title}</span>
+                                <div class="calendar-event-tooltip-divider"></div>
+                                <span>DURATION: ${duration}</span>
+                                <span>NOTES:</span>
+                                <span class="calendar-event-tooltip-notes-area">${notes}</span>
+                            </div>
+                        `,
+                        allowHTML: true,
+                        placement: 'top-start',
+                        theme: 'light'
+                    })
+                }}
+                displayEventTime={true}
+                displayEventEnd={true}
+                editable={true}
+                eventReceive = {(info) => {    
+                    const startTime = info.event.start.toISOString();
+                    const sessionData = {
+                        name: info.event.title,
+                        duration: Interval.fromDateTimes(info.event.start, info.event.end).toDuration().toFormat('hh:mm'),
+                        notes: info.event.extendedProps.notes || "",
+                        time: startTime
+                    }
+                    console.log(startTime);
+                    pushSession(sessionData);
+                }}
             />
         </div>
     );
