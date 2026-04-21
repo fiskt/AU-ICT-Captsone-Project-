@@ -127,78 +127,83 @@ export function CREATE_SESSION({ onAddClick }) {
 }
 
 export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDateChange, activeStart, activeEnd }, ref) => {
-    const currentWeekStart = activeStart || DateTime.now().startOf('week');
-    const currentWeekEnd = activeEnd.minus({ days: 1 }) || DateTime.now().endOf('week');
-    console.log("current week", currentWeekStart);
-    
+    const todayStart = DateTime.now().startOf('week').minus({ days: 1 });
+    const currentWeekStart = activeStart || todayStart;
+
+    const onCurrentWeek = currentWeekStart.hasSame(todayStart, 'day');
+    const currentWeekEnd = activeEnd ? activeEnd.minus({ days: 1 }) : currentWeekStart.endOf('week');
+
     const weekStartStr = currentWeekStart.toFormat('MMM d');
     const weekEndStr = (currentWeekStart.month === currentWeekEnd.month) 
         ? currentWeekEnd.toFormat('d, yyyy') 
         : currentWeekEnd.toFormat('MMM d, yyyy');
 
-    async function pushSession({ name, duration, notes, time }) {
-        const { data, error } = await supabase
-            .from('sessions')
-            .insert([{ name: name, duration: duration, notes: notes, time: time }]);
-        console.log(data, error);
-    }
+    const [isAnimating, setIsAnimating] = useState(false);
 
     return (
-        <div id="calendar-grid-container">
+        <div id="calendar-container">
             <div id="calendar-date-container">
-                <h1 id="calendar-date">{weekStartStr} - {weekEndStr}</h1>
-                <button onClick={onTodayClick}>Back to current week</button>
+                <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()} >{weekStartStr} - {weekEndStr}</h1>
+                <div id="calendar-date-middle"></div>
+                {!onCurrentWeek && (
+                    <button onClick={onTodayClick} class="calendar-title-fade">Back to current week</button>
+                )}
             </div>
-            <FullCalendar
-                plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
-                ref={ref}
-                events={events}
-                initialView="timeGridWeek"
-                eventClick={(info) => {
-                    onSessionClick(info.event);
-                }}
-                headerToolbar={{
-                    start: 'prev,next', 
-                    end: 'dayGridMonth,timeGridWeek'
-                }}
-                datesSet={(dateInfo) => {
-                    console.log("current date: ", dateInfo.start, "-", dateInfo.end);
-                    onDateChange(dateInfo.start, dateInfo.end);
-                }}
-                eventDidMount={(info) => {
-                    const duration = info.event.extendedProps.duration || "-";
-                    const notes = info.event.extendedProps.notes || "No notes";
+            <div class="calendar-fade" className={isAnimating ? "calendar-fade" : ""}>
+                <FullCalendar
+                    plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
+                    ref={ref}
+                    events={events}
+                    initialView="timeGridWeek"
+                    eventClick={(info) => {
+                        onSessionClick(info.event);
+                    }}
+                    headerToolbar={{
+                        start: 'prev,next', 
+                        end: 'dayGridMonth,timeGridWeek'
+                    }}
+                    datesSet={(dateInfo) => {
+                        setIsAnimating(false);
+                        
+                        setTimeout(() => {
+                            setIsAnimating(true);
+                            onDateChange(dateInfo.start, dateInfo.end);
+                        }, 10);
+                    }}
+                    eventDidMount={(info) => {
+                        const duration = info.event.extendedProps.duration || "-";
+                        const notes = info.event.extendedProps.notes || "No notes";
 
-                    tippy(info.el, {
-                        content: `
-                            <div class="calendar-event-tooltip">
-                                <span class="calendar-event-tooltip-title">${info.event.title}</span>
-                                <div class="calendar-event-tooltip-divider"></div>
-                                <span>DURATION: ${duration}</span>
-                                <span>NOTES:</span>
-                                <span class="calendar-event-tooltip-notes-area">${notes}</span>
-                            </div>
-                        `,
-                        allowHTML: true,
-                        placement: 'top-start',
-                        theme: 'light'
-                    })
-                }}
-                displayEventTime={true}
-                displayEventEnd={true}
-                editable={true}
-                eventReceive = {(info) => {    
-                    const startTime = info.event.start.toISOString();
-                    const sessionData = {
-                        name: info.event.title,
-                        duration: Interval.fromDateTimes(info.event.start, info.event.end).toDuration().toFormat('hh:mm'),
-                        notes: info.event.extendedProps.notes || "",
-                        time: startTime
-                    }
-                    console.log(startTime);
-                    pushSession(sessionData);
-                }}
-            />
+                        tippy(info.el, {
+                            content: `
+                                <div class="calendar-event-tooltip">
+                                    <span class="calendar-event-tooltip-title">${info.event.title}</span>
+                                    <div class="calendar-event-tooltip-divider"></div>
+                                    <span>DURATION: ${duration}</span>
+                                    <span>NOTES:</span>
+                                    <span class="calendar-event-tooltip-notes-area">${notes}</span>
+                                </div>
+                            `,
+                            allowHTML: true,
+                            placement: 'top-start',
+                            theme: 'light'
+                        })
+                    }}
+                    displayEventTime={true}
+                    displayEventEnd={true}
+                    editable={true}
+                    eventReceive = {(info) => {    
+                        const startTime = info.event.start.toISOString();
+                        const sessionData = {
+                            name: info.event.title,
+                            duration: Interval.fromDateTimes(info.event.start, info.event.end).toDuration().toFormat('hh:mm'),
+                            notes: info.event.extendedProps.notes || "",
+                            time: startTime
+                        }
+                        pushSession(sessionData);
+                    }}
+                />
+            </div>
         </div>
     );
 });

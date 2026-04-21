@@ -13,6 +13,24 @@
     border-bottom: 2px solid var(--content-input-border-color);
     margin: 20px 0 15px 0;
     padding: 0;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+#calendar-date-middle {
+    flex: 1;
+}
+
+#calendar-date-container button {
+    height: 35px;
+    padding: 5px;
+    transition: background-color 0.2s ease-out;
+}
+
+#calendar-date-container button:hover {
+    background-color: var(--btn-hover-color);
+    border-color: var(--btn-hover-color);
 }
 
 #calendar-date {
@@ -50,7 +68,7 @@
   overflow-y: auto;
 }
 
-#calendar-grid-container {
+#calendar-container {
     padding: 10px;
     overflow-y: hidden;
 }
@@ -166,4 +184,23 @@
 
 .people-selector-tickbox span {
     margin-left: 4px;
+}
+
+.calendar-title-fade {
+    display: inline-block; 
+    animation: title-slide-fade 0.4s ease-out;
+}
+
+@keyframes title-slide-fade {
+    from { opacity: 0; transform: translateY(-40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.calendar-fade {
+    animation: calendar-entry-fade 0.7s ease-in-out;
+}
+
+@keyframes calendar-entry-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }

@@ -19,8 +19,20 @@ export default function CoachCalendar() {
     const handleDateChange = (start, end) => { 
         setWeekStart(DateTime.fromJSDate(start));
         setWeekEnd(DateTime.fromJSDate(end));
-
     };
+
+    const handleShowToday = () => {
+        setWeekStart(DateTime.now().startOf('week'));
+        setWeekEnd(DateTime.now().endOf('week'));
+
+
+        if (calendarRef.current) {
+            const calendarApi = calendarRef.current.getApi();
+            calendarApi.today(); 
+        } else {
+            console.log("loading calendar....");
+        }
+    }
 
     useEffect(() => {
         fetchSessions();
@@ -105,12 +117,11 @@ export default function CoachCalendar() {
         <>
             <div class="content-box" id="calendar-box">
                 <CALENDAR 
+                    ref={calendarRef}
                     events={calendarEvents}
                     activeStart={weekStart}
                     activeEnd={weekEnd}
-                    onTodayClick={() => {
-                        if (calendarRef.current) calendarRef.current.getApi().today();
-                    }}
+                    onTodayClick={handleShowToday}
                     onDateChange={handleDateChange}
                     onSessionClick = {(eventData) => {
                         setSelectedSession(eventData);
