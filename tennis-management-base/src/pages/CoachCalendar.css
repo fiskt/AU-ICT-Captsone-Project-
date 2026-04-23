@@ -11,7 +11,7 @@
 
 #calendar-date-container {
     border-bottom: 2px solid var(--content-input-border-color);
-    margin: 20px 0 15px 0;
+    margin: 0 0 15px 0;
     padding: 0;
     display: flex;
     gap: 20px;
@@ -25,13 +25,8 @@
 #calendar-date-container button {
     height: 35px;
     padding: 5px;
-    transition: background-color 0.2s ease-out;
 }
 
-#calendar-date-container button:hover {
-    background-color: var(--btn-hover-color);
-    border-color: var(--btn-hover-color);
-}
 
 #calendar-date {
     color: var(--content-head-color);
@@ -123,24 +118,6 @@
     overflow-y: auto;
 }
 
-.add-new-btn {
-    border-radius: 8px;
-    background-color: lightgray;
-    border: 2px solid gray;
-    font-family: 'DM Mono Light', sans-serif;
-    font-size: small;
-    align-items: center;
-    justify-content: center;
-    display: flex;
-    padding: 5px;
-    color: black;
-}
-
-#add-session {
-    width: 100%;
-    height: 40px;
-}
-
 .calendar-event-tooltip {
     display: flex;
     flex-direction: column;
@@ -203,4 +180,38 @@
 @keyframes calendar-entry-fade {
     from { opacity: 0; }
     to { opacity: 1; }
+}
+
+#add-del-btns {
+    display: flex; 
+    gap: 8px;        
+    align-items: center; 
+    padding: 10px 5px 0 5px;
+    border-top: 2px solid var(--content-input-border-color);
+    margin-top: 5px;
+}
+
+#add-del-btns > * {
+    flex: 1; 
+    margin: 0;
+    height: 40px;
+}
+
+
+/* Keep your 'a' tag styling as is */
+.selected-session {
+    border: 2px solid #EC7842 !important;
+    background-color: var(--accent-color);
+    transition: border-color 0.2s ease-in-out;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.fc-event:hover {
+    border-color: black;
+    transition: border-color 0.2s ease-in-out;
+}
+
+.fc-event {
+    border: 2px solid white;
+    padding: 3px;
 }

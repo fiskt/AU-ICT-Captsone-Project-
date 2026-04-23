@@ -1,5 +1,5 @@
-import { DROPDOWN_INPUT, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, CREATE_SESSION, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
+import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
+import { CALENDAR, CREATE_DELETE_SESSION, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
@@ -7,11 +7,23 @@ import { DateTime, Duration } from 'luxon';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
+    // calendar reference for session editor
     const calendarRef = useRef(null);
     const [showSessionCreator, setShowSessionCreator] = useState(true);
     const [selectedSession, setSelectedSession] = useState(null);
 
     const [calendarEvents, setCalendarEvents] = useState([]);
+
+    // toggle for event tooltips
+    const [toggleEventTooltips, setToggleEventTooltips] = useState(true);
+
+    const toggleTooltips = () => {
+        toggleEventTooltips ? setToggleEventTooltips(false) : setToggleEventTooltips(true);
+        console.log(toggleEventTooltips);
+    }
+
+    // loading screen appears when data isnt fully loaded
+    const [isDataLoading, setIsDataLoading] = useState(true);
 
     const [weekStart, setWeekStart] = useState(DateTime.now().startOf('week'));
     const [weekEnd, setWeekEnd] = useState(DateTime.now().endOf('week'));
@@ -21,6 +33,7 @@ export default function CoachCalendar() {
         setWeekEnd(DateTime.fromJSDate(end));
     };
 
+    // handles returning to current week
     const handleShowToday = () => {
         setWeekStart(DateTime.now().startOf('week'));
         setWeekEnd(DateTime.now().endOf('week'));
@@ -33,12 +46,13 @@ export default function CoachCalendar() {
             console.log("loading calendar....");
         }
     }
-
     useEffect(() => {
         fetchSessions();
     }, []);
 
+    // fetch session data
     async function fetchSessions() {
+        setIsDataLoading(true);
         const { data, error } = await supabase
             .from('sessions')
             .select('*');
@@ -46,7 +60,6 @@ export default function CoachCalendar() {
         if (error) {
             console.log("Error fetching session data: ", error.message);
         } else {
-            console.log(data);
             const formattedEvents = data.map(session => {
                 const startTime = DateTime.fromISO(session.time);
                 const duration = Duration.fromISOTime(session.duration);
@@ -58,14 +71,33 @@ export default function CoachCalendar() {
                     end: startTime.plus(duration).toISO(),
                     extendedProps: {
                         duration: session.duration,
+                        people: session.people,
                         notes: session.notes
                     }
                 };
             });
+            setIsDataLoading(false);
             setCalendarEvents(formattedEvents);   
         }
     }
 
+    async function deleteSession() {
+        setIsDataLoading(true);
+        const { error } = await supabase
+            .from('sessions')
+            .delete()
+            .eq('id', selectedSession.id);
+
+        if (error) {
+            console.log("Error when deleting session. Please try again.");
+            setIsDataLoading(false);
+        } else {
+            selectedSession.remove();
+            fetchSessions();
+        }
+    }
+
+    // session creator/editor duration dropdown options
     const durationOptions = [
         { label: "30 mins", val: "00:30:00" },
         { label: "60 mins", val: "00:60:00" },
@@ -75,17 +107,26 @@ export default function CoachCalendar() {
         { label: "180 mins", val: "03:00:00" },
     ];
 
+    // temp coach/player arrays for session people 
     const coaches = ["coach 1", "coach 2", "coach 3", "coach 4", "coach 5"];
     const players = ["player 1", "player 2", "player 3", "player 4", "player 5"];
 
-    const [sessionSettings, setSessionSettings] = useState({
-        sessionName: "Session Name",
-        sessionDuration: durationOptions[0].val,
-        sessionNotes: "",
-        sessionPeople: []
+    // auto save current session inputs in local storage and restore the saved inputs
+    const [sessionSettings, setSessionSettings] = useState(() => {
+        const savedDraft = localStorage.getItem('session_creator_draft');
+        return savedDraft ? JSON.parse(savedDraft) : {
+            sessionName: "Session Name",
+            sessionDuration: durationOptions[0].val,
+            sessionNotes: "",
+            sessionPeople: []
+        };
     });
 
+    useEffect(() => {
+        localStorage.setItem('session_creator_draft', JSON.stringify(sessionSettings));
+    }, [sessionSettings]);
 
+    // temp drill settings
     const [drillSettings, setDrillSettings] = useState({
         drillName: "Right hand serve",
         drillDuration: "30m",
@@ -100,6 +141,7 @@ export default function CoachCalendar() {
         });
     }
 
+    // update fields in session editor
     const updateCalendarSession = (field, value) => {
         if (!calendarRef.current) return;
         const calendarApi = calendarRef.current.getApi();
@@ -113,8 +155,24 @@ export default function CoachCalendar() {
         }
     }
 
+    // confirmation popup for deleting sessions
+    const sessionDeleteConfirmation = () => {
+        const confirmed = window.confirm("Are you sure you want to delete this session? This action cannot be undone.");
+
+        if (confirmed) {
+            deleteSession();
+            setShowSessionCreator(true);
+            setSelectedSession(null);
+            console.log("Session deleted");
+        }
+    }
+
     return (
         <>
+            {/* Loading overlay */}
+            {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
+
+            {/* Calendar */}
             <div class="content-box" id="calendar-box">
                 <CALENDAR 
                     ref={calendarRef}
@@ -127,6 +185,9 @@ export default function CoachCalendar() {
                         setSelectedSession(eventData);
                         setShowSessionCreator(false);
                     }}
+                    selectedSession={selectedSession}
+                    toggleTooltips={toggleTooltips}
+                    tooltipsEnabled={toggleEventTooltips}
                 />
             </div>
 
@@ -230,15 +291,18 @@ export default function CoachCalendar() {
                             <div class="input-box-wrapper" id="session-drills">
                             </div>
                         </div>
-                        <CREATE_SESSION 
-                            onAddClick={() =>{
-                                setShowSessionCreator(true);
-                                setSelectedSession(null);
-                            }}
+                        <CREATE_DELETE_SESSION
+                            onAddClick={() => {
+                                    setShowSessionCreator(true);
+                                    setSelectedSession(null);
+                                }}
+                            onDeleteClick={sessionDeleteConfirmation}
                         />
                     </div>
                 </div>
             )}
+
+            {/* Drill Library */}
             <div class="content-box editor-box" id="drill-library">
                 <h2 class="content-header">Drills</h2>
                 <div class="input-container">

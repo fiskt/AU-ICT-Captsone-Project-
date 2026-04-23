@@ -116,17 +116,16 @@ export function DRAGGABLE_DRILL({ drillSettings }) {
     );
 }
 
-export function CREATE_SESSION({ onAddClick }) {
+export function CREATE_DELETE_SESSION({ onAddClick, onDeleteClick }) {
     return (
-        <div class="input-container">
-            <div class="add-new-btn" id="add-session" onClick={onAddClick}>
-                <span>New Session</span>
-            </div>
+        <div id="add-del-btns">
+            <button class="add-new-btn" id="add-session" onClick={onAddClick}>Add New</button>
+            <button class="delete-btn" id="delete-session" onClick={onDeleteClick}>Delete</button>
         </div>
     );
 }
 
-export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDateChange, activeStart, activeEnd }, ref) => {
+export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDateChange, activeStart, activeEnd, selectedSession, toggleTooltips, tooltipsEnabled }, ref) => {
     const todayStart = DateTime.now().startOf('week').minus({ days: 1 });
     const currentWeekStart = activeStart || todayStart;
 
@@ -140,11 +139,20 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
 
     const [isAnimating, setIsAnimating] = useState(false);
 
+    async function pushSession({ name, duration, notes, time }) {
+        const { data, error } = await supabase
+            .from('sessions')
+            .insert([{ name: name, duration: duration, notes: notes, time: time }]);
+        console.log(data, error);
+    }
+
     return (
         <div id="calendar-container">
             <div id="calendar-date-container">
                 <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()} >{weekStartStr} - {weekEndStr}</h1>
-                <div id="calendar-date-middle"></div>
+                <div id="calendar-date-middle">
+                    <button onClick={toggleTooltips} class="calenar-title-fade">toggle tooltips</button>
+                </div>
                 {!onCurrentWeek && (
                     <button onClick={onTodayClick} class="calendar-title-fade">Back to current week</button>
                 )}
@@ -154,6 +162,8 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
                     plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
                     ref={ref}
                     events={events}
+                    eventOverlap={false}
+                    selectOverlap={false}
                     initialView="timeGridWeek"
                     eventClick={(info) => {
                         onSessionClick(info.event);
@@ -161,6 +171,11 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
                     headerToolbar={{
                         start: 'prev,next', 
                         end: 'dayGridMonth,timeGridWeek'
+                    }}
+                    eventClassNames={(arg) => {
+                        if (selectedSession && arg.event.id === selectedSession.id) {
+                            return ['selected-session'];
+                        } return [];
                     }}
                     datesSet={(dateInfo) => {
                         setIsAnimating(false);
@@ -174,27 +189,32 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
                         const duration = info.event.extendedProps.duration || "-";
                         const notes = info.event.extendedProps.notes || "No notes";
 
-                        tippy(info.el, {
-                            content: `
-                                <div class="calendar-event-tooltip">
-                                    <span class="calendar-event-tooltip-title">${info.event.title}</span>
-                                    <div class="calendar-event-tooltip-divider"></div>
-                                    <span>DURATION: ${duration}</span>
-                                    <span>NOTES:</span>
-                                    <span class="calendar-event-tooltip-notes-area">${notes}</span>
-                                </div>
-                            `,
-                            allowHTML: true,
-                            placement: 'top-start',
-                            theme: 'light'
-                        })
+                        if (tooltipsEnabled) {
+                            tippy(info.el, {
+                                content: `
+                                    <div class="calendar-event-tooltip">
+                                        <span class="calendar-event-tooltip-title">${info.event.title}</span>
+                                        <div class="calendar-event-tooltip-divider"></div>
+                                        <span>DURATION: ${duration}</span>
+                                        <span>NOTES:</span>
+                                        <span class="calendar-event-tooltip-notes-area">${notes}</span>
+                                    </div>
+                                `,
+                                allowHTML: true,
+                                placement: 'top-start',
+                                theme: 'light'
+                            })
+                        }
                     }}
                     displayEventTime={true}
                     displayEventEnd={true}
                     editable={true}
                     eventReceive = {(info) => {    
                         const startTime = info.event.start.toISOString();
+                        const tempID = "temp-" + Date.now();
+                        info.event.setProp("id", tempID);
                         const sessionData = {
+                            id: tempID,
                             name: info.event.title,
                             duration: Interval.fromDateTimes(info.event.start, info.event.end).toDuration().toFormat('hh:mm'),
                             notes: info.event.extendedProps.notes || "",

@@ -118,3 +118,12 @@ export function DROPDOWN_INPUT({ label, input_id, box_w, box_h, options, value, 
         </div>
     );
 }
+
+export function LOADING_OVERLAY({ caption }) {
+    return (
+        <div class="loading-overlay">
+            <div class="loading-overlay-spinner"></div>
+            <span class="loading-overlay-caption">Loading {caption} ...</span>
+        </div>
+    );
+}
