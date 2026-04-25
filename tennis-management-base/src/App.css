@@ -192,6 +192,53 @@ button:hover {
     padding: 5px;
 }
 
+.content-box-top {
+  border-bottom: 2px solid var(--content-input-border-color);
+  margin: 3px 7px 4px 7px;
+  padding: 10px 0 10px 0;
+  display: flex;
+  flex-direction: row;
+}
+
+.content-box-middle {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  flex-grow: 1; 
+    min-height: 0;
+    overflow-y: hidden;
+}
+
+.content-box-middle-left, .content-box-middle-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.content-box-top-left, .content-box-bottom-left {
+  justify-content: left;
+  align-items: center;
+}
+
+.content-box-top-right, .content-box-bottom-right {
+  justify-content: right;
+  align-items: center;
+}
+
+.content-box-top-middle, .content-box-bottom-middle {
+  flex: 1;
+}
+
+.content-box-bottom {
+  border-top: 2px solid var(--content-input-border-color);
+  margin: 4px 7px 3px 7px;
+  padding: 10px 0 10px 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
 .input-container {
   display: flex;
   flex-direction: column;

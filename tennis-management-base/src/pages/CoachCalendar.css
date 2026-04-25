@@ -35,33 +35,6 @@
     margin-bottom: 20px;
 }
 
-#session-people {
-    width: 100%;
-    height: 150px;
-  background-color: white;
-  
-  border: 2px solid var(--content-input-border-color);
-  padding: 8px;
-  border-radius: 8px;
-  width: 100%;
-  overflow-y: auto;
-
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-#session-drills {
-    width: 100%;
-    height: 150px;
-  background-color: white;
-  
-  border: 2px solid var(--content-input-border-color);
-  padding: 8px;
-  border-radius: 8px;
-  width: 100%;
-  overflow-y: auto;
-}
 
 #calendar-container {
     padding: 10px;
@@ -197,8 +170,6 @@
     height: 40px;
 }
 
-
-/* Keep your 'a' tag styling as is */
 .selected-session {
     border: 2px solid #EC7842 !important;
     background-color: var(--accent-color);
@@ -214,4 +185,72 @@
 .fc-event {
     border: 2px solid white;
     padding: 3px;
+}
+
+#session-editor-container {
+    width: 100%;
+    height: 100%;
+    background-color: #00000050;
+    position: fixed;
+    z-index: 99;
+    margin: -20px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#session-editor {
+    width: 60%;
+    height: 70%;
+    display: flex;
+    flex-direction: column;
+    animation: calendar-entry-fade 0.3s ease-in;
+}
+
+#session-editor-header {
+    font-family: 'Bebas', sans-serif;
+    color: var(--content-head-color);
+    margin: 0;
+}
+
+#session-editor-drills, #session-editor-people {
+    height: 100%;
+}
+
+#session-editor-drills .session-drills, #session-editor-people .session-people {
+    height: 100%;
+}
+
+
+.session-people, 
+.session-drills {
+    width: 100%;
+    flex: 1;        
+    min-height: 0; 
+    
+    background-color: white;
+    border: 2px solid var(--content-input-border-color);
+    padding: 8px;
+    border-radius: 8px;
+    overflow-y: scroll;
+}
+
+.input-box-wrapper.session-people {
+    display: flex;
+    flex-direction: column;
+    flex: 1; 
+    min-height: 0;
+}
+
+.session-people {
+    flex: 1;    
+    min-height: 0;   
+    overflow-y: auto; 
+    
+    background-color: white;
+    border: 2px solid var(--content-input-border-color);
+    padding: 8px;
+    border-radius: 8px;
 }

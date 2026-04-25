@@ -116,15 +116,6 @@ export function DRAGGABLE_DRILL({ drillSettings }) {
     );
 }
 
-export function CREATE_DELETE_SESSION({ onAddClick, onDeleteClick }) {
-    return (
-        <div id="add-del-btns">
-            <button class="add-new-btn" id="add-session" onClick={onAddClick}>Add New</button>
-            <button class="delete-btn" id="delete-session" onClick={onDeleteClick}>Delete</button>
-        </div>
-    );
-}
-
 export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDateChange, activeStart, activeEnd, selectedSession, toggleTooltips, tooltipsEnabled }, ref) => {
     const todayStart = DateTime.now().startOf('week').minus({ days: 1 });
     const currentWeekStart = activeStart || todayStart;

@@ -1,5 +1,5 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, CREATE_DELETE_SESSION, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
@@ -7,9 +7,8 @@ import { DateTime, Duration } from 'luxon';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
-    // calendar reference for session editor
     const calendarRef = useRef(null);
-    const [showSessionCreator, setShowSessionCreator] = useState(true);
+    const [showSessionEditor, setShowSessionEditor] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
 
     const [calendarEvents, setCalendarEvents] = useState([]);
@@ -27,6 +26,22 @@ export default function CoachCalendar() {
 
     const [weekStart, setWeekStart] = useState(DateTime.now().startOf('week'));
     const [weekEnd, setWeekEnd] = useState(DateTime.now().endOf('week'));
+
+    const [tempSession, setTempSession] = useState(null);
+
+    useEffect(() => {
+        if (selectedSession) {
+            setTempSession({
+                id: selectedSession.id,
+                name: selectedSession.title,
+                duration: selectedSession.extendedProps.duration,
+                notes: selectedSession.extendedProps.notes,
+                people: selectedSession.extendedProps.people,
+            });
+        } else {
+            setTempSession(null);
+        }
+    }, [selectedSession]);
 
     const handleDateChange = (start, end) => { 
         setWeekStart(DateTime.fromJSDate(start));
@@ -97,6 +112,24 @@ export default function CoachCalendar() {
         }
     }
 
+    async function saveSessionChanges() {
+        setIsDataLoading(true);
+        const { error } = await supabase
+            .from('sessions')
+            .update({ 
+                name: tempSession.name, 
+                duration: tempSession.duration, 
+                notes: tempSession.notes 
+            })
+            .eq('id', tempSession.id);
+
+        if (!error) {
+            fetchSessions();
+            setSelectedSession(null);
+            setShowSessionEditor(false);
+        }
+    }
+
     // session creator/editor duration dropdown options
     const durationOptions = [
         { label: "30 mins", val: "00:30:00" },
@@ -161,7 +194,7 @@ export default function CoachCalendar() {
 
         if (confirmed) {
             deleteSession();
-            setShowSessionCreator(true);
+            setShowSessionEditor(false);
             setSelectedSession(null);
             console.log("Session deleted");
         }
@@ -183,7 +216,7 @@ export default function CoachCalendar() {
                     onDateChange={handleDateChange}
                     onSessionClick = {(eventData) => {
                         setSelectedSession(eventData);
-                        setShowSessionCreator(false);
+                        setShowSessionEditor(true);
                     }}
                     selectedSession={selectedSession}
                     toggleTooltips={toggleTooltips}
@@ -192,112 +225,129 @@ export default function CoachCalendar() {
             </div>
 
             {/* Session creator */}
-            {showSessionCreator && (
-                <div class="content-box editor-box" id="session-creator">
-                    <h2 class="content-header">Session Creator</h2>
-                    <div id="session-creator-input-container">
-                        <TYPING_INPUT 
-                            label="NAME" 
-                            num_rows="1" 
-                            input_id="session-name-creator" 
-                            box_w="100%" box_h="30px" 
-                            sample_txt="Session name"
-                            value={sessionSettings.sessionName}
-                            onChange={(val) => {
-                                updateField('sessionName', val);
-                            }}
-                        />
-                        <DROPDOWN_INPUT 
-                            label="DURATION" 
-                            input_id="session-duration-creator" 
-                            box_w="100%" box_h="30px" 
-                            options={durationOptions}
-                            value={sessionSettings.sessionDuration}
-                            onChange={(val) => {
-                                updateField('sessionDuration', val);
-                            }}
-                        />
-                        <TYPING_INPUT 
-                            label="NOTES" 
-                            num_rows="6" 
-                            input_id="session-notes-creator" 
-                            box_w="100%" box_h="80px" 
-                            sample_txt="Session notes" 
-                            value={sessionSettings.sessionNotes}
-                            onChange={(val) => updateField('sessionNotes', val)}
-                        />
-                        <div class="input-container">
-                            <span class="input-container-label">PEOPLE</span>
-                            <div class="input-box-wrapper" id="session-people">
-                                <PEOPLE_SELECTOR role="COACHES" names={coaches} />
-                                <PEOPLE_SELECTOR role="PLAYERS" names={players} />
-                            </div>
-                        </div>
-                        <div class="input-container">
-                            <span class="input-container-label">DRILLS</span>
-                            <div class="input-box-wrapper" id="session-drills">
-                            </div>
+            <div class="content-box editor-box" id="session-creator">
+                <h2 class="content-header">Session Creator</h2>
+                <div id="session-creator-input-container">
+                    <TYPING_INPUT 
+                        label="NAME" 
+                        num_rows="1" 
+                        input_id="session-name-creator" 
+                        box_w="100%" box_h="30px" 
+                        sample_txt="Session name"
+                        value={sessionSettings.sessionName}
+                        onChange={(val) => {
+                            updateField('sessionName', val);
+                        }}
+                    />
+                    <DROPDOWN_INPUT 
+                        label="DURATION" 
+                        input_id="session-duration-creator" 
+                        box_w="100%" box_h="30px" 
+                        options={durationOptions}
+                        value={sessionSettings.sessionDuration}
+                        onChange={(val) => {
+                            updateField('sessionDuration', val);
+                        }}
+                    />
+                    <TYPING_INPUT 
+                        label="NOTES" 
+                        num_rows="6" 
+                        input_id="session-notes-creator" 
+                        box_w="100%" box_h="80px" 
+                        sample_txt="Session notes" 
+                        value={sessionSettings.sessionNotes}
+                        onChange={(val) => updateField('sessionNotes', val)}
+                    />
+                    <div class="input-container">
+                        <span class="input-container-label">PEOPLE</span>
+                        <div class="input-box-wrapper session-people">
+                            <PEOPLE_SELECTOR role="COACHES" names={coaches} />
+                            <PEOPLE_SELECTOR role="PLAYERS" names={players} />
                         </div>
                     </div>
-                    <DRAGGABLE_SESSION sessionSettings={sessionSettings} />
+                    <div class="input-container">
+                        <span class="input-container-label">DRILLS</span>
+                        <div class="input-box-wrapper session-drills">
+                        </div>
+                    </div>
                 </div>
-            )}
+                <DRAGGABLE_SESSION sessionSettings={sessionSettings} />
+            </div>
 
             {/* Session editor */}
-            { selectedSession && (
-                <div class="content-box editor-box" id="session-editor">
-                    <h2 class="content-header">Session Editor</h2>
-                    <div id="session-editor-input-container">
-                        <TYPING_INPUT 
-                            label="NAME" 
-                            num_rows="1" 
-                            input_id="session-name-editor" 
-                            box_w="100%" box_h="30px" 
-                            sample_txt="Session name"
-                            value={sessionSettings.sessionName}
-                            onChange={(val) => {
-                                updateField('sessionName', val);
-                                updateCalendarSession('sessionName', val);
-                            }}
-                        />
-                        <DROPDOWN_INPUT 
-                            label="DURATION" 
-                            input_id="session-duration-editor" 
-                            box_w="100%" box_h="30px" 
-                            options={durationOptions}
-                            value={sessionSettings.sessionDuration}
-                            onChange={(val) => {
-                                updateField('sessionDuration', val);
-                                updateCalendarSession('sessionDuration', val);
-                            }}
-                        />
-                        <TYPING_INPUT 
-                            label="NOTES" 
-                            num_rows="6" 
-                            input_id="session-notes-editor" 
-                            box_w="100%" box_h="80px" 
-                            sample_txt="Session notes" 
-                            value={sessionSettings.sessionNotes}
-                            onChange={(val) => updateField('sessionNotes', val)}
-                        />
-                        <div class="input-container">
-                            <span class="input-container-label">PEOPLE</span>
-                            <div class="input-box-wrapper" id="session-people">
-                                
+            { selectedSession && showSessionEditor && (
+                <div id="session-editor-container">
+                    <div class="content-box" id="session-editor">
+                        <div class="content-box-top">
+                            <div class="content-box-top-left">
+                                <h2 id="session-editor-header">Session Editor</h2>
                             </div>
-                        </div>
-                        <div class="input-container">
-                            <span class="input-container-label">DRILLS</span>
-                            <div class="input-box-wrapper" id="session-drills">
-                            </div>
-                        </div>
-                        <CREATE_DELETE_SESSION
-                            onAddClick={() => {
-                                    setShowSessionCreator(true);
+                            <div class="content-box-top-middle"></div>
+                            <div class="content-box-top-right">
+                                <button id="close-session-editor" onClick={() => {
+                                    setShowSessionEditor(false);
                                     setSelectedSession(null);
-                                }}
-                            onDeleteClick={sessionDeleteConfirmation}
-                        />
+                                }}>Close</button>
+                            </div>
+                        </div>
+                        <div class="content-box-middle">
+                            <div class="content-box-middle-left">
+                                <TYPING_INPUT 
+                                label="NAME" 
+                                num_rows="1" 
+                                input_id="session-name-creator" 
+                                box_w="100%" box_h="30px" 
+                                sample_txt="Session name"
+                                value={tempSession?.name || ""}
+                                onChange={(val) => 
+                                    setTempSession({ ...tempSession, name: val })
+                                }
+                            />
+                            <DROPDOWN_INPUT 
+                                label="DURATION" 
+                                input_id="session-duration-creator" 
+                                box_w="100%" box_h="30px" 
+                                options={durationOptions}
+                                value={tempSession?.duration || ""}
+                                onChange={(val) => 
+                                    setTempSession({ ...tempSession, duration: val })
+                                }
+                            />
+                            <TYPING_INPUT 
+                                label="NOTES" 
+                                num_rows="6" 
+                                input_id="session-notes-creator" 
+                                box_w="100%" box_h="80px" 
+                                sample_txt="Session notes" 
+                                value={tempSession?.notes || ""}
+                                onChange={(val) => 
+                                    setTempSession({ ...tempSession, notes: val })
+                                }
+                            />
+                            <div class="input-container" id="session-editor-people">
+                                <span class="input-container-label">PEOPLE</span>
+                                <div class="input-box-wrapper session-people">
+                                    <PEOPLE_SELECTOR role="COACHES" names={coaches} />
+                                    <PEOPLE_SELECTOR role="PLAYERS" names={players} />
+                                </div>
+                            </div>
+                            </div>
+                            <div class="content-box-middle-right">
+                                <div class="input-container" id="session-editor-drills">
+                                    <span class="input-container-label">DRILLS</span>
+                                    <div class="input-box-wrapper session-drills"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="content-box-bottom">
+                            <div class="content-box-bottom-left">
+                                <button id="save-session-changes" onClick={saveSessionChanges}>Save Changes</button>
+                            </div>
+                            <div class="content-box-bottom-middle"></div>
+                            <div class="content-box-bottom-right">
+                                <button class="delete-btn" id="delete-session" onClick={sessionDeleteConfirmation}>Delete</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
