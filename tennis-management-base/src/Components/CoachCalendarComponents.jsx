@@ -1,7 +1,7 @@
 import '../App.css'
 import '../pages/CoachCalendar.css'
 
-import { DateTime, Info, Interval } from 'luxon'
+import { DateTime, Info, Interval, Duration } from 'luxon'
 import { useState, useEffect, useRef, forwardRef } from 'react';
 
 import FullCalendar from '@fullcalendar/react'
@@ -89,6 +89,38 @@ export function DRAGGABLE_SESSION({ sessionSettings }) {
     );
 }
 
+export function DRAGGABLE_AVAILABILITY({ availSettings }) {
+    const availRef = useRef(null);
+
+    useEffect(() => {
+        let avail = new Draggable(availRef.current, {
+            eventData: () => {
+                return {
+                    title: availSettings.availNotes,
+                    duration: availSettings.availDuration,
+                    start: availSettings.availStart,
+                    end: availSettings.availEnd,
+                    extendedProps: {
+                        type: 'availability'
+                    }
+                };
+            }
+        })
+        return () => avail.destroy();
+    }, [availSettings]);
+
+    return (
+        <div class="input-container">
+            <span class="input-container-label">UNAVAILABLE</span>
+            <div class="input-box-wrapper" id="draggable-session-container">
+                <div ref={availRef} class="draggable-icon session-icon">
+                    <span>{availSettings.availNotes}</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export function DRAGGABLE_DRILL({ drillSettings }) {
     const drillRef = useRef(null);
 
@@ -137,6 +169,57 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
         console.log(data, error);
     }
 
+    async function updateAvailability(event) {
+        if (!event.id || !event.start || !event.end) return;
+
+        // get start and end
+        const start = DateTime.fromJSDate(event.start);
+        const end = DateTime.fromJSDate(event.end);
+
+        // difference of end and start time to get the duration
+        const newDuration = end.diff(start).toFormat('hh:mm:ss');
+
+        const { error } = await supabase
+            .from('coach_availability')
+            .update({
+                start_datetime: start.toISO(),
+                end_datetime: end.toISO(),
+                duration: newDuration
+            })
+            .eq('avail_id', event.id);
+
+        if (error) console.error(error.message);
+    }
+
+    async function pushAvailability({ event, coachId }) {
+        if (!event || !event.start) return;
+
+        // start and end times, default availability slot is 1h
+        const start = DateTime.fromJSDate(event.start);
+        const end = event.end 
+            ? DateTime.fromJSDate(event.end) 
+            : start.plus({ hours: 1 });
+
+        // calculate duration with end - start
+        const durationStr = end.diff(start).toFormat('hh:mm:ss');
+
+        const { data, error } = await supabase
+            .from('coach_availability')
+            .insert([{
+                coach_id: coachId,
+                start_datetime: start.toISO(),
+                end_datetime: end.toISO(),
+                duration: durationStr,
+                notes: event.title || ""
+            }])
+            .select()
+            .single();
+
+        if (data) {
+            event.setProp('id', data.avail_id);
+        }
+    }
+
     return (
         <div id="calendar-container">
             <div id="calendar-date-container">
@@ -157,6 +240,7 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
                     selectOverlap={false}
                     initialView="timeGridWeek"
                     eventClick={(info) => {
+                        if (info.event.extendedProps.type === 'availability') return;
                         onSessionClick(info.event);
                     }}
                     headerToolbar={{
@@ -164,9 +248,15 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
                         end: 'dayGridMonth,timeGridWeek'
                     }}
                     eventClassNames={(arg) => {
+                        if (arg.event.extendedProps.type === 'availability') {
+                            return ['availability-event'];
+                        } 
+
                         if (selectedSession && arg.event.id === selectedSession.id) {
                             return ['selected-session'];
-                        } return [];
+                        } 
+                        
+                        return [];
                     }}
                     datesSet={(dateInfo) => {
                         setIsAnimating(false);
@@ -177,6 +267,7 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
                         }, 10);
                     }}
                     eventDidMount={(info) => {
+                        if (info.event.extendedProps.type === 'availability') return;
                         const duration = info.event.extendedProps.duration || "-";
                         const notes = info.event.extendedProps.notes || "No notes";
 
@@ -201,17 +292,31 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
                     displayEventEnd={true}
                     editable={true}
                     eventReceive = {(info) => {    
-                        const startTime = info.event.start.toISOString();
-                        const tempID = "temp-" + Date.now();
-                        info.event.setProp("id", tempID);
-                        const sessionData = {
-                            id: tempID,
-                            name: info.event.title,
-                            duration: Interval.fromDateTimes(info.event.start, info.event.end).toDuration().toFormat('hh:mm'),
-                            notes: info.event.extendedProps.notes || "",
-                            time: startTime
+                        if (info.event.extendedProps.type === 'availability') {
+                            pushAvailability({ event: info.event, coachId: null});
+                        } else {
+                            const startTime = info.event.start.toISOString();
+                            const tempID = "temp-" + Date.now();
+                            info.event.setProp("id", tempID);
+                            const sessionData = {
+                                id: tempID,
+                                name: info.event.title,
+                                duration: Interval.fromDateTimes(info.event.start, info.event.end).toDuration().toFormat('hh:mm'),
+                                notes: info.event.extendedProps.notes || "",
+                                time: startTime
+                            }
+                            pushSession(sessionData);
                         }
-                        pushSession(sessionData);
+                    }}
+                    eventDrop={(info) => {
+                        if (info.event.extendedProps.type === 'availability') {
+                            updateAvailability(info.event);
+                        }
+                    }}
+                    eventResize={(info) => {
+                        if (info.event.extendedProps.type === 'availability') {
+                            updateAvailability(info.event);
+                        }
                     }}
                 />
             </div>

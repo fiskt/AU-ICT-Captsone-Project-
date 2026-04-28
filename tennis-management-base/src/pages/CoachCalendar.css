@@ -177,7 +177,7 @@
     transition: background-color 0.2s ease-in-out;
 }
 
-.fc-event:hover {
+.fc-event:not(.availability-event):hover {
     border-color: black;
     transition: border-color 0.2s ease-in-out;
 }
@@ -253,4 +253,42 @@
     border: 2px solid var(--content-input-border-color);
     padding: 8px;
     border-radius: 8px;
+}
+
+.availability-event {
+    background-color: color-mix(in srgb, var(--sidebar-bg-color), transparent 80%);
+    border-radius: 0;
+    border-color: color-mix(in srgb, var(--sidebar-bg-color), transparent 80%);
+    
+    background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 10px,
+        #00000025 10px,
+        #00000025 20px
+    ) !important;
+}
+
+.availability-event .fc-event-time {
+    display: none !important;
+}
+
+.availability-event .fc-event-title {
+    text-align: center;
+    width: 100%;
+    color: #000000;
+    opacity: 100% !important;
+}
+
+.fc-event-title {
+    font-family: 'DM Mono Light', sans-serif;
+    color: var(--content-body-color);
+    font-size: 80%;
+}
+
+.fc-event-time {
+    border-bottom: 1px solid black;
+    font-family: 'DM Mono Light', sans-serif;
+    color: black;
+    font-size: 64% !important;
 }

@@ -1,5 +1,5 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
@@ -10,6 +10,8 @@ export default function CoachCalendar() {
     const calendarRef = useRef(null);
     const [showSessionEditor, setShowSessionEditor] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
+
+    const [showAvailabilityCreator, setShowAvailabilityCreator] = useState(false);
 
     const [calendarEvents, setCalendarEvents] = useState([]);
 
@@ -62,38 +64,60 @@ export default function CoachCalendar() {
         }
     }
     useEffect(() => {
-        fetchSessions();
+        fetchCalendarData();
     }, []);
 
-    // fetch session data
-    async function fetchSessions() {
+    async function fetchCalendarData() {
         setIsDataLoading(true);
-        const { data, error } = await supabase
+        
+        // fetch data from the database
+        const sessionData = await supabase
             .from('sessions')
             .select('*');
-        
-        if (error) {
-            console.log("Error fetching session data: ", error.message);
-        } else {
-            const formattedEvents = data.map(session => {
-                const startTime = DateTime.fromISO(session.time);
-                const duration = Duration.fromISOTime(session.duration);
 
-                return {
-                    id: session.id,
-                    title: session.name,
-                    start: session.time,
-                    end: startTime.plus(duration).toISO(),
-                    extendedProps: {
-                        duration: session.duration,
-                        people: session.people,
-                        notes: session.notes
-                    }
-                };
-            });
-            setIsDataLoading(false);
-            setCalendarEvents(formattedEvents);   
-        }
+        const availData = await supabase
+            .from('coach_availability')
+            .select('*');
+
+        // set the session data for the calendar events
+        const session = (sessionData.data || []).map(ses => {
+            const startTime = DateTime.fromISO(ses.time);
+            const duration = Duration.fromISOTime(ses.duration);
+            return {
+                id: ses.id,
+                title: ses.name,
+                start: startTime.toISO(),
+                end: startTime.plus(duration).toISO(),
+                extendedProps: {
+                    type: 'session',
+                    duration: duration.toISO(),
+                    people: ses.people,
+                    notes: ses.notes
+                }
+            };
+        })
+
+        // set data for availability events
+        const availability = (availData.data || []).map(ava => {
+            const startTime = DateTime.fromISO(ava.start_datetime);
+            const endTime = DateTime.fromISO(ava.end_datetime);
+            const duration = Duration.fromISOTime(ava.duration);
+            return {
+                id: ava.avail_id,
+                title: ava.notes || "",
+                start: startTime.toISO(),
+                end: endTime.toISO(),
+                extendedProps: {
+                    type: 'availability',
+                    duration: duration,
+                    notes: ava.notes
+                }
+            };
+        })
+
+        // set copies of the events to the calendar
+        setCalendarEvents([...session, ...availability]);
+        setIsDataLoading(false);
     }
 
     async function deleteSession() {
@@ -108,7 +132,7 @@ export default function CoachCalendar() {
             setIsDataLoading(false);
         } else {
             selectedSession.remove();
-            fetchSessions();
+            fetchCalendarData();
         }
     }
 
@@ -155,6 +179,13 @@ export default function CoachCalendar() {
         };
     });
 
+    const [availSettings, setAvailSettings] = useState({
+            availNotes: "",
+            availStart: "",
+            availEnd: "",
+            availDuration: "01:00:00"
+    })
+
     useEffect(() => {
         localStorage.setItem('session_creator_draft', JSON.stringify(sessionSettings));
     }, [sessionSettings]);
@@ -167,9 +198,16 @@ export default function CoachCalendar() {
         drillTags: ["Right hand", "Serving"]
     });
 
-    const updateField = (field, value) => {
+    const updateSessionField = (field, value) => {
         setSessionSettings({
             ...sessionSettings,
+            [field]: value 
+        });
+    }
+
+    const updateAvailField = (field, value) => {
+        setAvailSettings({
+            ...availSettings,
             [field]: value 
         });
     }
@@ -196,7 +234,6 @@ export default function CoachCalendar() {
             deleteSession();
             setShowSessionEditor(false);
             setSelectedSession(null);
-            console.log("Session deleted");
         }
     }
 
@@ -225,55 +262,78 @@ export default function CoachCalendar() {
             </div>
 
             {/* Session creator */}
-            <div class="content-box editor-box" id="session-creator">
-                <h2 class="content-header">Session Creator</h2>
-                <div id="session-creator-input-container">
-                    <TYPING_INPUT 
-                        label="NAME" 
-                        num_rows="1" 
-                        input_id="session-name-creator" 
-                        box_w="100%" box_h="30px" 
-                        sample_txt="Session name"
-                        value={sessionSettings.sessionName}
-                        onChange={(val) => {
-                            updateField('sessionName', val);
-                        }}
-                    />
-                    <DROPDOWN_INPUT 
-                        label="DURATION" 
-                        input_id="session-duration-creator" 
-                        box_w="100%" box_h="30px" 
-                        options={durationOptions}
-                        value={sessionSettings.sessionDuration}
-                        onChange={(val) => {
-                            updateField('sessionDuration', val);
-                        }}
-                    />
-                    <TYPING_INPUT 
-                        label="NOTES" 
-                        num_rows="6" 
-                        input_id="session-notes-creator" 
-                        box_w="100%" box_h="80px" 
-                        sample_txt="Session notes" 
-                        value={sessionSettings.sessionNotes}
-                        onChange={(val) => updateField('sessionNotes', val)}
-                    />
-                    <div class="input-container">
-                        <span class="input-container-label">PEOPLE</span>
-                        <div class="input-box-wrapper session-people">
-                            <PEOPLE_SELECTOR role="COACHES" names={coaches} />
-                            <PEOPLE_SELECTOR role="PLAYERS" names={players} />
+            { !showAvailabilityCreator && (
+                <div class="content-box editor-box" id="session-creator">
+                    <h2 class="content-header" onClick={() => setShowAvailabilityCreator(true)}>Session Creator</h2>
+                    <div id="session-creator-input-container">
+                        <TYPING_INPUT 
+                            label="NAME" 
+                            num_rows="1" 
+                            input_id="session-name-creator" 
+                            box_w="100%" box_h="30px" 
+                            sample_txt="Session name"
+                            value={sessionSettings.sessionName}
+                            onChange={(val) => {
+                                updateSessionField('sessionName', val);
+                            }}
+                        />
+                        <DROPDOWN_INPUT 
+                            label="DURATION" 
+                            input_id="session-duration-creator" 
+                            box_w="100%" box_h="30px" 
+                            options={durationOptions}
+                            value={sessionSettings.sessionDuration}
+                            onChange={(val) => {
+                                updateSessionField('sessionDuration', val);
+                            }}
+                        />
+                        <TYPING_INPUT 
+                            label="NOTES" 
+                            num_rows="6" 
+                            input_id="session-notes-creator" 
+                            box_w="100%" box_h="80px" 
+                            sample_txt="Session notes" 
+                            value={sessionSettings.sessionNotes}
+                            onChange={(val) => updateSessionField('sessionNotes', val)}
+                        />
+                        <div class="input-container">
+                            <span class="input-container-label">PEOPLE</span>
+                            <div class="input-box-wrapper session-people">
+                                <PEOPLE_SELECTOR role="COACHES" names={coaches} />
+                                <PEOPLE_SELECTOR role="PLAYERS" names={players} />
+                            </div>
+                        </div>
+                        <div class="input-container">
+                            <span class="input-container-label">DRILLS</span>
+                            <div class="input-box-wrapper session-drills">
+                            </div>
                         </div>
                     </div>
-                    <div class="input-container">
-                        <span class="input-container-label">DRILLS</span>
-                        <div class="input-box-wrapper session-drills">
-                        </div>
-                    </div>
+                    <DRAGGABLE_SESSION sessionSettings={sessionSettings} />
                 </div>
-                <DRAGGABLE_SESSION sessionSettings={sessionSettings} />
-            </div>
+            )}
 
+            {/* Availability creator */}
+            { showAvailabilityCreator && (
+                <div class="content-box editor-box" id="avail-creator">
+                    <h2 class="content-header" onClick={() => setShowAvailabilityCreator(false)}>Availability Creator</h2>
+                    <div id="session-creator-input-container">
+                        <TYPING_INPUT 
+                            label="NAME" 
+                            num_rows="1" 
+                            input_id="availibility-notes-creator" 
+                            box_w="100%" box_h="30px" 
+                            sample_txt="Notes"
+                            value={availSettings.availNotes}
+                            onChange={(val) => {
+                                updateAvailField('availNotes', val);
+                            }}
+                        />
+                    </div>
+                    <DRAGGABLE_AVAILABILITY availSettings={availSettings} />
+                </div>
+            )}
+            
             {/* Session editor */}
             { selectedSession && showSessionEditor && (
                 <div id="session-editor-container">
