@@ -148,7 +148,66 @@ export function DRAGGABLE_DRILL({ drillSettings }) {
     );
 }
 
-export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDateChange, activeStart, activeEnd, selectedSession, toggleTooltips, tooltipsEnabled }, ref) => {
+export function CONTEXT_MENU({ availContextOptions, sessionContextOptions, setShowCalendarContextMenu, calendarContextMenuPos }) {
+    /* 
+    bugs
+    - custom context menu doesnt always show up
+        - showCalendarContextMenu is set to false right after showing it
+    - custom context menu doesnt show after exiting session editor
+    
+    */
+    useEffect(() => {
+        const regRC = (e) => {
+            e.preventDefault();
+        }
+    const closeMenu = (e) => {
+
+        setShowCalendarContextMenu(false);
+    };
+    document.addEventListener("contextmenu", regRC);
+    document.addEventListener("mousedown", closeMenu);
+    return () => {
+        document.removeEventListener("contextmenu", regRC);
+        document.removeEventListener("mousedown", closeMenu);
+    }
+}, [setShowCalendarContextMenu]);
+
+    if (!calendarContextMenuPos) {
+        return;
+    }
+
+    const eventOptions = calendarContextMenuPos.event.extendedProps.type === 'availability'
+        ? availContextOptions
+        : sessionContextOptions;
+
+    return (
+        <ul
+            id="content-menu"
+            style={{
+            top: `${calendarContextMenuPos.y}px`,
+            left: `${calendarContextMenuPos.x}px`,
+            }}
+        >
+            {eventOptions.map((contextOption) => {
+                return (
+                    <li 
+                        className={contextOption.classes}
+                        key={contextOption.name}
+                        onClick={(e) =>{
+                            e.stopPropagation();
+                            contextOption.func(calendarContextMenuPos.event);
+                            setShowCalendarContextMenu(false);
+                        }} 
+                    >
+                        {contextOption.name}
+                    </li>
+                );
+            })}
+        </ul>
+    );
+}
+
+export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDateChange, activeStart, activeEnd, selectedSession, toggleTooltips, tooltipsEnabled, setCalendarContextMenuPos, calendarContextMenuPos, setShowCalendarContextMenu, showCalendarContextMenu }, ref) => {
     const todayStart = DateTime.now().startOf('week').minus({ days: 1 });
     const currentWeekStart = activeStart || todayStart;
 
@@ -220,15 +279,23 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
         }
     }
 
+    useEffect(() => {
+    console.log("New show state:", showCalendarContextMenu);
+}, [showCalendarContextMenu]);
+
+useEffect(() => {
+    console.log("New position:", calendarContextMenuPos);
+}, [calendarContextMenuPos]);
+
     return (
         <div id="calendar-container">
             <div id="calendar-date-container">
                 <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()} >{weekStartStr} - {weekEndStr}</h1>
                 <div id="calendar-date-middle">
-                    <button onClick={toggleTooltips} class="calenar-title-fade">toggle tooltips</button>
+                    <button onClick={toggleTooltips} class="calenar-title-fade btn">toggle tooltips</button>
                 </div>
                 {!onCurrentWeek && (
-                    <button onClick={onTodayClick} class="calendar-title-fade">Back to current week</button>
+                    <button onClick={onTodayClick} class="calendar-title-fade btn">Back to current week</button>
                 )}
             </div>
             <div class="calendar-fade" className={isAnimating ? "calendar-fade" : ""}>
@@ -267,11 +334,20 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
                         }, 10);
                     }}
                     eventDidMount={(info) => {
-                        if (info.event.extendedProps.type === 'availability') return;
-                        const duration = info.event.extendedProps.duration || "-";
-                        const notes = info.event.extendedProps.notes || "No notes";
-
-                        if (tooltipsEnabled) {
+                        info.el.addEventListener("contextmenu", (jsEvent) => {
+                            jsEvent.preventDefault();
+                            jsEvent.stopImmediatePropagation();
+                            setCalendarContextMenuPos({
+                                x: jsEvent.clientX,
+                                y: jsEvent.clientY,
+                                event: info.event
+                            });
+                            setShowCalendarContextMenu(true);
+                        })
+                        
+                        if (tooltipsEnabled && info.event.extendedProps.type !== 'availability') {
+                            const duration = info.event.extendedProps.duration || "-";
+                            const notes = info.event.extendedProps.notes || "No notes";
                             tippy(info.el, {
                                 content: `
                                     <div class="calendar-event-tooltip">
@@ -287,7 +363,9 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
                                 theme: 'light'
                             })
                         }
-                    }}
+                    }
+
+                    }
                     displayEventTime={true}
                     displayEventEnd={true}
                     editable={true}

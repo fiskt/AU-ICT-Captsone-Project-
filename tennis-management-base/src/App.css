@@ -50,7 +50,7 @@ body {
   height: 100%;
 }
 
-button {
+btn, button {
   border-radius: 8px;
   border: 2px solid var(--content-input-border-color);
   background-color: var(--content-bg-color);
@@ -61,7 +61,7 @@ button {
   transition: background-color 0.2s ease-in-out;
 }
 
-button:hover {
+btn, button:hover {
   background-color: var(--btn-hover-color);
     border-color: var(--btn-hover-color);
 }
@@ -282,15 +282,15 @@ button:hover {
 }
 
 .delete-btn {
-  background-color: var(--danger-bg-color);
-  border-color: var(--danger-border-color);
-  color: var(--danger-body-color);
+  background-color: var(--danger-bg-color) !important;
+  border-color: var(--danger-border-color) !important;
+  color: var(--danger-body-color) !important;
 }
 
 .delete-btn:hover {
-  transition: background-color 0.2s ease-in-out;
-  background-color: var(--danger-border-color);
-  border-color: var(--danger-border-color);
+  transition: background-color 0.2s ease-in-out !important;
+  background-color: var(--danger-border-color) !important;
+  border-color: var(--danger-border-color) !important;
 }
 
 .loading-overlay {

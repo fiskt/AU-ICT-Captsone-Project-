@@ -177,7 +177,7 @@
     transition: background-color 0.2s ease-in-out;
 }
 
-.fc-event:not(.availability-event):hover {
+.fc-event:hover {
     border-color: black;
     transition: border-color 0.2s ease-in-out;
 }
@@ -291,4 +291,36 @@
     font-family: 'DM Mono Light', sans-serif;
     color: black;
     font-size: 64% !important;
+}
+
+.delete-avail-btn {
+    font-size: 50%;
+    text-align: center;
+}
+
+#content-menu {
+  width: 100px;
+  position: fixed;
+  z-index: 200;
+  background-color: white;
+  font-family: 'DM Mono Light', sans-serif;
+  font-size: 70%;
+  text-align: center;
+  list-style: none;
+  padding: 5px;
+  border: 2px solid var(--content-input-border-color);
+  border-radius: 8px;
+}
+
+#content-menu li {
+  text-decoration: none;
+  cursor: pointer;
+  border: 2px solid gray;
+  padding: 2px;
+  border-radius: 5px;
+  margin: 5px 0 5px 0;
+}
+
+#content-menu li:hover {
+  background-color: #dddddd;
 }

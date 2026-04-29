@@ -1,5 +1,5 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, CONTEXT_MENU, DRAGGABLE_AVAILABILITY, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
@@ -14,6 +14,44 @@ export default function CoachCalendar() {
     const [showAvailabilityCreator, setShowAvailabilityCreator] = useState(false);
 
     const [calendarEvents, setCalendarEvents] = useState([]);
+
+    // right click menu for calendar
+    const [calendarContextMenuPos, setCalendarContextMenuPos] = useState(null);
+    const [showCalendarContextMenu, setShowCalendarContextMenu] = useState(false);
+
+    async function deleteAvail( event ) {
+        setIsDataLoading(true);
+
+        const { error } = await supabase
+            .from('coach_availability')
+            .delete()
+            .eq('avail_id', event.id);
+
+        if (!error) {
+            event.remove();
+        } else {
+            console.log("Could not delete event: ", error.message);
+        }
+        setIsDataLoading(false);
+    }
+
+    const renameAvail = () => {
+        // this will be an async funcion for changing the notes in the event
+        console.log("rename avail event");
+    }
+
+    const availContextOptions = [
+        { name: "Delete", func: deleteAvail, classes: ["delete-btn"] },
+        { name: "Rename", func: renameAvail, classes: ["btn"] }
+    ];
+
+    const sessionContextOptions = [
+        { name: "Delete", func: null, classes: ["delete-btn"] },
+        { name: "Edit", func: null, classes: ["btn"] },
+        { name: "Rename", func: null, classes: ["btn"] }
+    ];
+
+
 
     // toggle for event tooltips
     const [toggleEventTooltips, setToggleEventTooltips] = useState(true);
@@ -148,7 +186,7 @@ export default function CoachCalendar() {
             .eq('id', tempSession.id);
 
         if (!error) {
-            fetchSessions();
+            fetchCalendarData();
             setSelectedSession(null);
             setShowSessionEditor(false);
         }
@@ -239,6 +277,16 @@ export default function CoachCalendar() {
 
     return (
         <>
+            {/* Context menu */}
+            {showCalendarContextMenu && 
+                <CONTEXT_MENU
+                    availContextOptions={availContextOptions}
+                    sessionContextOptions={sessionContextOptions}
+                    setShowCalendarContextMenu={setShowCalendarContextMenu}
+                    calendarContextMenuPos={calendarContextMenuPos}
+                />
+            }
+
             {/* Loading overlay */}
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
 
@@ -258,13 +306,17 @@ export default function CoachCalendar() {
                     selectedSession={selectedSession}
                     toggleTooltips={toggleTooltips}
                     tooltipsEnabled={toggleEventTooltips}
+                    setCalendarContextMenuPos={setCalendarContextMenuPos}
+                    calendarContextMenuPos={calendarContextMenuPos}
+                    setShowCalendarContextMenu={setShowCalendarContextMenu}
+                    showCalendarContextMenu={showCalendarContextMenu}
                 />
             </div>
 
             {/* Session creator */}
             { !showAvailabilityCreator && (
                 <div class="content-box editor-box" id="session-creator">
-                    <h2 class="content-header" onClick={() => setShowAvailabilityCreator(true)}>Session Creator</h2>
+                    <h2 class="content-header" onClick={() => setShowAvailabilityCreator(true)} onContextMenu={(e) => handleContextMenu(e)}>Session Creator</h2>
                     <div id="session-creator-input-container">
                         <TYPING_INPUT 
                             label="NAME" 
@@ -401,7 +453,7 @@ export default function CoachCalendar() {
                         </div>
                         <div class="content-box-bottom">
                             <div class="content-box-bottom-left">
-                                <button id="save-session-changes" onClick={saveSessionChanges}>Save Changes</button>
+                                <button id="save-session-changes btn" onClick={saveSessionChanges}>Save Changes</button>
                             </div>
                             <div class="content-box-bottom-middle"></div>
                             <div class="content-box-bottom-right">
