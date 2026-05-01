@@ -2,11 +2,7 @@ import '../App.css'
 import '../pages/CoachCalendar.css'
 
 import { DateTime, Info, Interval, Duration } from 'luxon'
-import React, { useState, useEffect, useRef, forwardRef } from 'react';
-
-import { ContextMenu } from 'primereact/contextmenu'
-import "primereact/resources/themes/lara-light-indigo/theme.css"; 
-import "primereact/resources/primereact.min.css";
+import { useState, useEffect, useRef, forwardRef } from 'react';
 
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid' 
@@ -163,23 +159,6 @@ export const CALENDAR = forwardRef(({
     handleDelete
     }, ref) => {
 
-        const cm = useRef(null);
-    const [targetEvent, setTargetEvent] = useState(null);
-
-    // Define your menu items
-    const menuModel = [
-        { 
-            label: 'Edit Session', 
-            icon: 'pi pi-pencil', 
-            command: () => onSessionClick(targetEvent) 
-        },
-        { 
-            label: 'Delete', 
-            icon: 'pi pi-trash', 
-            className: 'text-red-500',
-            command: () => handleDelete(targetEvent) 
-        }
-    ];
     const todayStart = DateTime.now().startOf('week').minus({ days: 1 });
     const currentWeekStart = activeStart || todayStart;
 
@@ -282,7 +261,6 @@ export const CALENDAR = forwardRef(({
 
     return (
         <div id="calendar-container">
-            <ContextMenu model={menuModel} ref={cm} />
             <div id="calendar-date-container">
                 <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()} >{weekStartStr} - {weekEndStr}</h1>
                 <div id="calendar-date-middle">
@@ -328,13 +306,7 @@ export const CALENDAR = forwardRef(({
                         }, 10);
                     }}
                     eventDidMount={(info) => {
-                        info.el.addEventListener("contextmenu", (e) => {
-        e.preventDefault();
-
-        setTargetEvent(info.event);
-
-        cm.current.show(e);
-    });
+                      
                         if (tooltipsEnabled && info.event.extendedProps.type !== 'availability') {
                             const duration = info.event.extendedProps.duration || "-";
                             const notes = info.event.extendedProps.notes || "No notes";
