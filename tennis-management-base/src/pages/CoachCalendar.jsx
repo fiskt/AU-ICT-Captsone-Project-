@@ -1,6 +1,6 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, CONTEXT_MENU, DRAGGABLE_AVAILABILITY, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
-import { useState, useRef, useEffect } from 'react';
+import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
+import React, { useState, useRef, useEffect } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
 import { DateTime, Duration } from 'luxon';
@@ -15,9 +15,66 @@ export default function CoachCalendar() {
 
     const [calendarEvents, setCalendarEvents] = useState([]);
 
-    // right click menu for calendar
-    const [calendarContextMenuPos, setCalendarContextMenuPos] = useState(null);
-    const [showCalendarContextMenu, setShowCalendarContextMenu] = useState(false);
+    const [coaches, setCoaches] = useState([]);
+    const [players, setPlayers] = useState([]);
+
+    const [selectedCoaches, setSelectedCoaches] = useState([]);
+    const [selectedPlayers, setSelectedPlayers] = useState([]);
+
+    // confirmation popup for deleting sessions
+    const sessionDeleteConfirmation = () => {
+        const confirmed = window.confirm("Are you sure you want to delete this session? This action cannot be undone.");
+
+        if (confirmed) {
+            deleteSession();
+            setShowSessionEditor(false);
+            setSelectedSession(null);
+        }
+    }
+
+    async function deleteSession() {
+        setIsDataLoading(true);
+        const { error } = await supabase
+            .from('sessions')
+            .delete()
+            .eq('id', selectedSession.id);
+
+        if (error) {
+            console.log("Error when deleting session. Please try again.");
+            setIsDataLoading(false);
+        } else {
+            selectedSession.remove();
+            fetchCalendarData();
+        }
+    }
+
+    async function fetchPlayers() {
+        const { data, error } = await supabase
+            .from('players')
+            .select('*')
+
+        if (error) {
+            console.log("Error when fetching players: ", error.message);
+            setPlayers([]);
+        } else {
+            setPlayers(data);
+            console.log(players);
+        }
+    }
+
+    async function fetchCoaches() {
+        const { data, error } = await supabase
+            .from('coaches')
+            .select('*')
+
+        if (error) {
+            console.log("Error when fetching coaches: ", error.message);
+            setCoaches([]);
+        } else {
+            setCoaches(data);
+            console.log(coaches);
+        }
+    }
 
     async function deleteAvail( event ) {
         setIsDataLoading(true);
@@ -46,12 +103,8 @@ export default function CoachCalendar() {
     ];
 
     const sessionContextOptions = [
-        { name: "Delete", func: null, classes: ["delete-btn"] },
-        { name: "Edit", func: null, classes: ["btn"] },
-        { name: "Rename", func: null, classes: ["btn"] }
+        { name: "Delete", func: sessionDeleteConfirmation, classes: ["delete-btn"] }
     ];
-
-
 
     // toggle for event tooltips
     const [toggleEventTooltips, setToggleEventTooltips] = useState(true);
@@ -101,8 +154,11 @@ export default function CoachCalendar() {
             console.log("loading calendar....");
         }
     }
+
     useEffect(() => {
         fetchCalendarData();
+        fetchPlayers();
+        fetchCoaches();
     }, []);
 
     async function fetchCalendarData() {
@@ -158,22 +214,6 @@ export default function CoachCalendar() {
         setIsDataLoading(false);
     }
 
-    async function deleteSession() {
-        setIsDataLoading(true);
-        const { error } = await supabase
-            .from('sessions')
-            .delete()
-            .eq('id', selectedSession.id);
-
-        if (error) {
-            console.log("Error when deleting session. Please try again.");
-            setIsDataLoading(false);
-        } else {
-            selectedSession.remove();
-            fetchCalendarData();
-        }
-    }
-
     async function saveSessionChanges() {
         setIsDataLoading(true);
         const { error } = await supabase
@@ -201,10 +241,6 @@ export default function CoachCalendar() {
         { label: "150 mins", val: "02:30:00" },
         { label: "180 mins", val: "03:00:00" },
     ];
-
-    // temp coach/player arrays for session people 
-    const coaches = ["coach 1", "coach 2", "coach 3", "coach 4", "coach 5"];
-    const players = ["player 1", "player 2", "player 3", "player 4", "player 5"];
 
     // auto save current session inputs in local storage and restore the saved inputs
     const [sessionSettings, setSessionSettings] = useState(() => {
@@ -250,73 +286,40 @@ export default function CoachCalendar() {
         });
     }
 
-    // update fields in session editor
-    const updateCalendarSession = (field, value) => {
-        if (!calendarRef.current) return;
-        const calendarApi = calendarRef.current.getApi();
-        const event = calendarApi.getEventById(selectedSession.id);
-        if (event) {
-            if (field === 'sessionName') {
-                event.setProp('title', value);
-            } else if (field === 'sessionDuration') {
-                event.setProp('duration', value);
-            }
-        }
-    }
-
-    // confirmation popup for deleting sessions
-    const sessionDeleteConfirmation = () => {
-        const confirmed = window.confirm("Are you sure you want to delete this session? This action cannot be undone.");
-
-        if (confirmed) {
-            deleteSession();
-            setShowSessionEditor(false);
-            setSelectedSession(null);
-        }
-    }
-
     return (
         <>
-            {/* Context menu */}
-            {showCalendarContextMenu && 
-                <CONTEXT_MENU
-                    availContextOptions={availContextOptions}
-                    sessionContextOptions={sessionContextOptions}
-                    setShowCalendarContextMenu={setShowCalendarContextMenu}
-                    calendarContextMenuPos={calendarContextMenuPos}
-                />
-            }
-
             {/* Loading overlay */}
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
 
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
                 <CALENDAR 
-                    ref={calendarRef}
                     events={calendarEvents}
-                    activeStart={weekStart}
-                    activeEnd={weekEnd}
+                    activeStart={weekStart} activeEnd={weekEnd}
                     onTodayClick={handleShowToday}
                     onDateChange={handleDateChange}
                     onSessionClick = {(eventData) => {
                         setSelectedSession(eventData);
                         setShowSessionEditor(true);
                     }}
+
                     selectedSession={selectedSession}
-                    toggleTooltips={toggleTooltips}
-                    tooltipsEnabled={toggleEventTooltips}
-                    setCalendarContextMenuPos={setCalendarContextMenuPos}
-                    calendarContextMenuPos={calendarContextMenuPos}
-                    setShowCalendarContextMenu={setShowCalendarContextMenu}
-                    showCalendarContextMenu={showCalendarContextMenu}
+
+                    toggleTooltips={toggleTooltips} tooltipsEnabled={toggleEventTooltips}
+                    
+                    selectedCoaches={selectedCoaches} setSelectedCoaches={setSelectedCoaches}
+                    selectedPlayers={selectedPlayers} setSelectedPlayers={setSelectedPlayers}
+                    
+                    handleDelete={sessionDeleteConfirmation}
+
+                    ref={calendarRef}
                 />
             </div>
 
             {/* Session creator */}
             { !showAvailabilityCreator && (
                 <div class="content-box editor-box" id="session-creator">
-                    <h2 class="content-header" onClick={() => setShowAvailabilityCreator(true)} onContextMenu={(e) => handleContextMenu(e)}>Session Creator</h2>
+                    <h2 class="content-header" onClick={() => setShowAvailabilityCreator(true)}>Session Creator</h2>
                     <div id="session-creator-input-container">
                         <TYPING_INPUT 
                             label="NAME" 
@@ -351,8 +354,8 @@ export default function CoachCalendar() {
                         <div class="input-container">
                             <span class="input-container-label">PEOPLE</span>
                             <div class="input-box-wrapper session-people">
-                                <PEOPLE_SELECTOR role="COACHES" names={coaches} />
-                                <PEOPLE_SELECTOR role="PLAYERS" names={players} />
+                                <PEOPLE_SELECTOR role="COACHES" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
+                                <PEOPLE_SELECTOR role="PLAYERS" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
                             </div>
                         </div>
                         <div class="input-container">
@@ -439,8 +442,8 @@ export default function CoachCalendar() {
                             <div class="input-container" id="session-editor-people">
                                 <span class="input-container-label">PEOPLE</span>
                                 <div class="input-box-wrapper session-people">
-                                    <PEOPLE_SELECTOR role="COACHES" names={coaches} />
-                                    <PEOPLE_SELECTOR role="PLAYERS" names={players} />
+                                    <PEOPLE_SELECTOR role="COACHES" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
+                                    <PEOPLE_SELECTOR role="PLAYERS" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
                                 </div>
                             </div>
                             </div>

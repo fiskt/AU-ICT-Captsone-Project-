@@ -2,7 +2,11 @@ import '../App.css'
 import '../pages/CoachCalendar.css'
 
 import { DateTime, Info, Interval, Duration } from 'luxon'
-import { useState, useEffect, useRef, forwardRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef } from 'react';
+
+import { ContextMenu } from 'primereact/contextmenu'
+import "primereact/resources/themes/lara-light-indigo/theme.css"; 
+import "primereact/resources/primereact.min.css";
 
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid' 
@@ -16,40 +20,38 @@ import tippy from 'tippy.js';
 import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
-function TICKBOX_SELECTOR({ names, selectedPeople, onToggle }) {
+function TICKBOX_SELECTOR({ people, selectedPeople, onToggle }) {
     return (
         <div>
-            {names.map((name) => (
-                <div class="people-selector-tickbox" key={name}>
+            {people.map((person) => (
+                <div class="people-selector-tickbox" key={person.id}>
                         <input
-                            class="people-tickbox"
+                            className="people-tickbox"
                             type="checkbox"
-                            value={name}
-                            checked={selectedPeople.includes(name)}
-                            onChange={() => onToggle(name)}
+                            checked={selectedPeople.includes(person.id)}
+                            onChange={() => onToggle(person.id)}
                         />
-                        <span>{name}</span>
+                        <span>{person.first_name} {person.last_name}</span>
                 </div>
             ))}
         </div>
     );
 }
 
-export function PEOPLE_SELECTOR({ role, names }) {
-    const [selectedPeople, setSelectedPeople] = useState([]);
+export function PEOPLE_SELECTOR({ role, people, selectedPeople, setSelectedPeople }) {
 
-    const handleToggle = (name) => {
+    const handleToggle = (id) => {
         setSelectedPeople((prev) =>
-            prev.includes(name) 
-                ? prev.filter((p) => p !== name) 
-                : [...prev, name]
+            prev.includes(id) 
+                ? prev.filter((p) => p !== id) 
+                : [...prev, id]
         )
     }
     return (
         <div class="people-selector">
             <span class="people-selector-title">{role}</span>
             <TICKBOX_SELECTOR 
-                names={names}
+                people={people}
                 selectedPeople={selectedPeople}
                 onToggle={handleToggle}
             />
@@ -148,66 +150,36 @@ export function DRAGGABLE_DRILL({ drillSettings }) {
     );
 }
 
-export function CONTEXT_MENU({ availContextOptions, sessionContextOptions, setShowCalendarContextMenu, calendarContextMenuPos }) {
-    /* 
-    bugs
-    - custom context menu doesnt always show up
-        - showCalendarContextMenu is set to false right after showing it
-    - custom context menu doesnt show after exiting session editor
-    
-    */
-    useEffect(() => {
-        const regRC = (e) => {
-            e.preventDefault();
+export const CALENDAR = forwardRef(({ 
+    onSessionClick, 
+    events, 
+    onTodayClick, 
+    onDateChange, 
+    activeStart, activeEnd, 
+    selectedSession, 
+    toggleTooltips, tooltipsEnabled, 
+    selectedCoaches, setSelectedCoaches,
+    selectedPlayers, setSelectedPlayers,
+    handleDelete
+    }, ref) => {
+
+        const cm = useRef(null);
+    const [targetEvent, setTargetEvent] = useState(null);
+
+    // Define your menu items
+    const menuModel = [
+        { 
+            label: 'Edit Session', 
+            icon: 'pi pi-pencil', 
+            command: () => onSessionClick(targetEvent) 
+        },
+        { 
+            label: 'Delete', 
+            icon: 'pi pi-trash', 
+            className: 'text-red-500',
+            command: () => handleDelete(targetEvent) 
         }
-    const closeMenu = (e) => {
-
-        setShowCalendarContextMenu(false);
-    };
-    document.addEventListener("contextmenu", regRC);
-    document.addEventListener("mousedown", closeMenu);
-    return () => {
-        document.removeEventListener("contextmenu", regRC);
-        document.removeEventListener("mousedown", closeMenu);
-    }
-}, [setShowCalendarContextMenu]);
-
-    if (!calendarContextMenuPos) {
-        return;
-    }
-
-    const eventOptions = calendarContextMenuPos.event.extendedProps.type === 'availability'
-        ? availContextOptions
-        : sessionContextOptions;
-
-    return (
-        <ul
-            id="content-menu"
-            style={{
-            top: `${calendarContextMenuPos.y}px`,
-            left: `${calendarContextMenuPos.x}px`,
-            }}
-        >
-            {eventOptions.map((contextOption) => {
-                return (
-                    <li 
-                        className={contextOption.classes}
-                        key={contextOption.name}
-                        onClick={(e) =>{
-                            e.stopPropagation();
-                            contextOption.func(calendarContextMenuPos.event);
-                            setShowCalendarContextMenu(false);
-                        }} 
-                    >
-                        {contextOption.name}
-                    </li>
-                );
-            })}
-        </ul>
-    );
-}
-
-export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDateChange, activeStart, activeEnd, selectedSession, toggleTooltips, tooltipsEnabled, setCalendarContextMenuPos, calendarContextMenuPos, setShowCalendarContextMenu, showCalendarContextMenu }, ref) => {
+    ];
     const todayStart = DateTime.now().startOf('week').minus({ days: 1 });
     const currentWeekStart = activeStart || todayStart;
 
@@ -221,11 +193,40 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
 
     const [isAnimating, setIsAnimating] = useState(false);
 
-    async function pushSession({ name, duration, notes, time }) {
-        const { data, error } = await supabase
+    async function pushSession({ event, sessionSettings }) {
+        const { data: session, error: sessionError } = await supabase
             .from('sessions')
-            .insert([{ name: name, duration: duration, notes: notes, time: time }]);
-        console.log(data, error);
+            .insert([{ 
+                name: sessionSettings.name, 
+                duration: sessionSettings.duration, 
+                notes: sessionSettings.notes, 
+                time: sessionSettings.time 
+            }])
+            .select()
+            .single();
+
+        if (session) {
+            const sessionID = session.id;
+
+            const sessionCoaches = selectedCoaches.map(coachID => ({
+                session_id: sessionID,
+                coach_id: coachID
+            }));
+
+            const sessionPlayers = selectedPlayers.map(playerID => ({
+                session_id: sessionID,
+                player_id: playerID
+            }));
+
+            await Promise.all([
+                sessionCoaches.length > 0 && supabase.from('session_coaches').insert(sessionCoaches),
+                sessionPlayers.length > 0 && supabase.from('session_players').insert(sessionPlayers)
+            ]);
+
+            event.setProp('id', sessionID);
+        } else {
+            console.log(sessionError);
+        }
     }
 
     async function updateAvailability(event) {
@@ -279,16 +280,9 @@ export const CALENDAR = forwardRef(({ onSessionClick, events, onTodayClick, onDa
         }
     }
 
-    useEffect(() => {
-    console.log("New show state:", showCalendarContextMenu);
-}, [showCalendarContextMenu]);
-
-useEffect(() => {
-    console.log("New position:", calendarContextMenuPos);
-}, [calendarContextMenuPos]);
-
     return (
         <div id="calendar-container">
+            <ContextMenu model={menuModel} ref={cm} />
             <div id="calendar-date-container">
                 <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()} >{weekStartStr} - {weekEndStr}</h1>
                 <div id="calendar-date-middle">
@@ -334,17 +328,13 @@ useEffect(() => {
                         }, 10);
                     }}
                     eventDidMount={(info) => {
-                        info.el.addEventListener("contextmenu", (jsEvent) => {
-                            jsEvent.preventDefault();
-                            jsEvent.stopImmediatePropagation();
-                            setCalendarContextMenuPos({
-                                x: jsEvent.clientX,
-                                y: jsEvent.clientY,
-                                event: info.event
-                            });
-                            setShowCalendarContextMenu(true);
-                        })
-                        
+                        info.el.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+
+        setTargetEvent(info.event);
+
+        cm.current.show(e);
+    });
                         if (tooltipsEnabled && info.event.extendedProps.type !== 'availability') {
                             const duration = info.event.extendedProps.duration || "-";
                             const notes = info.event.extendedProps.notes || "No notes";
@@ -383,7 +373,7 @@ useEffect(() => {
                                 notes: info.event.extendedProps.notes || "",
                                 time: startTime
                             }
-                            pushSession(sessionData);
+                            pushSession({ event: info.event, sessionSettings: sessionData });
                         }
                     }}
                     eventDrop={(info) => {
