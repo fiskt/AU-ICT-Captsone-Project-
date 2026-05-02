@@ -14,7 +14,8 @@ import Testing from './pages/Testing';
 import PlayerCalendar from './pages/PlayerCalendar'
 import PlayerDashboard from './pages/PlayerDashboard'
 
-function App() {
+
+export default function App() {
   return (
     <BrowserRouter>
       <div id="layout">
@@ -36,4 +37,3 @@ function App() {
   );
 }
 
-export default App
