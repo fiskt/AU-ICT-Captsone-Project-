@@ -16,7 +16,7 @@ import tippy from 'tippy.js';
 import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
-function TICKBOX_SELECTOR({ people, selectedPeople, onToggle }) {
+function TICKBOX_SELECTOR({ people = [], selectedPeople = [], onToggle }) {
     return (
         <div>
             {people.map((person) => (
@@ -34,7 +34,7 @@ function TICKBOX_SELECTOR({ people, selectedPeople, onToggle }) {
     );
 }
 
-export function PEOPLE_SELECTOR({ role, people, selectedPeople, setSelectedPeople }) {
+export function PEOPLE_SELECTOR({ role, people = [], selectedPeople = [], setSelectedPeople }) {
 
     const handleToggle = (id) => {
         setSelectedPeople((prev) =>
@@ -42,7 +42,8 @@ export function PEOPLE_SELECTOR({ role, people, selectedPeople, setSelectedPeopl
                 ? prev.filter((p) => p !== id) 
                 : [...prev, id]
         )
-    }
+    };
+
     return (
         <div class="people-selector">
             <span class="people-selector-title">{role}</span>
@@ -258,6 +259,8 @@ export const CALENDAR = forwardRef(({
             event.setProp('id', data.avail_id);
         }
     }
+    
+    
 
     return (
         <div id="calendar-container">

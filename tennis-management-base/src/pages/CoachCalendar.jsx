@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
 import { DateTime, Duration } from 'luxon';
+import { useSearchParams } from 'react-router-dom';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
@@ -21,6 +22,11 @@ export default function CoachCalendar() {
 
     const [selectedCoaches, setSelectedCoaches] = useState([]);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
+
+    const [selectedSessionCoaches, setSelectedSessionCoaches] = useState([]);
+    const [selectedSessionPlayers, setSelectedSessionPlayers] = useState([]);
+    const [editedSessionCoaches, setEditedSessionCoaches] = useState([]);
+    const [editedSessionPlayers, setEditedSessionPlayers] = useState([]);
 
     // confirmation popup for deleting sessions
     const sessionDeleteConfirmation = () => {
@@ -77,6 +83,34 @@ export default function CoachCalendar() {
         }
     }
 
+    async function fetchSessionCoaches(sessionId) {
+        const { data, error } = await supabase
+            .from('session_coaches')
+            .select('coach_id')
+            .eq('session_id', sessionId);
+
+        if (error) {
+            console.log("Error when fetching selected session coaches: ", error.message);
+            return [];
+        } else {
+            return data.map(item => item.coach_id);
+        }
+    }
+
+    async function fetchSessionPlayers(sessionId) {
+        const { data, error } = await supabase
+            .from('session_players')
+            .select('player_id')
+            .eq('session_id', sessionId);
+
+        if (error) {
+            console.log("Error when fetching selected session players: ", error.message);
+            return [];
+        } else {
+            return data.map(item => item.player_id);
+        }
+    }
+
     async function deleteAvail( event ) {
         setIsDataLoading(true);
 
@@ -97,16 +131,6 @@ export default function CoachCalendar() {
         // this will be an async funcion for changing the notes in the event
         console.log("rename avail event");
     }
-
-    const availContextOptions = [
-        { name: "Delete", func: deleteAvail, classes: ["delete-btn"] },
-        { name: "Rename", func: renameAvail, classes: ["btn"] }
-    ];
-
-    const sessionContextOptions = [
-        { name: "Delete", func: sessionDeleteConfirmation, classes: ["delete-btn"] }
-    ];
-
     // toggle for event tooltips
     const [toggleEventTooltips, setToggleEventTooltips] = useState(true);
 
@@ -124,18 +148,50 @@ export default function CoachCalendar() {
     const [tempSession, setTempSession] = useState(null);
 
     useEffect(() => {
+    const loadSessionData = async () => {
         if (selectedSession) {
+            setIsDataLoading(true);
+
+            const [sessionCoaches, sessionPlayers] = await Promise.all([
+                fetchSessionCoaches(selectedSession.id),
+                fetchSessionPlayers(selectedSession.id)
+            ]);
+
+
+            setEditedSessionCoaches(sessionCoaches);
+            setEditedSessionPlayers(sessionPlayers);
+
+
             setTempSession({
                 id: selectedSession.id,
                 name: selectedSession.title,
                 duration: selectedSession.extendedProps.duration,
                 notes: selectedSession.extendedProps.notes,
-                people: selectedSession.extendedProps.people,
+                selectedCoaches: sessionCoaches, 
+                selectedPlayers: sessionPlayers 
             });
         } else {
             setTempSession(null);
+            setEditedSessionCoaches([]);
+            setEditedSessionPlayers([]);
         }
-    }, [selectedSession]);
+        setIsDataLoading(false);
+    };
+
+    loadSessionData();
+}, [selectedSession]);
+
+useEffect(() => {
+    if (tempSession) {
+        setTempSession(prev => ({
+            ...prev,
+            selectedCoaches: editedSessionCoaches,
+            selectedPlayers: editedSessionPlayers
+        }));
+    }
+}, [editedSessionCoaches, editedSessionPlayers]);
+
+
 
     const handleDateChange = (start, end) => { 
         setWeekStart(DateTime.fromJSDate(start));
@@ -225,6 +281,27 @@ export default function CoachCalendar() {
                 notes: tempSession.notes 
             })
             .eq('id', tempSession.id);
+
+        await Promise.all([
+            supabase.from('session_coaches').delete().eq('session_id', tempSession.id),
+            supabase.from('session_players').delete().eq('session_id', tempSession.id)
+        ]);
+
+        const newCoaches = (tempSession.selectedCoaches || []).map(coachId => ({
+            session_id: tempSession.id,
+            coach_id: coachId
+        }));
+
+        const newPlayers = (tempSession.selectedPlayers || []).map(playerId => ({
+            session_id: tempSession.id,
+            player_id: playerId
+        }));
+
+        await Promise.all([
+            newCoaches.length > 0 && supabase.from('session_coaches').insert(newCoaches),
+            newPlayers.length > 0 && supabase.from('session_players').insert(newPlayers)
+        ]);
+
 
         if (!error) {
             fetchCalendarData();
@@ -393,6 +470,12 @@ export default function CoachCalendar() {
             {/* Session editor */}
             { selectedSession && showSessionEditor && (
                 <div id="session-editor-container">
+                    <button 
+                onClick={() => {
+                    console.log(tempSession);
+                    console.log(selectedSessionCoaches, selectedSessionPlayers);
+                }}
+                >show selected people</button>
                     <div class="content-box" id="session-editor">
                         <div class="content-box-top">
                             <div class="content-box-top-left">
@@ -407,46 +490,57 @@ export default function CoachCalendar() {
                             </div>
                         </div>
                         <div class="content-box-middle">
-                            <div class="content-box-middle-left">
+                            <div class="content-box-middle-left" id="session-editor-middle-left">
                                 <TYPING_INPUT 
-                                label="NAME" 
-                                num_rows="1" 
-                                input_id="session-name-creator" 
-                                box_w="100%" box_h="30px" 
-                                sample_txt="Session name"
-                                value={tempSession?.name || ""}
-                                onChange={(val) => 
-                                    setTempSession({ ...tempSession, name: val })
-                                }
-                            />
-                            <DROPDOWN_INPUT 
-                                label="DURATION" 
-                                input_id="session-duration-creator" 
-                                box_w="100%" box_h="30px" 
-                                options={durationOptions}
-                                value={tempSession?.duration || ""}
-                                onChange={(val) => 
-                                    setTempSession({ ...tempSession, duration: val })
-                                }
-                            />
-                            <TYPING_INPUT 
-                                label="NOTES" 
-                                num_rows="6" 
-                                input_id="session-notes-creator" 
-                                box_w="100%" box_h="80px" 
-                                sample_txt="Session notes" 
-                                value={tempSession?.notes || ""}
-                                onChange={(val) => 
-                                    setTempSession({ ...tempSession, notes: val })
-                                }
-                            />
-                            <div class="input-container" id="session-editor-people">
-                                <span class="input-container-label">PEOPLE</span>
-                                <div class="input-box-wrapper session-people">
-                                    <PEOPLE_SELECTOR role="COACHES" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
-                                    <PEOPLE_SELECTOR role="PLAYERS" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
+                                    label="NAME" 
+                                    num_rows="1" 
+                                    input_id="session-name-creator" 
+                                    box_w="100%" box_h="30px" 
+                                    sample_txt="Session name"
+                                    value={tempSession?.name || ""}
+                                    onChange={(val) => 
+                                        setTempSession({ ...tempSession, name: val })
+                                    }
+                                    id="session-editor-name"
+                                />
+                                <DROPDOWN_INPUT 
+                                    label="DURATION" 
+                                    input_id="session-duration-creator" 
+                                    box_w="100%" box_h="30px" 
+                                    options={durationOptions}
+                                    value={tempSession?.duration || ""}
+                                    onChange={(val) => 
+                                        setTempSession({ ...tempSession, duration: val })
+                                    }
+                                    id="session-editor-duration"
+                                />
+                                <TYPING_INPUT 
+                                    label="NOTES" 
+                                    num_rows="6" 
+                                    input_id="session-notes-creator" 
+                                    box_w="100%" box_h="80px" 
+                                    sample_txt="Session notes" 
+                                    value={tempSession?.notes || ""}
+                                    onChange={(val) => 
+                                        setTempSession({ ...tempSession, notes: val })
+                                    }
+                                    id="session-editor-notes"
+                                />
+                                <div class="input-container" id="session-editor-people">
+                                    <span class="input-container-label">PEOPLE</span>
+                                    <div class="input-box-wrapper session-people">
+                                        <PEOPLE_SELECTOR 
+                                            role="COACHES" people={coaches} 
+                                            selectedPeople={editedSessionCoaches} 
+                                            setSelectedPeople={setEditedSessionCoaches}  
+                                        />
+                                        <PEOPLE_SELECTOR 
+                                            role="PLAYERS" people={players} 
+                                            selectedPeople={editedSessionPlayers} 
+                                            setSelectedPeople={setEditedSessionPlayers} 
+                                        />
+                                    </div>
                                 </div>
-                            </div>
                             </div>
                             <div class="content-box-middle-right">
                                 <div class="input-container" id="session-editor-drills">
