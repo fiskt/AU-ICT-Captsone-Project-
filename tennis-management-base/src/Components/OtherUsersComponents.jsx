@@ -1,5 +1,6 @@
 import '../App.css'
 import '../pages/CoachCalendar.css'
+import '../pages/OtherUsers.css'
 
 import { DateTime, Info, Interval, Duration } from 'luxon'
 import { useState, useEffect, useRef, forwardRef } from 'react';
@@ -16,138 +17,72 @@ import tippy from 'tippy.js';
 import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
-function TICKBOX_SELECTOR({ people = [], selectedPeople = [], onToggle }) {
-    return (
-        <div>
-            {people.map((person) => (
-                <div class="people-selector-tickbox" key={person.id}>
-                        <input
-                            className="people-tickbox"
-                            type="checkbox"
-                            checked={selectedPeople.includes(person.id)}
-                            onChange={() => onToggle(person.id)}
-                        />
-                        <span>{person.first_name} {person.last_name}</span>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-export function PEOPLE_SELECTOR({ role, people = [], selectedPeople = [], setSelectedPeople }) {
-
-    const handleToggle = (id) => {
-        setSelectedPeople((prev) =>
-            prev.includes(id) 
-                ? prev.filter((p) => p !== id) 
-                : [...prev, id]
-        )
-    };
-
-    return (
-        <div class="people-selector">
-            <span class="people-selector-title">{role}</span>
-            <TICKBOX_SELECTOR 
-                people={people}
-                selectedPeople={selectedPeople}
-                onToggle={handleToggle}
-            />
-        </div>
-    );
-}
-
-export function DRAGGABLE_SESSION({ sessionSettings }) {
-    const sessionRef = useRef(null);
-
-    useEffect(() => {
-        let session = new Draggable(sessionRef.current, {
-            eventData: () => {
-                return {
-                    title: sessionSettings.sessionName,
-                    duration: sessionSettings.sessionDuration,
-                    extendedProps: {
-                        notes: sessionSettings.sessionNotes,
-                        people: sessionSettings.sessionPeople
-                    }
-                };
-            }
-        })
-        return () => session.destroy();
-    }, [sessionSettings]);
-
+export function USERS_LIST({ coaches = [], players = [], selectedUser, setSelectedUser }) {
     return (
         <div class="input-container">
-            <span class="input-container-label">SESSION</span>
-            <div class="input-box-wrapper" id="draggable-session-container">
-                <div ref={sessionRef} class="draggable-icon session-icon">
-                    <span>{sessionSettings.sessionName}</span>
-                    <span>{sessionSettings.sessionDuration}</span>
-                </div>
+            <div class="input-box-wrapper session-people">
+                {(coaches.length > 0) &&
+                    <div class="people-selector">
+                        <span class="people-selector-title">COACHES</span>
+                        {
+                            <ul class="user-list">
+                                {coaches.map((coach) => {
+                                    const isActive = selectedUser?.user_id === coach.id && selectedUser?.table === 'session_coaches';
+
+                                    return (
+                                        <li 
+                                        key={coach.id}
+                                        className={`${isActive ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setSelectedUser({
+                                                table: 'session_coaches',
+                                                user_id: coach.id
+                                            });
+                                        }}
+                                    >
+                                        <span>{coach.first_name} {coach.last_name}</span>
+                                    </li>
+                                    );
+                                })}
+                            </ul>
+                        }
+                    </div>
+                }
+
+                {(players.length > 0) && 
+                    <div class="people-selector">
+                        <span class="people-selector-title">PLAYERS</span>
+                        {
+                            <ul class="user-list">
+                                {players.map((player) => {
+                                    const isActive = selectedUser?.user_id === player.id && selectedUser?.table === 'session_players';
+
+                                    return (
+                                    <li 
+                                        key={player.id}
+                                        className={`${isActive ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setSelectedUser({
+                                                table: 'session_players',
+                                                user_id: player.id
+                                            });
+                                        }}
+                                    >
+                                        <span>{player.first_name} {player.last_name}</span>
+                                    </li>
+                                    );
+                                })}
+                            </ul>
+                        }
+                    </div>
+                }
             </div>
         </div>
     );
 }
 
-export function DRAGGABLE_AVAILABILITY({ availSettings }) {
-    const availRef = useRef(null);
 
-    useEffect(() => {
-        let avail = new Draggable(availRef.current, {
-            eventData: () => {
-                return {
-                    title: availSettings.availNotes,
-                    duration: availSettings.availDuration,
-                    start: availSettings.availStart,
-                    end: availSettings.availEnd,
-                    extendedProps: {
-                        type: 'availability'
-                    }
-                };
-            }
-        })
-        return () => avail.destroy();
-    }, [availSettings]);
-
-    return (
-        <div class="input-container">
-            <span class="input-container-label">UNAVAILABLE</span>
-            <div class="input-box-wrapper" id="draggable-session-container">
-                <div ref={availRef} class="draggable-icon session-icon">
-                    <span>{availSettings.availNotes}</span>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-export function DRAGGABLE_DRILL({ drillSettings }) {
-    const drillRef = useRef(null);
-
-    useEffect(() => {
-        let drill = new Draggable(drillRef.current, {
-            eventData: () => {
-                return {
-                    drillName: drillSettings.drillName,
-                    drillDuration: drillSettings.drillDuration,
-                    drillDescription: drillSettings.drillDescription,
-                    drillTags: drillSettings.drillTags
-                };
-            }
-        })
-        return () => drill.destroy();
-    }, [drillSettings]);
-
-    return (
-        <div class="input-container">
-            <div ref={drillRef} class="draggable-icon session-icon">
-                <span>{drillSettings.drillName}</span>
-                <span>{drillSettings.drillDuration}</span>
-            </div>
-        </div>
-    );
-}
-
-export const CALENDAR = forwardRef(({ 
+export const OTHER_CALENDARS = forwardRef(({ 
     onSessionClick, 
     events, 
     onTodayClick, 
@@ -157,7 +92,6 @@ export const CALENDAR = forwardRef(({
     toggleTooltips, tooltipsEnabled, 
     selectedCoaches, setSelectedCoaches,
     selectedPlayers, setSelectedPlayers,
-    handleDelete,
     currentUser
     }, ref) => {
 

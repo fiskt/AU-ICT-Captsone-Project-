@@ -1,68 +1,68 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
 import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
+import { USERS_LIST } from '../Components/OtherUsersComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
-
 
 import { createClient } from '@supabase/supabase-js';
 import { DateTime, Duration } from 'luxon';
-import { useSearchParams } from 'react-router-dom';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
-    // current user
-    let [currentUser, setCurrentUser] = useState();
-
-    currentUser = {
-        id: 1,
-        first_name: "coachfirst",
-        last_name: "coachLast"
-    };
-
     const calendarRef = useRef(null);
     const [showSessionEditor, setShowSessionEditor] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
 
-    const [showAvailabilityCreator, setShowAvailabilityCreator] = useState(false);
 
     const [calendarEvents, setCalendarEvents] = useState([]);
 
     const [coaches, setCoaches] = useState([]);
     const [players, setPlayers] = useState([]);
 
+    // filtering and searching users
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchFilter, setSearchFilter] = useState("all");
+
+    const [filteredCoaches, setFilteredCoaches] = useState([]);
+    const [filteredPlayers, setFilteredPlayers] = useState([]);
+
+    useEffect(() => {
+        const q = searchQuery.toLowerCase().trim();
+
+        if (q === "" && searchFilter === "all") {
+            setFilteredCoaches(coaches);
+            setFilteredPlayers(players);
+            return;
+        }
+
+        const showCoaches = searchFilter === "all" || searchFilter === "coaches";
+        if (showCoaches) {
+            // array for all names that match what the user has searched
+            const matchesQuery = coaches.filter(coach => {
+                const fullName = `${coach.first_name} ${coach.last_name}`.toLowerCase();
+                return fullName.includes(q);
+            });
+            setFilteredCoaches(matchesQuery);
+        } else {
+            setFilteredCoaches([]);
+        }
+
+        // same thing for players
+        const showPlayers = searchFilter === "all" || searchFilter === "players";
+        if (showPlayers) {
+            const matchesQuery = players.filter(player => {
+                const fullName = `${player.first_name} ${player.last_name}`.toLowerCase();
+                return fullName.includes(q);
+            });
+            setFilteredPlayers(matchesQuery);
+        } else {
+            setFilteredPlayers([]);
+        }
+    }, [searchQuery, searchFilter, coaches, players]);
+
+    const [selectedUser, setSelectedUser] = useState();
+
     const [selectedCoaches, setSelectedCoaches] = useState([]);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
-
-    const [selectedSessionCoaches, setSelectedSessionCoaches] = useState([]);
-    const [selectedSessionPlayers, setSelectedSessionPlayers] = useState([]);
-    const [editedSessionCoaches, setEditedSessionCoaches] = useState([]);
-    const [editedSessionPlayers, setEditedSessionPlayers] = useState([]);
-
-    // confirmation popup for deleting sessions
-    const sessionDeleteConfirmation = () => {
-        const confirmed = window.confirm("Are you sure you want to delete this session? This action cannot be undone.");
-
-        if (confirmed) {
-            deleteSession();
-            setShowSessionEditor(false);
-            setSelectedSession(null);
-        }
-    }
-
-    async function deleteSession() {
-        setIsDataLoading(true);
-        const { error } = await supabase
-            .from('sessions')
-            .delete()
-            .eq('id', selectedSession.id);
-
-        if (error) {
-            console.log("Error when deleting session. Please try again.");
-            setIsDataLoading(false);
-        } else {
-            selectedSession.remove();
-            fetchCalendarData();
-        }
-    }
 
     async function fetchPlayers() {
         const { data, error } = await supabase
@@ -120,34 +120,6 @@ export default function CoachCalendar() {
         }
     }
 
-    async function deleteAvail( event ) {
-        setIsDataLoading(true);
-
-        const { error } = await supabase
-            .from('coach_availability')
-            .delete()
-            .eq('avail_id', event.id);
-
-        if (!error) {
-            event.remove();
-        } else {
-            console.log("Could not delete event: ", error.message);
-        }
-        setIsDataLoading(false);
-    }
-
-    const renameAvail = () => {
-        // this will be an async funcion for changing the notes in the event
-        console.log("rename avail event");
-    }
-    // toggle for event tooltips
-    const [toggleEventTooltips, setToggleEventTooltips] = useState(true);
-
-    const toggleTooltips = () => {
-        toggleEventTooltips ? setToggleEventTooltips(false) : setToggleEventTooltips(true);
-        console.log(toggleEventTooltips);
-    }
-
     // loading screen appears when data isnt fully loaded
     const [isDataLoading, setIsDataLoading] = useState(true);
 
@@ -167,9 +139,6 @@ export default function CoachCalendar() {
             ]);
 
 
-            setEditedSessionCoaches(sessionCoaches);
-            setEditedSessionPlayers(sessionPlayers);
-
 
             setTempSession({
                 id: selectedSession.id,
@@ -181,26 +150,12 @@ export default function CoachCalendar() {
             });
         } else {
             setTempSession(null);
-            setEditedSessionCoaches([]);
-            setEditedSessionPlayers([]);
         }
         setIsDataLoading(false);
     };
 
     loadSessionData();
 }, [selectedSession]);
-
-useEffect(() => {
-    if (tempSession) {
-        setTempSession(prev => ({
-            ...prev,
-            selectedCoaches: editedSessionCoaches,
-            selectedPlayers: editedSessionPlayers
-        }));
-    }
-}, [editedSessionCoaches, editedSessionPlayers]);
-
-
 
     const handleDateChange = (start, end) => { 
         setWeekStart(DateTime.fromJSDate(start));
@@ -221,102 +176,86 @@ useEffect(() => {
         }
     }
 
-    useEffect(() => {
-        fetchCalendarData();
-        fetchPlayers();
-        fetchCoaches();
-    }, []);
 
     async function fetchCalendarData() {
+        if (!selectedUser) return;
         setIsDataLoading(true);
         
-        // fetch data from the database
-        const sessionData = await supabase
-            .from('sessions')
-            .select('*');
+        let sessionIds = [];
+        let formattedSessions = [];
 
-        const availData = await supabase
-            .from('coach_availability')
-            .select('*');
+        if (selectedUser.table === 'session_coaches') {
+            const { data, error } = await supabase 
+                .from(selectedUser.table)
+                .select('*')
+                .eq('coach_id', selectedUser.user_id);
 
-        // set the session data for the calendar events
-        const session = (sessionData.data || []).map(ses => {
-            const startTime = DateTime.fromISO(ses.time);
-            const duration = Duration.fromISOTime(ses.duration);
-            return {
-                id: ses.id,
-                title: ses.name,
-                start: startTime.toISO(),
-                end: startTime.plus(duration).toISO(),
-                extendedProps: {
-                    type: 'session',
-                    duration: duration.toISO(),
-                    people: ses.people,
-                    notes: ses.notes
-                }
-            };
-        })
+            if (!error) sessionIds = (data || []).map(cs => cs.session_id);
+        } else if (selectedUser.table === 'session_players') {
+            const { data, error } = await supabase 
+                .from(selectedUser.table)
+                .select('*')
+                .eq('player_id', selectedUser.user_id);
 
-        // set data for availability events
-        const availability = (availData.data || []).map(ava => {
-            const startTime = DateTime.fromISO(ava.start_datetime);
-            const endTime = DateTime.fromISO(ava.end_datetime);
-            const duration = Duration.fromISOTime(ava.duration);
-            return {
-                id: ava.avail_id,
-                title: ava.notes || "",
-                start: startTime.toISO(),
-                end: endTime.toISO(),
-                extendedProps: {
-                    type: 'availability',
-                    duration: duration,
-                    notes: ava.notes
-                }
-            };
-        })
-
-        // set copies of the events to the calendar
-        setCalendarEvents([...session, ...availability]);
-        setIsDataLoading(false);
-    }
-
-    async function saveSessionChanges() {
-        setIsDataLoading(true);
-        const { error } = await supabase
-            .from('sessions')
-            .update({ 
-                name: tempSession.name, 
-                duration: tempSession.duration, 
-                notes: tempSession.notes 
-            })
-            .eq('id', tempSession.id);
-
-        await Promise.all([
-            supabase.from('session_coaches').delete().eq('session_id', tempSession.id),
-            supabase.from('session_players').delete().eq('session_id', tempSession.id)
-        ]);
-
-        const newCoaches = (tempSession.selectedCoaches || []).map(coachId => ({
-            session_id: tempSession.id,
-            coach_id: coachId
-        }));
-
-        const newPlayers = (tempSession.selectedPlayers || []).map(playerId => ({
-            session_id: tempSession.id,
-            player_id: playerId
-        }));
-
-        await Promise.all([
-            newCoaches.length > 0 && supabase.from('session_coaches').insert(newCoaches),
-            newPlayers.length > 0 && supabase.from('session_players').insert(newPlayers)
-        ]);
-
-
-        if (!error) {
-            fetchCalendarData();
-            setSelectedSession(null);
-            setShowSessionEditor(false);
+            if (!error) sessionIds = (data || []).map(cs => cs.session_id);
         }
+
+        console.log("sessino ids: ", sessionIds);
+
+        if (sessionIds.length > 0) {
+            const { data, error } = await supabase
+                .from('sessions')
+                .select('*')
+                .in('id', sessionIds);
+
+                formattedSessions = (data || []).map(ses => {
+                    const startTime = DateTime.fromISO(ses.time);
+                    const duration = Duration.fromISOTime(ses.duration);
+                    return {
+                        id: ses.id,
+                        title: ses.name,
+                        start: startTime.toISO(),
+                        end: startTime.plus(duration).toISO(),
+                        extendedProps: {
+                            type: 'session',
+                            duration: duration.toISO(),
+                            people: ses.people,
+                            notes: ses.notes
+                        }
+                    };
+                });
+        }
+
+        let formattedAvail = [];
+        if (selectedUser.table === 'session_coaches') {
+            const { data, error } = await supabase
+                .from('coach_availability')
+                .select('*')
+                .eq('coach_id', selectedUser.user_id);
+
+            if (!error) {
+                formattedAvail = (data || []).map(ava => {
+                    const startTime = DateTime.fromISO(ava.start_datetime);
+                    const endTime = DateTime.fromISO(ava.end_datetime);
+                    const duration = Duration.fromISOTime(ava.duration);
+                    return {
+                        id: ava.avail_id,
+                        title: ava.notes || "",
+                        start: startTime.toISO(),
+                        end: endTime.toISO(),
+                        extendedProps: {
+                            type: 'availability',
+                            duration: duration,
+                            notes: ava.notes
+                        }
+                    };
+                });
+            }
+        }
+        
+        // set copies of the events to the calendar
+        setCalendarEvents([...formattedSessions, ...formattedAvail]);
+        setIsDataLoading(false);
     }
 
     // session creator/editor duration dropdown options
@@ -351,14 +290,6 @@ useEffect(() => {
         localStorage.setItem('session_creator_draft', JSON.stringify(sessionSettings));
     }, [sessionSettings]);
 
-    // temp drill settings
-    const [drillSettings, setDrillSettings] = useState({
-        drillName: "Right hand serve",
-        drillDuration: "30m",
-        drillDescription: "Practice serves with right hand",
-        drillTags: ["Right hand", "Serving"]
-    });
-
     const updateSessionField = (field, value) => {
         setSessionSettings({
             ...sessionSettings,
@@ -373,10 +304,61 @@ useEffect(() => {
         });
     }
 
+    useEffect(() => {
+        if (selectedUser) {
+            fetchCalendarData();
+        } else {
+            setCalendarEvents([]);
+        }
+    }, [selectedUser]);
+
+    useEffect(() => {
+        const initializeUsers = async () => {
+            setIsDataLoading(true);
+            await Promise.all([
+                fetchCoaches(),
+                fetchPlayers()
+            ]);
+            setIsDataLoading(false);
+        };
+
+        initializeUsers();
+    }, []);
+
     return (
         <>
             {/* Loading overlay */}
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
+
+            <div class="content-box editor-box">
+                <h2 class="content-header">Users</h2>
+                <div id="input-box-wrapper">
+                    <div id="users-filter-container">
+                        <div id="users-search-bar">
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            ></input>
+                        </div>
+                        <div id="users-filter-btn">
+                            <button 
+                                onClick={() => setSearchFilter("coaches")}>Coach</button>
+                            <button 
+                                onClick={() => setSearchFilter("players")}>Player</button>
+                        </div>
+                        <button
+                            onClick={() => {
+                                setSearchFilter("all");
+                                setSearchQuery("");} }>Reset</button>
+                    </div>
+                </div>
+                <USERS_LIST 
+                    coaches={filteredCoaches} players={filteredPlayers} 
+                    selectedUser={selectedUser}
+                    setSelectedUser={setSelectedUser} 
+                />
+            </div> 
 
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
@@ -391,102 +373,17 @@ useEffect(() => {
                     }}
 
                     selectedSession={selectedSession}
-
-                    toggleTooltips={toggleTooltips} tooltipsEnabled={toggleEventTooltips}
                     
                     selectedCoaches={selectedCoaches} setSelectedCoaches={setSelectedCoaches}
                     selectedPlayers={selectedPlayers} setSelectedPlayers={setSelectedPlayers}
                     
-                    handleDelete={sessionDeleteConfirmation}
-
-                    currentUser={currentUser}
-
                     ref={calendarRef}
                 />
             </div>
 
-            {/* Session creator */}
-            { !showAvailabilityCreator && (
-                <div class="content-box editor-box" id="session-creator">
-                    <h2 class="content-header" onClick={() => setShowAvailabilityCreator(true)}>Session Creator</h2>
-                    <div id="session-creator-input-container">
-                        <TYPING_INPUT 
-                            label="NAME" 
-                            num_rows="1" 
-                            input_id="session-name-creator" 
-                            box_w="100%" box_h="30px" 
-                            sample_txt="Session name"
-                            value={sessionSettings.sessionName}
-                            onChange={(val) => {
-                                updateSessionField('sessionName', val);
-                            }}
-                        />
-                        <DROPDOWN_INPUT 
-                            label="DURATION" 
-                            input_id="session-duration-creator" 
-                            box_w="100%" box_h="30px" 
-                            options={durationOptions}
-                            value={sessionSettings.sessionDuration}
-                            onChange={(val) => {
-                                updateSessionField('sessionDuration', val);
-                            }}
-                        />
-                        <TYPING_INPUT 
-                            label="NOTES" 
-                            num_rows="6" 
-                            input_id="session-notes-creator" 
-                            box_w="100%" box_h="80px" 
-                            sample_txt="Session notes" 
-                            value={sessionSettings.sessionNotes}
-                            onChange={(val) => updateSessionField('sessionNotes', val)}
-                        />
-                        <div class="input-container">
-                            <span class="input-container-label">PEOPLE</span>
-                            <div class="input-box-wrapper session-people">
-                                <PEOPLE_SELECTOR role="COACHES" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
-                                <PEOPLE_SELECTOR role="PLAYERS" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
-                            </div>
-                        </div>
-                        <div class="input-container">
-                            <span class="input-container-label">DRILLS</span>
-                            <div class="input-box-wrapper session-drills">
-                            </div>
-                        </div>
-                    </div>
-                    <DRAGGABLE_SESSION sessionSettings={sessionSettings} />
-                </div>
-            )}
-
-            {/* Availability creator */}
-            { showAvailabilityCreator && (
-                <div class="content-box editor-box" id="avail-creator">
-                    <h2 class="content-header" onClick={() => setShowAvailabilityCreator(false)}>Availability Creator</h2>
-                    <div id="session-creator-input-container">
-                        <TYPING_INPUT 
-                            label="NAME" 
-                            num_rows="1" 
-                            input_id="availibility-notes-creator" 
-                            box_w="100%" box_h="30px" 
-                            sample_txt="Notes"
-                            value={availSettings.availNotes}
-                            onChange={(val) => {
-                                updateAvailField('availNotes', val);
-                            }}
-                        />
-                    </div>
-                    <DRAGGABLE_AVAILABILITY availSettings={availSettings} />
-                </div>
-            )}
-            
             {/* Session editor */}
             { selectedSession && showSessionEditor && (
                 <div id="session-editor-container">
-                    <button 
-                onClick={() => {
-                    console.log(tempSession);
-                    console.log(selectedSessionCoaches, selectedSessionPlayers);
-                }}
-                >show selected people</button>
                     <div class="content-box" id="session-editor">
                         <div class="content-box-top">
                             <div class="content-box-top-left">
@@ -572,17 +469,6 @@ useEffect(() => {
                     </div>
                 </div>
             )}
-
-            {/* Drill Library */}
-            <div class="content-box editor-box" id="drill-library">
-                <h2 class="content-header">Drills</h2>
-                <div class="input-container">
-                    <span class="input-container-label">LIBRARY</span>
-                    <div class="input-box-wrapper" id="drill-library-container">
-                        <DRAGGABLE_DRILL drillSettings={drillSettings} />
-                    </div>
-                </div>
-            </div>
         </>
     );
 }

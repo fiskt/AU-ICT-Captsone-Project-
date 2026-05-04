@@ -9,9 +9,12 @@ import PlayerProfile from '../pages/PlayerProfile'
 import DrillLibrary from '../pages/DrillLibrary'
 import LoadTracking from '../pages/LoadTracking'
 import Testing from '../pages/Testing'
+import OtherUsers from '../pages/OtherUsers'
 
 import PlayerCalendar from '../pages/PlayerCalendar'
 import PlayerDashboard from '../pages/PlayerDashboard'
+
+
 
 function SIDEBAR_BUTTON({ label, path }) {
     const navigate = useNavigate();
@@ -38,6 +41,7 @@ export function COACH_SIDEBAR() {
                 <SIDEBAR_BUTTON label="Players" path="/PlayerProfile" />
                 <SIDEBAR_BUTTON label="Drill Library" path="/DrillLibrary" />
                 <SIDEBAR_BUTTON label="Testing" path="/Testing" />
+                <SIDEBAR_BUTTON label="Other Users" path="/OtherUsers" />
             </div>
             <div id="sidebar-bottom"></div>
         </div>

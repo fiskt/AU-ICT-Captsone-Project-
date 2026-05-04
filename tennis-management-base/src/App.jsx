@@ -10,6 +10,7 @@ import PlayerProfile from './pages/PlayerProfile'
 import DrillLibrary from './pages/DrillLibrary';
 import LoadTracking from './pages/LoadTracking';
 import Testing from './pages/Testing';
+import OtherUsers from './pages/OtherUsers';
 
 import PlayerCalendar from './pages/PlayerCalendar'
 import PlayerDashboard from './pages/PlayerDashboard'
@@ -28,6 +29,7 @@ function App() {
               <Route path="/PlayerProfile" element={<PlayerProfile />} />
               <Route path="/DrillLibrary" element={<DrillLibrary />} />
               <Route path="/Testing" element={<Testing />} />
+              <Route path="/OtherUsers" element={<OtherUsers />} />
             </Routes>
           </main>
         </div>

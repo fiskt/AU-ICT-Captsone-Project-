@@ -1,0 +1,35 @@
+@import url(../App.css);
+
+.user-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 0 10px 0;
+}
+
+.user-list li {
+    cursor: pointer;
+    padding: 6px;
+
+    border-radius: 8px;
+  border: 2px solid transparent;
+
+  color: var(--content-body-color);
+  font-family: 'DM Mono Light', sans-serif;
+  text-align: left;
+  font-size: small;
+
+  transition: background-color 0.2s ease-in-out;
+}
+
+.user-list li:hover:not(.active) {
+    background-color: var(--btn-hover-color);
+    border-color: var(--btn-hover-color);
+}
+
+.user-list li.active {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
