@@ -481,12 +481,6 @@ useEffect(() => {
             {/* Session editor */}
             { selectedSession && showSessionEditor && (
                 <div id="session-editor-container">
-                    <button 
-                onClick={() => {
-                    console.log(tempSession);
-                    console.log(selectedSessionCoaches, selectedSessionPlayers);
-                }}
-                >show selected people</button>
                     <div class="content-box" id="session-editor">
                         <div class="content-box-top">
                             <div class="content-box-top-left">

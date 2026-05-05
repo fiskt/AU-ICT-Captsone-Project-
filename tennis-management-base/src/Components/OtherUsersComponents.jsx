@@ -213,6 +213,7 @@ export const OTHER_CALENDARS = forwardRef(({
                     events={events}
                     eventOverlap={false}
                     selectOverlap={false}
+                    editable={false}
                     initialView="timeGridWeek"
                     eventClick={(info) => {
                         if (info.event.extendedProps.type === 'availability') return;
@@ -266,7 +267,6 @@ export const OTHER_CALENDARS = forwardRef(({
                     }
                     displayEventTime={true}
                     displayEventEnd={true}
-                    editable={true}
                     eventReceive = {(info) => {    
                         if (info.event.extendedProps.type === 'availability') {
                             pushAvailability({ event: info.event, coachId: currentUser.id});

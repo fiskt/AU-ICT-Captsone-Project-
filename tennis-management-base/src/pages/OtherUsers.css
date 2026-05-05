@@ -33,3 +33,26 @@
     background-color: var(--accent-color);
     border-color: var(--accent-color);
 }
+
+#user-filter-container {
+    width: 100%;
+}
+
+#user-filter-container > div {
+    border: none;
+}
+
+#user-filter-container > #users-filter-btn {
+    margin: 0;
+    gap: 6px;
+}
+
+button.active {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--sidebar-body-color);
+}
+
+.user-filter-btn {
+    padding: 5px;
+}

@@ -1,6 +1,6 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
 import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
-import { USERS_LIST } from '../Components/OtherUsersComponents.jsx';
+import { USERS_LIST, OTHER_CALENDARS } from '../Components/OtherUsersComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
@@ -11,7 +11,6 @@ export default function CoachCalendar() {
     const calendarRef = useRef(null);
     const [showSessionEditor, setShowSessionEditor] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
-
 
     const [calendarEvents, setCalendarEvents] = useState([]);
 
@@ -332,37 +331,49 @@ export default function CoachCalendar() {
 
             <div class="content-box editor-box">
                 <h2 class="content-header">Users</h2>
-                <div id="input-box-wrapper">
-                    <div id="users-filter-container">
-                        <div id="users-search-bar">
+                <div class="content-box-top">
+                    <div id="user-filter-container">
+                        <div class="content-box-middle">
                             <input
+                                class="typing-input-box"
+                                placeholder='Search user'
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                            ></input>
+                            >
+                            </input>
                         </div>
-                        <div id="users-filter-btn">
-                            <button 
-                                onClick={() => setSearchFilter("coaches")}>Coach</button>
-                            <button 
-                                onClick={() => setSearchFilter("players")}>Player</button>
+                        <div class="content-box-bottom" id="users-filter-btn">
+                                <button 
+                                    onClick={() => setSearchFilter("coaches")}
+                                    className={`user-filter-btn ${searchFilter === 'coaches' ? 'active' : ''}`}
+                                >Coach</button>
+                                <button 
+                                    onClick={() => setSearchFilter("players")}
+                                    className={`user-filter-btn ${searchFilter === 'players' ? 'active' : ''}`}
+                                >Player</button>
+                                <button
+                                    class="user-filter-btn"
+                                    onClick={() => {
+                                        setSearchFilter("all");
+                                        setSearchQuery("");
+                                    }}
+                                >Reset</button>
                         </div>
-                        <button
-                            onClick={() => {
-                                setSearchFilter("all");
-                                setSearchQuery("");} }>Reset</button>
                     </div>
                 </div>
-                <USERS_LIST 
-                    coaches={filteredCoaches} players={filteredPlayers} 
-                    selectedUser={selectedUser}
-                    setSelectedUser={setSelectedUser} 
-                />
+                <div class="content-box-middle">
+                    <USERS_LIST 
+                        coaches={filteredCoaches} players={filteredPlayers} 
+                        selectedUser={selectedUser}
+                        setSelectedUser={setSelectedUser} 
+                    />
+                </div>
             </div> 
 
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
-                <CALENDAR 
+                <OTHER_CALENDARS
                     events={calendarEvents}
                     activeStart={weekStart} activeEnd={weekEnd}
                     onTodayClick={handleShowToday}
