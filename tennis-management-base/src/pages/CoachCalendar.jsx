@@ -1,11 +1,10 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_DRILL, DRAGGABLE_SESSION, PEOPLE_SELECTOR, DRILL_LIBRARY, SIMPLE_DRILL_CARD } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
 
 import { createClient } from '@supabase/supabase-js';
 import { DateTime, Duration } from 'luxon';
-import { useSearchParams } from 'react-router-dom';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
@@ -17,6 +16,8 @@ export default function CoachCalendar() {
         first_name: "coachfirst",
         last_name: "coachLast"
     };
+
+    const [isDraggingEvent, setIsDraggingEvent] = useState(false);
 
     const calendarRef = useRef(null);
     const [showSessionEditor, setShowSessionEditor] = useState(false);
@@ -120,22 +121,6 @@ export default function CoachCalendar() {
         }
     }
 
-    async function deleteAvail( event ) {
-        setIsDataLoading(true);
-
-        const { error } = await supabase
-            .from('coach_availability')
-            .delete()
-            .eq('avail_id', event.id);
-
-        if (!error) {
-            event.remove();
-        } else {
-            console.log("Could not delete event: ", error.message);
-        }
-        setIsDataLoading(false);
-    }
-
     const renameAvail = () => {
         // this will be an async funcion for changing the notes in the event
         console.log("rename avail event");
@@ -147,6 +132,46 @@ export default function CoachCalendar() {
         toggleEventTooltips ? setToggleEventTooltips(false) : setToggleEventTooltips(true);
         console.log(toggleEventTooltips);
     }
+
+    // Drill library
+
+    const [drills, setDrills] = useState([]);
+
+    const [showAddDrill, setShowAddDrill] = useState(false);
+
+    const [filteredDrills, setFilteredDrills] = useState([]);
+
+    const [drillSearchQuery, setDrillSearchQuery] = useState("");
+    const [drillSearchFilter, setDrillSerachFilter] = useState([]);
+
+    async function fetchDrills() {
+        const { data, error } = await supabase
+            .from('drill_library')
+            .select('*');
+
+        if (error) {
+            console.log("Error when fetching drills: ", error.message);
+            setDrills([]);
+        } else {
+            setDrills(data);
+        }
+    }
+
+    useEffect(() => {
+        const q = drillSearchQuery.toLowerCase().trim();
+
+        if (q === "") {
+            setFilteredDrills(drills);
+        } else {
+            const matchesQuery = drills.filter(drill => {
+                const drillName = drill.name.toLowerCase();
+                return drillName.includes(q);
+            });
+            setFilteredDrills(matchesQuery);
+        }
+    })
+
+
 
     // loading screen appears when data isnt fully loaded
     const [isDataLoading, setIsDataLoading] = useState(true);
@@ -174,7 +199,6 @@ export default function CoachCalendar() {
             setTempSession({
                 id: selectedSession.id,
                 name: selectedSession.title,
-                duration: selectedSession.extendedProps.duration,
                 notes: selectedSession.extendedProps.notes,
                 selectedCoaches: sessionCoaches, 
                 selectedPlayers: sessionPlayers 
@@ -223,6 +247,7 @@ useEffect(() => {
 
     useEffect(() => {
         fetchCalendarData();
+        fetchDrills();
         fetchPlayers();
         fetchCoaches();
     }, []);
@@ -241,17 +266,17 @@ useEffect(() => {
 
         // set the session data for the calendar events
         const session = (sessionData.data || []).map(ses => {
-            const startTime = DateTime.fromISO(ses.time);
+            const startTime = DateTime.fromISO(ses.start_datetime);
+            const endTime = DateTime.fromISO(ses.end_datetime);
             const duration = Duration.fromISOTime(ses.duration);
             return {
                 id: ses.id,
                 title: ses.name,
                 start: startTime.toISO(),
-                end: startTime.plus(duration).toISO(),
+                end: endTime.toISO(),
                 extendedProps: {
                     type: 'session',
-                    duration: duration.toISO(),
-                    people: ses.people,
+                    duration: duration,
                     notes: ses.notes
                 }
             };
@@ -286,7 +311,6 @@ useEffect(() => {
             .from('sessions')
             .update({ 
                 name: tempSession.name, 
-                duration: tempSession.duration, 
                 notes: tempSession.notes 
             })
             .eq('id', tempSession.id);
@@ -319,24 +343,16 @@ useEffect(() => {
         }
     }
 
-    // session creator/editor duration dropdown options
-    const durationOptions = [
-        { label: "30 mins", val: "00:30:00" },
-        { label: "60 mins", val: "00:60:00" },
-        { label: "90 mins", val: "01:30:00" },
-        { label: "120 mins", val: "02:00:00" },
-        { label: "150 mins", val: "02:30:00" },
-        { label: "180 mins", val: "03:00:00" },
-    ];
 
     // auto save current session inputs in local storage and restore the saved inputs
     const [sessionSettings, setSessionSettings] = useState(() => {
         const savedDraft = localStorage.getItem('session_creator_draft');
         return savedDraft ? JSON.parse(savedDraft) : {
             sessionName: "Session Name",
-            sessionDuration: durationOptions[0].val,
+            sessionDuration: "01:00:00",
             sessionNotes: "",
-            sessionPeople: []
+            sessionStart: "",
+            sessionEnd: ""
         };
     });
 
@@ -345,19 +361,11 @@ useEffect(() => {
             availStart: "",
             availEnd: "",
             availDuration: "01:00:00"
-    })
+    });
 
     useEffect(() => {
         localStorage.setItem('session_creator_draft', JSON.stringify(sessionSettings));
     }, [sessionSettings]);
-
-    // temp drill settings
-    const [drillSettings, setDrillSettings] = useState({
-        drillName: "Right hand serve",
-        drillDuration: "30m",
-        drillDescription: "Practice serves with right hand",
-        drillTags: ["Right hand", "Serving"]
-    });
 
     const updateSessionField = (field, value) => {
         setSessionSettings({
@@ -380,6 +388,11 @@ useEffect(() => {
 
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
+                {
+                    <div className={`calendar-trash-zone ${isDraggingEvent ? 'active-dragging' : ''}`} id="calendar-del-area">
+                        <span className="trash-label">Drop here to delete</span>
+                    </div>
+                }
                 <CALENDAR 
                     events={calendarEvents}
                     activeStart={weekStart} activeEnd={weekEnd}
@@ -401,15 +414,16 @@ useEffect(() => {
 
                     currentUser={currentUser}
 
+                    setIsDraggingEvent={setIsDraggingEvent}
+
                     ref={calendarRef}
                 />
             </div>
-
-            {/* Session creator */}
-            { !showAvailabilityCreator && (
-                <div class="content-box editor-box" id="session-creator">
-                    <h2 class="content-header" onClick={() => setShowAvailabilityCreator(true)}>Session Creator</h2>
-                    <div id="session-creator-input-container">
+            
+            <div id="session-creator" class="content-box">
+                <h2 class="content-header">Session Creator</h2>
+                <div id="session-creator-middle">
+                    <div id="session-creator-middle-left">
                         <TYPING_INPUT 
                             label="NAME" 
                             num_rows="1" 
@@ -419,16 +433,6 @@ useEffect(() => {
                             value={sessionSettings.sessionName}
                             onChange={(val) => {
                                 updateSessionField('sessionName', val);
-                            }}
-                        />
-                        <DROPDOWN_INPUT 
-                            label="DURATION" 
-                            input_id="session-duration-creator" 
-                            box_w="100%" box_h="30px" 
-                            options={durationOptions}
-                            value={sessionSettings.sessionDuration}
-                            onChange={(val) => {
-                                updateSessionField('sessionDuration', val);
                             }}
                         />
                         <TYPING_INPUT 
@@ -447,13 +451,60 @@ useEffect(() => {
                                 <PEOPLE_SELECTOR role="PLAYERS" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
                             </div>
                         </div>
+                    </div>
+                    <div id="session-creator-middle-right">
                         <div class="input-container">
-                            <span class="input-container-label">DRILLS</span>
-                            <div class="input-box-wrapper session-drills">
+                            <span class="input-container-label">SESSION DRILLS</span>
+                            <div class="input-box-wrapper" id="drill-library-container">
+                                <DRILL_LIBRARY drills={drills} />
+                                <button 
+                                    id="session-creator-add-drill-btn"
+                                    onClick={() => setShowAddDrill(true)}
+                                >
+                                    Add Drill
+                                </button>
                             </div>
                         </div>
+                        <DRAGGABLE_SESSION sessionSettings={sessionSettings} />
                     </div>
-                    <DRAGGABLE_SESSION sessionSettings={sessionSettings} />
+                </div>
+            </div>
+
+            {/* Drill library */}
+            { showAddDrill && (
+                <div id="add-drill-container">
+                    <div class="content-box" id="session-drill-library">
+                        <div class="content-box-top">
+                            <div class="content-box-top-left">
+                                <h2 class="content-header">Drill Library</h2>
+                            </div>
+                            <div class="content-box-top-middle"></div>
+                            <div class="content-box-top-right">
+                                <button
+                                    onClick={() => setShowAddDrill(false)}
+                                >Close</button>
+                            </div>
+                        </div>
+                        <div class="content-box-middle">
+                            <div id="session-drill-library-filter">
+                                <input
+                                class="typing-input-box"
+                                placeholder='Search drill'
+                                type="text"
+                                value={drillSearchQuery}
+                                onChange={(e) => setDrillSearchQuery(e.target.value)}
+                                >
+                                </input>
+                            </div>
+                            {filteredDrills.length > 0 && (
+                                <div id="session-drill-grid">
+                                    {filteredDrills.map(drill => (
+                                        <SIMPLE_DRILL_CARD drill={drill} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -508,17 +559,6 @@ useEffect(() => {
                                     }
                                     id="session-editor-name"
                                 />
-                                <DROPDOWN_INPUT 
-                                    label="DURATION" 
-                                    input_id="session-duration-creator" 
-                                    box_w="100%" box_h="30px" 
-                                    options={durationOptions}
-                                    value={tempSession?.duration || ""}
-                                    onChange={(val) => 
-                                        setTempSession({ ...tempSession, duration: val })
-                                    }
-                                    id="session-editor-duration"
-                                />
                                 <TYPING_INPUT 
                                     label="NOTES" 
                                     num_rows="6" 
@@ -566,17 +606,6 @@ useEffect(() => {
                     </div>
                 </div>
             )}
-
-            {/* Drill Library */}
-            <div class="content-box editor-box" id="drill-library">
-                <h2 class="content-header">Drills</h2>
-                <div class="input-container">
-                    <span class="input-container-label">LIBRARY</span>
-                    <div class="input-box-wrapper" id="drill-library-container">
-                        <DRAGGABLE_DRILL drillSettings={drillSettings} />
-                    </div>
-                </div>
-            </div>
         </>
     );
 }

@@ -1,5 +1,6 @@
 import '../App.css'
 import '../pages/CoachCalendar.css'
+import '../pages/DrillLibrary.css'
 
 import { DateTime, Info, Interval, Duration } from 'luxon'
 import { useState, useEffect, useRef, forwardRef } from 'react';
@@ -15,6 +16,35 @@ import tippy from 'tippy.js';
 
 import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+
+function Stars({ level, size = '' }) {
+    const levelMap = { Beginner: 1, Intermediate: 2, Advanced: 3, Elite: 5 };
+    const filled = levelMap[level] ?? 2;
+    return (
+        <div className={`drill-stars ${size}`}>
+            {[1, 2, 3, 4, 5].map(i => (
+                <svg
+                    key={i}
+                    className={`drill-star ${i <= filled ? 'filled' : 'empty'}`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+            ))}
+        </div>
+    );
+}
+
+// ── TYPE BADGE ────────────────────────────────────────────────────────────────
+function TypeBadge({ type }) {
+    if (!type) return null;
+    return (
+        <span className={`drill-type-badge badge-${type.toLowerCase()}`}>
+            {type}
+        </span>
+    );
+}
 
 function TICKBOX_SELECTOR({ people = [], selectedPeople = [], onToggle }) {
     return (
@@ -80,8 +110,8 @@ export function DRAGGABLE_SESSION({ sessionSettings }) {
             <span class="input-container-label">SESSION</span>
             <div class="input-box-wrapper" id="draggable-session-container">
                 <div ref={sessionRef} class="draggable-icon session-icon">
+                    <span>00:00 - 00:00</span>
                     <span>{sessionSettings.sessionName}</span>
-                    <span>{sessionSettings.sessionDuration}</span>
                 </div>
             </div>
         </div>
@@ -120,6 +150,27 @@ export function DRAGGABLE_AVAILABILITY({ availSettings }) {
     );
 }
 
+export function DRILL_LIBRARY({ drills }) {
+    return (
+        <>  
+            {
+            drills.map((drill) => (
+                <div class="drill-card">
+                    <div class="drill-card-top">
+                        <TypeBadge tyoe={drill.type} />
+                    </div>
+                    <div class="drill-card-name">{drill.name}</div>
+                    <div class="drill-card-desc">{drill.name}</div>
+                    <div class="drill-card-footer">
+                        <Stars level={drill.level} />
+                    </div>
+                </div>
+            ))
+            }
+        </>
+    );
+}
+
 export function DRAGGABLE_DRILL({ drillSettings }) {
     const drillRef = useRef(null);
 
@@ -147,6 +198,21 @@ export function DRAGGABLE_DRILL({ drillSettings }) {
     );
 }
 
+export function SIMPLE_DRILL_CARD({ drill }) {
+    return (
+        <div className="drill-card">
+            <div className="drill-card-top">
+                <TypeBadge type={drill.type} />
+            </div>
+            <div className="drill-card-name">{drill.name}</div>
+            <div className="drill-card-name">{drill.description}</div>
+            <div className="drill-card-footer">
+                <Stars level={drill.level} />
+            </div>
+        </div>
+    );
+}
+
 export const CALENDAR = forwardRef(({ 
     onSessionClick, 
     events, 
@@ -158,7 +224,8 @@ export const CALENDAR = forwardRef(({
     selectedCoaches, setSelectedCoaches,
     selectedPlayers, setSelectedPlayers,
     handleDelete,
-    currentUser
+    currentUser,
+    setIsDraggingEvent
     }, ref) => {
 
     const todayStart = DateTime.now().startOf('week').minus({ days: 1 });
@@ -175,27 +242,35 @@ export const CALENDAR = forwardRef(({
     const [isAnimating, setIsAnimating] = useState(false);
 
     async function pushSession({ event, sessionSettings }) {
-        const { data: session, error: sessionError } = await supabase
+        if (!event || !event.start) return;
+
+        const start = DateTime.fromJSDate(event.start);
+        const end = event.end
+            ? DateTime.fromJSDate(event.end)
+            : start.plus({ hours: 1 });
+
+        const durationStr = end.diff(start).toFormat('hh:mm:ss');
+
+        const { data, error } = await supabase
             .from('sessions')
             .insert([{ 
                 name: sessionSettings.name, 
-                duration: sessionSettings.duration, 
+                duration: durationStr, 
                 notes: sessionSettings.notes, 
-                time: sessionSettings.time 
+                start_datetime: start.toISO(),
+                end_datetime: end.toISO()
             }])
             .select()
             .single();
 
-        if (session) {
-            const sessionID = session.id;
-
+        if (data) {
             const sessionCoaches = selectedCoaches.map(coachID => ({
-                session_id: sessionID,
+                session_id: data.id,
                 coach_id: coachID
             }));
 
             const sessionPlayers = selectedPlayers.map(playerID => ({
-                session_id: sessionID,
+                session_id: data.id,
                 player_id: playerID
             }));
 
@@ -204,9 +279,9 @@ export const CALENDAR = forwardRef(({
                 sessionPlayers.length > 0 && supabase.from('session_players').insert(sessionPlayers)
             ]);
 
-            event.setProp('id', sessionID);
+            event.setProp('id', data.id);
         } else {
-            console.log(sessionError);
+            console.log(error);
         }
     }
 
@@ -228,6 +303,26 @@ export const CALENDAR = forwardRef(({
                 duration: newDuration
             })
             .eq('avail_id', event.id);
+
+        if (error) console.error(error.message);
+    }
+
+    async function updateSessionTimes(event) {
+        if (!event.id || !event.start || !event.end) return;
+
+        const start = DateTime.fromJSDate(event.start);
+        const end = DateTime.fromJSDate(event.end);
+
+        const newDuration = end.diff(start).toFormat('hh:mm:ss');
+
+        const { error } = await supabase
+            .from('sessions')
+            .update({
+                duration: newDuration,
+                start_datetime: start.toISO(),
+                end_datetime: end.toISO()                
+            })
+            .eq('id', event.id);
 
         if (error) console.error(error.message);
     }
@@ -259,6 +354,18 @@ export const CALENDAR = forwardRef(({
         if (data) {
             event.setProp('id', data.avail_id);
         }
+    }
+
+    async function deleteAvailablity( event ) {
+        console.log("del called", event);
+        if (!event || event.extendedProps.type === 'session') return;
+
+        const { error } = await supabase
+            .from('coach_availability')
+            .delete()
+            .eq('avail_id', event.id);
+
+        if (!error) event.remove();
     }
     
     return (
@@ -337,15 +444,9 @@ export const CALENDAR = forwardRef(({
                         if (info.event.extendedProps.type === 'availability') {
                             pushAvailability({ event: info.event, coachId: currentUser.id});
                         } else {
-                            const startTime = info.event.start.toISOString();
-                            const tempID = "temp-" + Date.now();
-                            info.event.setProp("id", tempID);
                             const sessionData = {
-                                id: tempID,
                                 name: info.event.title,
-                                duration: Interval.fromDateTimes(info.event.start, info.event.end).toDuration().toFormat('hh:mm'),
                                 notes: info.event.extendedProps.notes || "",
-                                time: startTime
                             }
                             pushSession({ event: info.event, sessionSettings: sessionData });
                         }
@@ -353,13 +454,41 @@ export const CALENDAR = forwardRef(({
                     eventDrop={(info) => {
                         if (info.event.extendedProps.type === 'availability') {
                             updateAvailability(info.event);
+                        } else if (info.event.extendedProps.type === 'session') {
+                            updateSessionTimes(info.event);
                         }
                     }}
                     eventResize={(info) => {
                         if (info.event.extendedProps.type === 'availability') {
                             updateAvailability(info.event);
+                        } else if (info.event.extendedProps.type === 'session') {
+                            updateSessionTimes(info.event);
                         }
                     }}
+                    eventDragStart={(info) => {
+                        if (info.event.extendedProps.type === 'session') return;
+
+                        setIsDraggingEvent(true);
+                    }}
+                    eventDragStop={(info) => {
+                        setIsDraggingEvent(false);
+                        if (info.event.extendedProps.type === 'session') return;
+
+                        const delArea = document.getElementById('calendar-del-area');
+                        if (!delArea) return;
+                        const rect = delArea.getBoundingClientRect();
+
+                        const inDelArea = 
+                            info.jsEvent.clientX >= rect.left &&
+                            info.jsEvent.clientX <= rect.right &&
+                            info.jsEvent.clientY >= rect.top &&
+                            info.jsEvent.clientY <= rect.bottom;
+
+                        if (inDelArea && info.event.extendedProps.type === 'availability') {
+                            deleteAvailablity(info.event);
+                        }
+                    }}
+
                 />
             </div>
         </div>

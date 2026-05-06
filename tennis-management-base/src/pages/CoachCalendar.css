@@ -290,43 +290,129 @@
   background-color: #dddddd;
 }
 
-
 .session-people, .session-drill {
     text-align: left;
-  font-family: 'DM Sans Light', sans-serif;
-  background-color: white;
-  
-  border: 2px solid var(--content-input-border-color);
-  padding: 8px;
-  border-radius: 8px;
-  width: 100%;
-  color: var(--content-input-placeholder-color);
-  font-size: small;
+    font-family: 'DM Sans Light', sans-serif;
+    background-color: white;
+
+    border: 2px solid var(--content-input-border-color);
+    padding: 8px;
+    border-radius: 8px;
+    width: 100%;
+    color: var(--content-input-placeholder-color);
+    font-size: small;
 }
 
-#session-editor-middle-left {
-    display: grid !important;
-    grid-template-areas:
-        'session-editor-name'
-        'session-editor-duration'
-        'session-editor-notes'
-        'session-editor-people';
-    grid-template-rows: 30px 30px 80px 50% !important;
-    gap: 35px;
+.calendar-trash-zone {
+    width: 200px;
+    height: 70px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease-in-out;
+    
+    position: absolute;
+    bottom: 20px;
+    left: 10px;
+    z-index: 99; 
+    
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none; 
 }
 
-#session-editor-name {
-    grid-area: session-editor-name;
+.calendar-trash-zone .trash-label {
+    font-family: 'Bebas', sans-serif;
+    font-size: 1.1rem;
+    color: #999;
+    transition: color 0.2s ease-in-out;
 }
 
-#session-editor-duration {
-    grid-area: session-editor-duration;
+.calendar-trash-zone.active-dragging {
+    background-color: color-mix(in srgb, var(--danger-bg-color), transparent 10%) !important;
+    border: 2px dashed var(--danger-border-color) !important;
+    opacity: 1 !important;
+    transform: scale(1.01);
 }
 
-#session-editor-notes {
-    grid-area: session-editor-notes;
+.calendar-trash-zone.active-dragging .trash-label {
+    color: #e74c3c !important;
+    animation: pulse 1s infinite alternate;
 }
 
-#session-editor-people {
-    grid-area: session-editor-people;
+@keyframes pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.03); }
+}
+
+#session-creator-middle {
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+#session-creator-middle-left, #session-creator-middle-right {
+    width: 50%;
+    flex: 1;
+}
+
+
+
+#session-creator.content-box {
+    display: grid;
+    grid-template-rows: 40px 1fr;
+    overflow: auto; 
+}
+
+.content-header {
+    margin: 0;
+    padding-bottom: 10px;
+}
+
+#session-creator-middle {
+    gap: 10px;
+    min-height: 0; 
+    height: 100%;
+}
+
+#session-creator-middle-left, 
+#session-creator-middle-right {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+
+}
+
+#drill-library-container {
+    flex: 1;
+    overflow-y: auto;
+    background-color: white;
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 8px;
+    padding: 10px;
+    gap: 10px;
+}
+
+#add-drill-container {
+    width: 100%;
+    height: 100%;
+    background-color: #00000050;
+    position: absolute;
+    z-index: 99;
+    margin: -20px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#session-drill-library {
+    width: 70%;
+    height: 80%;
+    display: flex;
+    flex-direction: column;
+    animation: calendar-entry-fade 0.3s ease-in;
 }
