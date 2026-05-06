@@ -1,3 +1,5 @@
+// COMPONENTS FOR REGISTER AND LOGIN PAGES
+
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 
