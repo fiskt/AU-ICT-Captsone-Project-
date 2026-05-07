@@ -8,6 +8,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
+    const sessionEditorRef = useRef(null);
+    const drillLibraryRef = useRef(null);
+
     // current user
     let [currentUser, setCurrentUser] = useState();
 
@@ -496,7 +499,7 @@ useEffect(() => {
                 <div id="session-creator-middle">
                     <div id="session-creator-middle-left">
                         <TYPING_INPUT 
-                            label="NAME" 
+                            label="NAME *" 
                             num_rows="1" 
                             input_id="session-name-creator" 
                             box_w="100%" box_h="30px" 
@@ -516,7 +519,7 @@ useEffect(() => {
                             onChange={(val) => updateSessionField('sessionNotes', val)}
                         />
                         <div class="input-container">
-                            <span class="input-container-label">PEOPLE</span>
+                            <span class="input-container-label">PEOPLE *</span>
                             <div class="input-box-wrapper session-people">
                                 <PEOPLE_SELECTOR role="COACHES" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
                                 <PEOPLE_SELECTOR role="PLAYERS" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
@@ -525,7 +528,7 @@ useEffect(() => {
                     </div>
                     <div id="session-creator-middle-right">
                         <div class="input-container">
-                            <span class="input-container-label">SESSION DRILLS</span>
+                            <span class="input-container-label">DRILLS</span>
                             <div class="drill-library-container">
                                 <SESSION_CREATOR_DRILLS
                                     selectedDrills={selectedDrills}
@@ -610,72 +613,82 @@ useEffect(() => {
             
             {/* Session editor */}
             { selectedSession && showSessionEditor && (
-                <div id="session-editor-container">
-                    <div class="content-box" id="session-editor">
-                        <div class="content-box-top">
-                            <div class="content-box-top-left">
+                <div 
+                    id="session-editor-container" 
+                    onClick={(e) => {
+                        if (sessionEditorRef.current && !sessionEditorRef.current.contains(e.target)) {
+                            setShowSessionEditor(false);
+                            setSelectedSession(null);
+                        }
+                    }}
+                >
+                    <div id="session-editor" ref={sessionEditorRef}>
+                            <div id="session-editor-top-left">
                                 <h2 id="session-editor-header">Session Editor</h2>
                             </div>
-                            <div class="content-box-top-middle"></div>
-                            <div class="content-box-top-right">
+                            <div id="session-editor-top-right">
                                 <button id="close-session-editor" onClick={() => {
                                     setShowSessionEditor(false);
                                     setSelectedSession(null);
                                 }}>Close</button>
                             </div>
-                        </div>
-                        <div class="content-box-middle">
-                            <div class="content-box-middle-left">
-                                <TYPING_INPUT 
-                                    label="NAME" 
-                                    num_rows="1" 
-                                    input_id="session-name-creator" 
-                                    box_w="100%" box_h="30px" 
-                                    sample_txt="Session name"
-                                    value={tempSession?.name || ""}
-                                    onChange={(val) => 
-                                        setTempSession({ ...tempSession, name: val })
-                                    }
-                                    id="session-editor-name"
-                                />
-                                <TYPING_INPUT 
-                                    label="NOTES" 
-                                    num_rows="6" 
-                                    input_id="session-notes-creator" 
-                                    box_w="100%" box_h="80px" 
-                                    sample_txt="Session notes" 
-                                    value={tempSession?.notes || ""}
-                                    onChange={(val) => 
-                                        setTempSession({ ...tempSession, notes: val })
-                                    }
-                                    id="session-editor-notes"
-                                />
-                                <div class="input-container" id="session-editor-people">
-                                    <span class="input-container-label">PEOPLE</span>
-                                    <div class="input-box-wrapper session-people">
-                                        <PEOPLE_SELECTOR 
-                                            role="COACHES" people={coaches} 
-                                            selectedPeople={editedSessionCoaches} 
-                                            setSelectedPeople={setEditedSessionCoaches}  
-                                        />
-                                        <PEOPLE_SELECTOR 
-                                            role="PLAYERS" people={players} 
-                                            selectedPeople={editedSessionPlayers} 
-                                            setSelectedPeople={setEditedSessionPlayers} 
-                                        />
+
+                            <div id="session-editor-middle-left">
+                                <div id="session-editor-middle-left-left">
+                                    <TYPING_INPUT 
+                                        label="NAME *" 
+                                        num_rows="1" 
+                                        input_id="session-name-creator" 
+                                        box_w="100%" box_h="30px" 
+                                        sample_txt="Session name"
+                                        value={tempSession?.name || ""}
+                                        onChange={(val) => 
+                                            setTempSession({ ...tempSession, name: val })
+                                        }
+                                        id="session-editor-name"
+                                    />
+                                    <TYPING_INPUT 
+                                        label="NOTES" 
+                                        num_rows="6" 
+                                        input_id="session-notes-creator" 
+                                        box_w="100%" box_h="80px" 
+                                        sample_txt="Session notes" 
+                                        value={tempSession?.notes || ""}
+                                        onChange={(val) => 
+                                            setTempSession({ ...tempSession, notes: val })
+                                        }
+                                        id="session-editor-notes"
+                                    />
+                                </div>
+                                <div id="session-editor-middle-left-right">
+                                    <div class="input-container" id="session-editor-people-container">
+                                        <span class="input-container-label">PEOPLE *</span>
+                                        <div class="input-box-wrapper session-people" id="session-editor-people">
+                                            <PEOPLE_SELECTOR 
+                                                role="COACHES" people={coaches} 
+                                                selectedPeople={editedSessionCoaches} 
+                                                setSelectedPeople={setEditedSessionCoaches}  
+                                            />
+                                            <PEOPLE_SELECTOR 
+                                                role="PLAYERS" people={players} 
+                                                selectedPeople={editedSessionPlayers} 
+                                                setSelectedPeople={setEditedSessionPlayers} 
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="content-box-middle-right">
-                                <div class="input-container" id="session-editor-drills">
+
+                            <div id="session-editor-middle-right">
+                                <div class="input-container" id="session-editor-drills-container">
                                     <span class="input-container-label">DRILLS</span>
-                                    <div class="drill-library-container">
+                                    <div id="session-editor-drills">
                                         <SESSION_CREATOR_DRILLS
                                             selectedDrills={editedSessionDrills}
                                             removeDrillFromSession={removeDrillFromSelectedSession}
                                         />
                                         <button 
-                                            id="session-creator-add-drill-btn"
+                                            id="session-editor-add-drill-btn"
                                             onClick={() => setShowAddDrill(true)}
                                         >
                                             Add Drill
@@ -683,16 +696,13 @@ useEffect(() => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="content-box-bottom">
-                            <div class="content-box-bottom-left">
+
+                            <div id="session-editor-bottom-left">
                                 <button id="save-session-changes btn" onClick={saveSessionChanges}>Save Changes</button>
                             </div>
-                            <div class="content-box-bottom-middle"></div>
-                            <div class="content-box-bottom-right">
+                            <div id="session-editor-bottom-right">
                                 <button class="delete-btn" id="delete-session" onClick={sessionDeleteConfirmation}>Delete</button>
                             </div>
-                        </div>
                     </div>
                 </div>
             )}

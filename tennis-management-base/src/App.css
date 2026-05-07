@@ -247,10 +247,12 @@ btn, button:hover {
 }
 
 .input-container-label {
-  color: var(--content-subhead-color);
-  text-align: left;
-  width: 100%;
+  text-align: center;
   font-family: 'DM Mono Light', sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--content-subhead-color);
 }
 
 .input-box-wrapper {

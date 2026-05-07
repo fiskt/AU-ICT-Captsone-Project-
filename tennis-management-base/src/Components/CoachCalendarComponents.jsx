@@ -391,15 +391,22 @@ export const CALENDAR = forwardRef(({
                         end: 'dayGridMonth,timeGridWeek'
                     }}
                     eventClassNames={(arg) => {
+                        const classes = [];
+
+                        const duration = arg.event.end - arg.event.start;
+                        if (duration === 1800000) {
+                            classes.push('short-event');
+                        }
+
                         if (arg.event.extendedProps.type === 'availability') {
-                            return ['availability-event'];
+                            classes.push('availability-event');
                         } 
 
                         if (selectedSession && arg.event.id === selectedSession.id) {
-                            return ['selected-session'];
+                            classes.push('selected-session');
                         } 
                         
-                        return [];
+                        return classes;
                     }}
                     datesSet={(dateInfo) => {
                         setIsAnimating(false);
@@ -433,7 +440,7 @@ export const CALENDAR = forwardRef(({
 
                     }
                     displayEventTime={true}
-                    displayEventEnd={true}
+                    displayEventEnd={false}
                     editable={true}
                     eventReceive = {(info) => {    
                         if (info.event.extendedProps.type === 'availability') {
@@ -483,7 +490,6 @@ export const CALENDAR = forwardRef(({
                             deleteAvailablity(info.event);
                         }
                     }}
-
                 />
             </div>
         </div>
