@@ -197,15 +197,13 @@
     justify-content: center;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+
+    animation: calendar-entry-fade 0.3s ease-in;
 }
 
 #session-editor {
     width: 70%;
     height: 80%;
-    display: flex;
-    flex-direction: column;
-    animation: calendar-entry-fade 0.3s ease-in;
 }
 
 #session-editor-header {
@@ -261,33 +259,6 @@
 .delete-avail-btn {
     font-size: 50%;
     text-align: center;
-}
-
-#content-menu {
-  width: 100px;
-  position: fixed;
-  z-index: 200;
-  background-color: white;
-  font-family: 'DM Mono Light', sans-serif;
-  font-size: 70%;
-  text-align: center;
-  list-style: none;
-  padding: 5px;
-  border: 2px solid var(--content-input-border-color);
-  border-radius: 8px;
-}
-
-#content-menu li {
-  text-decoration: none;
-  cursor: pointer;
-  border: 2px solid gray;
-  padding: 2px;
-  border-radius: 5px;
-  margin: 5px 0 5px 0;
-}
-
-#content-menu li:hover {
-  background-color: #dddddd;
 }
 
 .session-people, .session-drill {
@@ -349,15 +320,12 @@
 #session-creator-middle {
     display: flex;
     flex-direction: row;
-    overflow: hidden;
 }
 
 #session-creator-middle-left, #session-creator-middle-right {
     width: 50%;
     flex: 1;
 }
-
-
 
 #session-creator.content-box {
     display: grid;
@@ -370,23 +338,7 @@
     padding-bottom: 10px;
 }
 
-#session-creator-middle {
-    gap: 10px;
-    min-height: 0; 
-    height: 100%;
-}
-
-#session-creator-middle-left, 
-#session-creator-middle-right {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
-
-}
-
-#drill-library-container {
-    flex: 1;
+.drill-library-container {
     overflow-y: auto;
     background-color: white;
     border: 2px solid var(--content-input-border-color);
@@ -400,7 +352,7 @@
     height: 100%;
     background-color: #00000050;
     position: absolute;
-    z-index: 99;
+    z-index: 101;
     margin: -20px;
     align-items: center;
     justify-content: center;

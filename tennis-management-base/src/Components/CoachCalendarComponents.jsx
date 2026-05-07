@@ -150,64 +150,52 @@ export function DRAGGABLE_AVAILABILITY({ availSettings }) {
     );
 }
 
-export function DRILL_LIBRARY({ drills }) {
+export function SESSION_CREATOR_DRILLS({ selectedDrills, removeDrillFromSession }) {
     return (
-        <>  
-            {
-            drills.map((drill) => (
-                <div class="drill-card">
-                    <div class="drill-card-top">
-                        <TypeBadge tyoe={drill.type} />
-                    </div>
-                    <div class="drill-card-name">{drill.name}</div>
-                    <div class="drill-card-desc">{drill.name}</div>
-                    <div class="drill-card-footer">
-                        <Stars level={drill.level} />
-                    </div>
+        <>
+            {selectedDrills.map((drill, index) => (
+                <div key={drill.instanceId || `${drill.id}-${index}`}>
+                    <SIMPLE_DRILL_CARD 
+                        drill={drill} 
+                        removeDrillFromSession={removeDrillFromSession}
+                        isSelectedDrill={true}
+                    />
                 </div>
-            ))
-            }
+            ))}
         </>
     );
 }
 
-export function DRAGGABLE_DRILL({ drillSettings }) {
-    const drillRef = useRef(null);
-
-    useEffect(() => {
-        let drill = new Draggable(drillRef.current, {
-            eventData: () => {
-                return {
-                    drillName: drillSettings.drillName,
-                    drillDuration: drillSettings.drillDuration,
-                    drillDescription: drillSettings.drillDescription,
-                    drillTags: drillSettings.drillTags
-                };
-            }
-        })
-        return () => drill.destroy();
-    }, [drillSettings]);
-
+export function SIMPLE_DRILL_CARD({ drill, addDrillToSession, removeDrillFromSession, isSelectedDrill }) {
     return (
-        <div class="input-container">
-            <div ref={drillRef} class="draggable-icon session-icon">
-                <span>{drillSettings.drillName}</span>
-                <span>{drillSettings.drillDuration}</span>
-            </div>
-        </div>
-    );
-}
-
-export function SIMPLE_DRILL_CARD({ drill }) {
-    return (
-        <div className="drill-card">
+        <div 
+            className="drill-card" 
+            onClick={() => addDrillToSession && addDrillToSession(drill)}
+            key={drill.id}
+        >
             <div className="drill-card-top">
-                <TypeBadge type={drill.type} />
+                {!isSelectedDrill && (
+                    <TypeBadge type={drill.type} />
+                )}
+                
+                
             </div>
             <div className="drill-card-name">{drill.name}</div>
-            <div className="drill-card-name">{drill.description}</div>
+            {!isSelectedDrill && (
+                <div className="drill-card-name">{drill.description}</div>
+            )}
             <div className="drill-card-footer">
                 <Stars level={drill.level} />
+                {isSelectedDrill && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation;
+                            removeDrillFromSession(drill.instanceId);
+                        }}
+                    >
+                        Remove
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -223,7 +211,7 @@ export const CALENDAR = forwardRef(({
     toggleTooltips, tooltipsEnabled, 
     selectedCoaches, setSelectedCoaches,
     selectedPlayers, setSelectedPlayers,
-    handleDelete,
+    selectedDrills,
     currentUser,
     setIsDraggingEvent
     }, ref) => {
@@ -274,9 +262,16 @@ export const CALENDAR = forwardRef(({
                 player_id: playerID
             }));
 
+            const sessionDrills = selectedDrills.map((drill, index) => ({
+                session_id: data.id,
+                drill_id: drill.id,
+                order: index
+            }));
+
             await Promise.all([
                 sessionCoaches.length > 0 && supabase.from('session_coaches').insert(sessionCoaches),
-                sessionPlayers.length > 0 && supabase.from('session_players').insert(sessionPlayers)
+                sessionPlayers.length > 0 && supabase.from('session_players').insert(sessionPlayers),
+                sessionDrills.length > 0 && supabase.from('session_drills').insert(sessionDrills)
             ]);
 
             event.setProp('id', data.id);

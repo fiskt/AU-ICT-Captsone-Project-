@@ -184,6 +184,7 @@ btn, button:hover {
     width: 100%;
 }
 
+
 .content-box {
     background-color: var(--content-bg-color);
     border: 2px solid var(--topbar-accent-color);
