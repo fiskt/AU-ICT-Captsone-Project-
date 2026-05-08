@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import '../App.css';
 import './DrillLibrary.css';
-import { createClient } from '@supabase/supabase-js';
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+import { supabase } from '../supabaseClient';
+import { LOADING_OVERLAY } from '../Components/SharedComponents';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const DIFFICULTY_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Elite'];
