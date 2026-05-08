@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient'; // Ensure this path matches your folder structure
 
 export default function Register() {
   const navigate = useNavigate();
@@ -17,6 +18,10 @@ export default function Register() {
     lastName: '',
     email: ''
   });
+
+  // States for database submission and errors
+  const [registerError, setRegisterError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // States for password visibility
   const [showPassword, setShowPassword] = useState(false);
@@ -36,6 +41,7 @@ export default function Register() {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
     setErrors({ ...errors, [e.target.id]: '' }); 
+    setRegisterError(''); // Clear global error on new input
   };
 
   const validateName = (field, value) => {
@@ -59,8 +65,9 @@ export default function Register() {
     return true;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setRegisterError('');
     
     const isFirstNameValid = validateName('firstName', formData.firstName);
     const isLastNameValid = validateName('lastName', formData.lastName);
@@ -69,13 +76,41 @@ export default function Register() {
 
     if (isFirstNameValid && isLastNameValid && isEmailValid && isPasswordValid) {
         if (formData.password !== formData.confirmPassword) {
-            alert("Passwords do not match!");
+            setRegisterError("Passwords do not match!");
             return;
         }
         
-        console.log('Registering:', formData, 'as', role);
-        // Add your Supabase registration call here
-        navigate('/login');
+        setIsSubmitting(true);
+
+        try {
+          // Supabase Registration
+          const { data, error } = await supabase.auth.signUp({
+            email: formData.email,
+            password: formData.password,
+            options: {
+              data: {
+                first_name: formData.firstName,
+                last_name: formData.lastName,
+                role: role // 'Coach' or 'Player'
+              }
+            }
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          // reminder for me: turn on email confirmation in Supabase, 
+          // alert the user to check their email here.
+          alert("Registration successful! You can now log in.");
+          navigate('/login');
+
+        } catch (error) {
+          // Catch errors like "User already exists"
+          setRegisterError(error.message);
+        } finally {
+          setIsSubmitting(false);
+        }
     }
   };
 
@@ -100,6 +135,13 @@ export default function Register() {
             Player
           </button>
         </div>
+
+        {/* Display Supabase global errors here */}
+        {registerError && (
+          <div style={{ backgroundColor: '#fce8e6', color: '#d93025', padding: '10px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px', textAlign: 'center', fontWeight: '600' }}>
+            {registerError}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="name-row" style={{ display: 'flex', gap: '15px' }}>
@@ -203,7 +245,9 @@ export default function Register() {
             </div>
           </div>
 
-          <button type="submit" className="submit-btn">Register</button>
+          <button type="submit" className="submit-btn" disabled={isSubmitting}>
+            {isSubmitting ? 'Registering...' : 'Register'}
+          </button>
         </form>
 
         <div className="register-prompt">
