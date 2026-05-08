@@ -6,7 +6,7 @@ import logo from '../assets/logo.png';
 
 export default function Layout() {
   return (
-    <>
+    <div className="login-register-page">
       <div className="bg-image-wrapper">
         <img src={bgImage} alt="Tennis court background" className="bg-image" />
       </div>
@@ -21,9 +21,8 @@ export default function Layout() {
       </header>
 
       <main>
-        {/* The Outlet renders whatever page (Login/Register) is currently active */}
         <Outlet />
       </main>
-    </>
+    </div>
   );
 }
