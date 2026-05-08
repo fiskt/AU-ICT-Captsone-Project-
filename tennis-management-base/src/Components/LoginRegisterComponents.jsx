@@ -1,5 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import '../pages/LoginRegister.css'
 
 import bgImage from '../assets/background.webp';
 import logo from '../assets/logo.png';
