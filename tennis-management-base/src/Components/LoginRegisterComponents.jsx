@@ -15,7 +15,7 @@ export default function Layout() {
         <div className="logo-container">
           <img src={logo} alt="HPT Logo" className="logo-image" />
           <div className="logo-text">
-            <span className="bold-title">HPT</span>
+            <span className="bold-title"></span>
           </div>
         </div>
       </header>
