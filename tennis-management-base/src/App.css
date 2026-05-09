@@ -338,3 +338,25 @@ btn, button:hover {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+@media (max-width: 768px) {
+    #main-content-wrapper {
+        top: 70px;
+        left: 0;
+        padding: 0 !important;
+    }
+
+    #topbar {
+      left: 0;
+      width: 100%;
+    }
+
+    #sidebar {
+        display: none; 
+    }
+
+    #main-content-wrapper {
+        width: 100%;
+        padding: 10px;
+    }
+}

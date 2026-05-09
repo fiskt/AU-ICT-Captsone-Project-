@@ -106,9 +106,9 @@ export function DRAGGABLE_SESSION({ sessionSettings }) {
     }, [sessionSettings]);
 
     return (
-        <div class="input-container">
+        <div class="input-container" id="draggable-session-container">
             <span class="input-container-label">SESSION</span>
-            <div class="input-box-wrapper" id="draggable-session-container">
+            <div class="input-box-wrapper" id="draggable-session">
                 <div ref={sessionRef} class="draggable-icon session-icon">
                     <span>00:00 - 00:00</span>
                     <span>{sessionSettings.sessionName}</span>
@@ -213,8 +213,19 @@ export const CALENDAR = forwardRef(({
     selectedPlayers, setSelectedPlayers,
     selectedDrills,
     currentUser,
-    setIsDraggingEvent
+    setIsDraggingEvent,
+    isMobile
     }, ref) => {
+
+    const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
+    const headerToolBar = isMobile 
+        ? {
+            start: 'prev,next today', 
+            end: 'dayGridMonth,timeGridWeek,timeGridDay'
+        } : {
+            start: 'prev,next today', 
+            end: 'dayGridMonth,timeGridWeek'
+        }
 
     const todayStart = DateTime.now().startOf('week').minus({ days: 1 });
     const currentWeekStart = activeStart || todayStart;
@@ -381,15 +392,12 @@ export const CALENDAR = forwardRef(({
                     events={events}
                     eventOverlap={false}
                     selectOverlap={false}
-                    initialView="timeGridWeek"
+                    initialView={initialView}
                     eventClick={(info) => {
                         if (info.event.extendedProps.type === 'availability') return;
                         onSessionClick(info.event);
                     }}
-                    headerToolbar={{
-                        start: 'prev,next', 
-                        end: 'dayGridMonth,timeGridWeek'
-                    }}
+                    headerToolbar={headerToolBar}
                     eventClassNames={(arg) => {
                         const classes = [];
 
@@ -417,7 +425,8 @@ export const CALENDAR = forwardRef(({
                         }, 10);
                     }}
                     eventDidMount={(info) => {
-                      
+                        if (isMobile) return;
+                        
                         if (tooltipsEnabled && info.event.extendedProps.type !== 'availability') {
                             const duration = info.event.extendedProps.duration || "-";
                             const notes = info.event.extendedProps.notes || "No notes";
@@ -436,10 +445,9 @@ export const CALENDAR = forwardRef(({
                                 theme: 'light'
                             })
                         }
+                        }
                     }
-
-                    }
-                    displayEventTime={true}
+                    displayEventTime={!isMobile}
                     displayEventEnd={false}
                     editable={true}
                     eventReceive = {(info) => {    
@@ -454,6 +462,8 @@ export const CALENDAR = forwardRef(({
                         }
                     }}
                     eventDrop={(info) => {
+                        if (isMobile) return;
+
                         if (info.event.extendedProps.type === 'availability') {
                             updateAvailability(info.event);
                         } else if (info.event.extendedProps.type === 'session') {
@@ -461,6 +471,8 @@ export const CALENDAR = forwardRef(({
                         }
                     }}
                     eventResize={(info) => {
+                        if (isMobile) return;
+
                         if (info.event.extendedProps.type === 'availability') {
                             updateAvailability(info.event);
                         } else if (info.event.extendedProps.type === 'session') {
@@ -468,11 +480,15 @@ export const CALENDAR = forwardRef(({
                         }
                     }}
                     eventDragStart={(info) => {
+                        if (isMobile) return;
+
                         if (info.event.extendedProps.type === 'session') return;
 
                         setIsDraggingEvent(true);
                     }}
                     eventDragStop={(info) => {
+                        if (isMobile) return;
+
                         setIsDraggingEvent(false);
                         if (info.event.extendedProps.type === 'session') return;
 

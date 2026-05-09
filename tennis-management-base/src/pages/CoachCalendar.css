@@ -42,13 +42,6 @@
 
 #draggable-session-container {
     width: 100%;
-    height: 90px;
-    padding: 10px;
-    background-color: white;
-    border: 2px solid var(--content-input-border-color);
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
 }
 
 .session-icon {
@@ -67,10 +60,6 @@
     cursor: grab;
 }
 
-#session-creator-input-container {
-    height: 75%;
-    overflow-y: auto;
-}
 
 #session-editor-input-container {
     height: 100%;
@@ -186,11 +175,6 @@
     padding: 3px;
 }
 
-.session-people {
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-}
 
 .availability-event {
     background-color: color-mix(in srgb, var(--sidebar-bg-color), transparent 80%);
@@ -243,18 +227,6 @@
     text-align: center;
 }
 
-.session-people, .session-drill {
-    text-align: left;
-    font-family: 'DM Sans Light', sans-serif;
-    background-color: white;
-
-    border: 2px solid var(--content-input-border-color);
-    padding: 8px;
-    border-radius: 8px;
-    width: 100%;
-    font-size: small;
-}
-
 .session-people span {
     color: black;
 }
@@ -302,11 +274,6 @@
     to { transform: scale(1.03); }
 }
 
-#session-creator-middle {
-    display: flex;
-    flex-direction: row;
-}
-
 #session-creator-middle-left, #session-creator-middle-right {
     width: 50%;
     flex: 1;
@@ -323,7 +290,7 @@
     padding-bottom: 10px;
 }
 
-.drill-library-container {
+.drill-library-container .session-people-container {
     overflow-y: auto;
     background-color: white;
     border: 2px solid var(--content-input-border-color);
@@ -374,11 +341,11 @@
     height: 80%;
 
     grid-template-areas: 
-        'session-editor-top-left session-editor-top-right'
-        'session-editor-middle-left session-editor-middle-right'
-        'session-editor-bottom-left session-editor-bottom-right';
+        'session-editor-top-left session-editor-top-left session-editor-top-right'
+        'session-editor-middle-left session-editor-middle-middle session-editor-middle-right'
+        'session-editor-bottom-left session-editor-bottom-middle session-editor-bottom-right';
 
-    grid-template-columns: 50% 50%;
+    grid-template-columns: 15% 35% 50%;
     grid-template-rows: 10% 80% 10%;
     display: grid;
 
@@ -396,83 +363,177 @@
 }
 
 #session-editor-top-left {
-    grid-area: 'session-editor-top-left';
+    grid-area: session-editor-top-left;
     display: flex;
     justify-content: left;
     align-items: center;
 }
 
 #session-editor-top-right {
-    grid-area: 'session-editor-top-right';
+    grid-area: session-editor-top-right;
     display: flex;
     justify-content: right;
     align-items: center;
 }
 
 #session-editor-middle-left {
-    grid-area: 'session-editor-middle-left';
-    display: grid;
-    grid-template-areas: 'session-editor-middle-left-left session-editor-middle-left-right';
-    grid-template-columns: 35% 65%;
-}
-
-#session-editor-middle-left-left {
-    grid-area: 'session-editor-middle-left-left';
+    grid-area: session-editor-middle-left;
     display: flex;
     flex-direction: column;
 }
 
-#session-editor-middle-left-right {
-    grid-area: 'session-editor-middle-left-right';
+#session-editor-middle-middle {
+    grid-area: session-editor-middle-middle;
     display: flex;
 }
 
 #session-editor-middle-right {
-    grid-area: 'session-editor-middle-right';
+    grid-area: session-editor-middle-right;
     display: flex;
 }
 
 #session-editor-bottom-left {
-    grid-area: 'session-editor-bottom-left';
+    grid-area: session-editor-bottom-left;
     display: flex;
     justify-content: left;
     align-items: center;
 }
 
+#session-editor-bottom-middle {
+    grid-area: session-editor-bottom-middle;
+}
+
 #session-editor-bottom-right {
-    grid-area: 'session-editor-bottom-right';
+    grid-area: session-editor-bottom-right;
     display: flex;
     justify-content: right;
     align-items: center;
 }
 
-#session-editor-drills-container {
+#session-editor-drills-container, #session-editor-people-container,
+#session-creator-drills-container, #session-creator-people-container {
     width: 100%;
     height: 100%;
 }
 
-#session-editor-people-container {
-    width: 100%;
-    height: 100%;
-}
-
-#session-editor-people {
-    height: 100%;
-}
-
-#session-editor-drills {
-    overflow-y: auto;
+#session-editor-drills, #session-editor-people,
+#session-creator-drills, #session-creator-people {
+    overflow-y: auto !important;
     background-color: white;
     border-radius: 8px;
     border: 2px solid var(--content-input-border-color);
     padding: 10px;
 }
 
-#session-editor-drills #session-editor-add-drill-btn {
+#session-editor-drills #session-editor-add-drill-btn,
+#session-creator-drills #session-creator-add-drill-btn {
     width: 100%;
     height: 40px;
 }
 
 #session-editor-drills > * > div {
     margin-bottom: 10px;
+}
+
+
+#session-creator {
+    height: 100%;
+    width: 35%;
+
+    grid-template-areas: 
+        'session-creator-top session-creator-top'
+        'session-creator-middle-left-top session-creator-middle-right-top'
+        'session-creator-middle-left-bottom session-creator-middle-right-bottom'
+        'session-creator-bottom session-creator-bottom';
+
+    grid-template-columns: 50% 50%;
+    grid-template-rows: 5% auto 65% 15%;
+    display: grid;
+
+    background-color: white;
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 8px;
+
+    padding: 10px;
+}
+
+#session-creator-top {
+    grid-area: session-creator-top;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+}
+
+#session-creator-middle-left-top {
+    grid-area: session-creator-middle-left-top;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+#session-creator-middle-left-bottom {
+    grid-area: session-creator-middle-left-bottom;
+    display: flex;
+    width: 100%;
+}
+
+#session-creator-middle-right-top {
+    grid-area: session-creator-middle-right-top;
+    display: flex;
+    width: 100%;
+}
+
+#session-creator-middle-right-bottom {
+    grid-area: session-creator-middle-right-bottom;
+    display: flex;
+    width: 100%;
+}
+
+#session-creator-bottom {
+    grid-area: session-creator-bottom;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#session-creator-drills-container {
+    width: 100%;
+    height: 100%;
+}
+
+#session-creator-people-container {
+    width: 100%;
+    height: 100%;
+}
+
+#session-creator-drills #session-creator-add-drill-btn {
+    width: 100%;
+    height: 40px;
+}
+
+#session-creator-drills > * > div {
+    margin-bottom: 10px;
+}
+
+@media (max-width: 768px) {
+    #session-creator {
+        display: none;
+    }
+
+    #calendar-box {
+        width: 100%;
+    }
+
+    #calendar-container {
+        height: 100%;
+    }
+
+    .fc-view-harness {
+        height: 100%;
+    }
+}
+
+#mobile-calendar-toolbar {
+    width: 100%;
+    margin-bottom: 20px;
 }
