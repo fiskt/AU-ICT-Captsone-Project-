@@ -214,3 +214,92 @@
     background-color: #d4622e;
     border-color: #d4622e;
 }
+
+.playerSessionHighlight {
+    font-family: 'DM Sans Light', sans-serif;
+    font-size: 14px;
+    color: var(--content-body-color);
+    line-height: 1.8;
+}
+
+.feedbackForm {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.feedbackForm label {
+    font-family: 'DM Mono Light', sans-serif;
+    font-size: 12px;
+    color: var(--content-subhead-color);
+}
+
+.feedbackForm select,
+.feedbackForm textarea {
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 8px;
+    padding: 10px;
+    font-family: 'DM Sans Light', sans-serif;
+}
+
+.feedbackForm textarea {
+    min-height: 90px;
+    resize: none;
+}
+
+.tagList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.positiveTag,
+.warningTag {
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-family: 'DM Sans Light', sans-serif;
+    font-size: 13px;
+}
+
+.positiveTag {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.warningTag {
+    background-color: #ffedd5;
+    color: #9a3412;
+}
+
+.updateBoard {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.updateItem {
+    border: 2px solid var(--topbar-accent-color);
+    background-color: var(--main-bg-color);
+    border-radius: 8px;
+    padding: 14px;
+}
+
+.updateType {
+    font-family: 'DM Mono Light', sans-serif;
+    font-size: 11px;
+    color: var(--accent-color);
+    margin: 0 0 6px 0;
+}
+
+.updateMessage {
+    font-family: 'DM Sans Light', sans-serif;
+    font-size: 13px;
+    color: var(--content-body-color);
+    margin: 0 0 8px 0;
+}
+
+.updateTime {
+    font-family: 'DM Mono Light', sans-serif;
+    font-size: 11px;
+    color: var(--content-subhead-color);
+}
