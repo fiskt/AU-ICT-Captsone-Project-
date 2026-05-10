@@ -765,17 +765,19 @@ useEffect(() => {
                                 </button>
                             </div>
                         </div>
-
-                        <button
-                            onClick={() => mobilePushSession({
-                                sessionSettings: sessionSettings,
-                                currentDay: weekStart,
-                                startTimeStr: mobileSessionStart,
-                                endTimeStr: mobileSessionEnd
-                            })}        
-                
-                        >Add To Calendar</button>
-                        <button onClick={() => setShowMobileSessionCreator(false)}>Cancel</button>
+                        
+                        <div id="mobile-session-creator-bottom">
+                            <button
+                                onClick={() => mobilePushSession({
+                                    sessionSettings: sessionSettings,
+                                    currentDay: weekStart,
+                                    startTimeStr: mobileSessionStart,
+                                    endTimeStr: mobileSessionEnd
+                                })}        
+                    
+                            >Add To Calendar</button>
+                            <button onClick={() => setShowMobileSessionCreator(false)}>Cancel</button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -845,7 +847,7 @@ useEffect(() => {
             )}
             
             {/* Session editor */}
-            { selectedSession && showSessionEditor && (
+            { selectedSession && showSessionEditor && !isMobile && (
                 <div 
                     id="session-editor-container" 
                     onClick={(e) => {
@@ -936,6 +938,124 @@ useEffect(() => {
                             <div id="session-editor-bottom-right">
                                 <button class="delete-btn" id="delete-session" onClick={sessionDeleteConfirmation}>Delete</button>
                             </div>
+                    </div>
+                </div>
+            )}
+
+            {isMobile && showSessionEditor && selectedSession && (
+                <div id="mobile-session-editor-container">
+                    <div id="mobile-session-editor">
+                        <h2 class="content-header">Session Editor</h2>
+                        <TYPING_INPUT 
+                            label="NAME *" 
+                            num_rows="1" 
+                            input_id="session-name-creator" 
+                            box_w="100%" box_h="30px" 
+                            sample_txt="Session name"
+                            value={tempSession?.name || ""}
+                            onChange={(val) => 
+                                setTempSession({ ...tempSession, name: val })
+                            }
+                            id="session-editor-name"
+                        />
+
+                        <TYPING_INPUT 
+                            label="NOTES" 
+                            num_rows="6" 
+                            input_id="session-notes-creator" 
+                            box_w="100%" box_h="80px" 
+                            sample_txt="Session notes" 
+                            value={tempSession?.notes || ""}
+                            onChange={(val) => 
+                                setTempSession({ ...tempSession, notes: val })
+                            }
+                            id="session-editor-notes"
+                        />
+
+                        <div class="input-container">
+                            <span class="input-container-label">TIMES *</span>
+                            <div id="mobile-session-editor-times">
+                                <div class="mobile-session-creator-times-container">
+                                    <p>Start</p>
+                                    <select
+                                        value={selectedSession.start}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setMobileSessionStart(val);
+                                            updateSessionField('sessionStart', val);
+                                        }}
+                                    >
+                                        {mobileSessionCreatorTimes.map(time => (
+                                            <option
+                                                key={time.name}
+                                                value={time.val}
+                                            >
+                                                {time.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div class="mobile-session-creator-times-container">
+                                    <p>End</p>
+                                    <select
+                                        value={selectedSession.end}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setMobileSessionEnd(val);
+                                            updateSessionField('sessionEnd', val);
+                                        }}
+                                    >
+                                        {validEndTimes.map(time => (
+                                            <option
+                                                key={time.name}
+                                                value={time.val}
+                                            >
+                                                {time.name}
+                                            </option>
+                                            
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+            
+                        <div class="input-container" >
+                            <span class="input-container-label">PEOPLE *</span>
+                            <div id="session-editor-people">
+                                <PEOPLE_SELECTOR 
+                                    role="COACHES" people={coaches} 
+                                    selectedPeople={editedSessionCoaches} 
+                                    setSelectedPeople={setEditedSessionCoaches}  
+                                />
+                                <PEOPLE_SELECTOR 
+                                    role="PLAYERS" people={players} 
+                                    selectedPeople={editedSessionPlayers} 
+                                    setSelectedPeople={setEditedSessionPlayers} 
+                                />
+                            </div>
+                        </div>
+
+                        <div class="input-container">
+                            <span class="input-container-label">DRILLS</span>
+                            <div id="session-editor-drills">
+                                <SESSION_CREATOR_DRILLS
+                                    selectedDrills={editedSessionDrills}
+                                    removeDrillFromSession={removeDrillFromSelectedSession}
+                                />
+                                <button 
+                                    id="session-editor-add-drill-btn"
+                                    onClick={() => setShowAddDrill(true)}
+                                >
+                                    Add Drill
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="mobile-editor-creator-bottom">
+                            <button onClick={saveSessionChanges}>Save Changes</button>
+                            <button onClick={() => setShowSessionEditor(false)}>Cancel</button>
+                        </div>
                     </div>
                 </div>
             )}
