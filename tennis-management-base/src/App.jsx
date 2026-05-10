@@ -16,10 +16,26 @@ import OtherUsers from './pages/OtherUsers';
 function App() {
   return (
     <BrowserRouter>
-      <Routes>        
-        <Route path="/Login" element={<Login />} />
-        <Route path="/Register" element={<Register />} />
-      </Routes>
+      <div id="layout">
+        <COACH_SIDEBAR />
+        <TOPBAR />
+        <Routes>        
+          <Route path="/Login" element={<Login />} />
+          <Route path="/Register" element={<Register />} />
+        </Routes>
+        <div id="main-content-wrapper">
+          <main id="main-content">
+            <Routes>
+              <Route path="/CoachDashboard" element={<CoachDashboard />} />
+              <Route path="/CoachCalendar" element={<CoachCalendar />} />
+              <Route path="/PlayerProfile" element={<PlayerProfile />} />
+              <Route path="/DrillLibrary" element={<DrillLibrary />} />
+              <Route path="/Testing" element={<Testing />} />
+              <Route path="/OtherUsers" element={<OtherUsers />} />
+            </Routes>
+          </main>
+        </div>
+      </div>
     </BrowserRouter>
   );
 }
