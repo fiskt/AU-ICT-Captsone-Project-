@@ -5,11 +5,31 @@ import { useState, useRef, useEffect } from 'react';
 
 import { DateTime, Duration } from 'luxon';
 import { createClient } from '@supabase/supabase-js';
+import { useActionData } from 'react-router-dom';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
     const sessionEditorRef = useRef(null);
     const drillLibraryRef = useRef(null);
+
+    // auto save current session inputs in local storage and restore the saved inputs
+    const [sessionSettings, setSessionSettings] = useState(() => {
+        const savedDraft = localStorage.getItem('session_creator_draft');
+        return savedDraft ? JSON.parse(savedDraft) : {
+            sessionName: "Session Name",
+            sessionDuration: "01:00:00",
+            sessionNotes: "",
+            sessionStart: "",
+            sessionEnd: ""
+        };
+    });
+
+      const updateSessionField = (field, value) => {
+        setSessionSettings({
+            ...sessionSettings,
+            [field]: value 
+        });
+    }
 
     // detecting mobile window size
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -36,6 +56,7 @@ export default function CoachCalendar() {
     const [isDraggingEvent, setIsDraggingEvent] = useState(false);
 
     const calendarRef = useRef(null);
+    const [showMobileSessionCreator, setShowMobileSessionCreator] = useState(false);
     const [showSessionEditor, setShowSessionEditor] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
 
@@ -144,6 +165,109 @@ export default function CoachCalendar() {
         toggleEventTooltips ? setToggleEventTooltips(false) : setToggleEventTooltips(true);
         console.log(toggleEventTooltips);
     }
+
+    // Times for mobile session creator 
+    const mobileSessionCreatorTimes = [
+        { name: "05:00", val: "05:00:00" },
+        { name: "05:30", val: "05:30:00" },
+        { name: "06:00", val: "06:00:00" },
+        { name: "06:30", val: "06:30:00" },
+        { name: "07:00", val: "07:00:00" },
+        { name: "07:30", val: "07:30:00" },
+        { name: "08:00", val: "08:00:00" },
+        { name: "08:30", val: "08:30:00" },
+        { name: "09:00", val: "09:00:00" },
+        { name: "09:30", val: "09:30:00" },
+        { name: "10:00", val: "10:00:00" },
+        { name: "10:30", val: "10:30:00" },
+        { name: "11:00", val: "11:00:00" },
+        { name: "11:30", val: "11:30:00" },
+        { name: "12:00", val: "12:00:00" },
+        { name: "12:30", val: "12:30:00" },
+        { name: "13:00", val: "13:00:00" },
+        { name: "13:30", val: "13:30:00" },
+        { name: "14:00", val: "14:00:00" },
+        { name: "14:30", val: "14:30:00" },
+        { name: "15:00", val: "15:00:00" },
+        { name: "15:30", val: "15:30:00" },
+        { name: "16:00", val: "16:00:00" },
+        { name: "16:30", val: "16:30:00" },
+        { name: "17:00", val: "17:00:00" },
+        { name: "17:30", val: "17:30:00" },
+        { name: "18:00", val: "18:00:00" },
+        { name: "18:30", val: "18:30:00" },
+        { name: "19:00", val: "19:00:00" },
+        { name: "19:30", val: "19:30:00" },
+        { name: "20:00", val: "20:00:00" },
+        { name: "20:30", val: "20:30:00" },
+        { name: "21:00", val: "21:00:00" },
+    ];
+
+    async function mobilePushSession({ currentDay, sessionSettings, startTimeStr, endTimeStr }) {
+        if (!sessionSettings) return;
+
+        console.log(sessionSettings);
+
+        const start = DateTime.fromISO(`${currentDay.toISODate()}T${startTimeStr}`);
+        const end = DateTime.fromISO(`${currentDay.toISODate()}T${endTimeStr}`);
+
+        const durationStr = end.diff(start).toFormat('hh:mm:ss');
+
+        const { data, error } = await supabase
+            .from('sessions')
+            .insert([{ 
+                name: sessionSettings.sessionName, 
+                duration: durationStr, 
+                notes: sessionSettings.sessionNotes, 
+                start_datetime: start.toISO(),
+                end_datetime: end.toISO()
+            }])
+            .select()
+            .single();
+
+        if (data) {
+            const sessionCoaches = selectedCoaches.map(coachID => ({
+                session_id: data.id,
+                coach_id: coachID
+            }));
+
+            const sessionPlayers = selectedPlayers.map(playerID => ({
+                session_id: data.id,
+                player_id: playerID
+            }));
+
+            const sessionDrills = selectedDrills.map((drill, index) => ({
+                session_id: data.id,
+                drill_id: drill.id,
+                order: index
+            }));
+
+            await Promise.all([
+                sessionCoaches.length > 0 && supabase.from('session_coaches').insert(sessionCoaches),
+                sessionPlayers.length > 0 && supabase.from('session_players').insert(sessionPlayers),
+                sessionDrills.length > 0 && supabase.from('session_drills').insert(sessionDrills)
+            ]);
+
+            fetchCalendarData();
+            setShowMobileSessionCreator(false);
+        } else {
+            console.log(error);
+        }
+    }
+
+    const [mobileSessionStart, setMobileSessionStart] = useState("05:00:00");
+    const [mobileSessionEnd, setMobileSessionEnd] = useState("06:00:00");
+
+    const mobileSessionStartIndex = mobileSessionCreatorTimes.findIndex(time => time.val === mobileSessionStart);
+
+    const validEndTimes = mobileSessionCreatorTimes.slice(mobileSessionStartIndex + 1);
+
+    useEffect(() => {
+        if (validEndTimes.length > 0 && !validEndTimes.find(t => t.val === mobileSessionEnd)) {
+            setMobileSessionEnd(validEndTimes[0].val);
+            updateSessionField('sessionEnd', validEndTimes[0].val);
+        }
+    }, [mobileSessionStart]);
 
     // Drill library
 
@@ -309,20 +433,6 @@ useEffect(() => {
         setWeekEnd(DateTime.fromJSDate(end));
     };
 
-    // handles returning to current week
-    const handleShowToday = () => {
-        setWeekStart(DateTime.now().startOf('week'));
-        setWeekEnd(DateTime.now().endOf('week'));
-
-
-        if (calendarRef.current) {
-            const calendarApi = calendarRef.current.getApi();
-            calendarApi.today(); 
-        } else {
-            console.log("loading calendar....");
-        }
-    }
-
     useEffect(() => {
         fetchCalendarData();
         fetchDrills();
@@ -429,18 +539,6 @@ useEffect(() => {
         }
     }
 
-    // auto save current session inputs in local storage and restore the saved inputs
-    const [sessionSettings, setSessionSettings] = useState(() => {
-        const savedDraft = localStorage.getItem('session_creator_draft');
-        return savedDraft ? JSON.parse(savedDraft) : {
-            sessionName: "Session Name",
-            sessionDuration: "01:00:00",
-            sessionNotes: "",
-            sessionStart: "",
-            sessionEnd: ""
-        };
-    });
-
     const [availSettings, setAvailSettings] = useState({
             availNotes: "",
             availStart: "",
@@ -452,12 +550,6 @@ useEffect(() => {
         localStorage.setItem('session_creator_draft', JSON.stringify(sessionSettings));
     }, [sessionSettings]);
 
-    const updateSessionField = (field, value) => {
-        setSessionSettings({
-            ...sessionSettings,
-            [field]: value 
-        });
-    }
 
     const updateAvailField = (field, value) => {
         setAvailSettings({
@@ -474,11 +566,6 @@ useEffect(() => {
 
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
-                {isMobile &&  (
-                    <div id="mobile-calendar-toolbar">
-                        <button>Add Session</button>
-                    </div>
-                )}
                 {
                     <div className={`calendar-trash-zone ${isDraggingEvent ? 'active-dragging' : ''}`} id="calendar-del-area">
                         <span className="trash-label">Drop here to delete</span>
@@ -487,7 +574,6 @@ useEffect(() => {
                 <CALENDAR 
                     events={calendarEvents}
                     activeStart={weekStart} activeEnd={weekEnd}
-                    onTodayClick={handleShowToday}
                     onDateChange={handleDateChange}
                     onSessionClick = {(eventData) => {
                         setSelectedSession(eventData);
@@ -510,6 +596,8 @@ useEffect(() => {
                     setIsDraggingEvent={setIsDraggingEvent}
 
                     isMobile={isMobile}
+
+                    setShowMobileSessionCreator={setShowMobileSessionCreator}
 
                     ref={calendarRef}
                 />
@@ -579,6 +667,118 @@ useEffect(() => {
                     <DRAGGABLE_SESSION sessionSettings={sessionSettings} />
                 </div>
             </div>
+
+            {isMobile && showMobileSessionCreator && (
+                <div id="mobile-session-creator-container">
+                    <div id="mobile-session-creator">
+                        <h2 class="content-header">Session Creator</h2>
+                        <TYPING_INPUT 
+                                label="NAME *" 
+                                num_rows="1" 
+                                input_id="session-name-creator" 
+                                box_w="100%" box_h="30px" 
+                                sample_txt="Session name"
+                                value={sessionSettings.sessionName}
+                                onChange={(val) => {
+                                    updateSessionField('sessionName', val);
+                                }}
+                        />
+
+                        <TYPING_INPUT 
+                                label="NOTES" 
+                                num_rows="6" 
+                                input_id="session-notes-creator" 
+                                box_w="100%" box_h="80px" 
+                                sample_txt="Session notes" 
+                                value={sessionSettings.sessionNotes}
+                                onChange={(val) => updateSessionField('sessionNotes', val)}
+                        />  
+
+                        <div class="input-container">
+                            <span class="input-container-label">TIMES *</span>
+                            <div id="mobile-session-creator-times">
+                                <div class="mobile-session-creator-times-container">
+                                    <p>Start</p>
+                                    <select
+                                        value={sessionSettings.sessionStart}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setMobileSessionStart(val);
+                                            updateSessionField('sessionStart', val);
+                                        }}
+                                    >
+                                        {mobileSessionCreatorTimes.map(time => (
+                                            <option
+                                                key={time.name}
+                                                value={time.val}
+                                            >
+                                                {time.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div class="mobile-session-creator-times-container">
+                                    <p>End</p>
+                                    <select
+                                        value={sessionSettings.sessionEnd}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setMobileSessionEnd(val);
+                                            updateSessionField('sessionEnd', val);
+                                        }}
+                                    >
+                                        {validEndTimes.map(time => (
+                                            <option
+                                                key={time.name}
+                                                value={time.val}
+                                            >
+                                                {time.name}
+                                            </option>
+                                            
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+            
+                        <div class="input-container" >
+                            <span class="input-container-label">PEOPLE *</span>
+                            <div id="session-creator-people">
+                                <PEOPLE_SELECTOR role="COACHES" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
+                                <PEOPLE_SELECTOR role="PLAYERS" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
+                            </div>
+                        </div>
+
+                        <div class="input-container">
+                            <span class="input-container-label">DRILLS</span>
+                            <div id="session-creator-drills">
+                                <SESSION_CREATOR_DRILLS
+                                    selectedDrills={selectedDrills}
+                                    removeDrillFromSession={removeDrillFromSession}
+                                />
+                                <button 
+                                    id="session-creator-add-drill-btn"
+                                    onClick={() => setShowAddDrill(true)}
+                                >
+                                    Add Drill
+                                </button>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => mobilePushSession({
+                                sessionSettings: sessionSettings,
+                                currentDay: weekStart,
+                                startTimeStr: mobileSessionStart,
+                                endTimeStr: mobileSessionEnd
+                            })}        
+                
+                        >Add To Calendar</button>
+                        <button onClick={() => setShowMobileSessionCreator(false)}>Cancel</button>
+                    </div>
+                </div>
+            )}
 
             {/* Drill library */}
             { showAddDrill && (

@@ -204,7 +204,6 @@ export function SIMPLE_DRILL_CARD({ drill, addDrillToSession, removeDrillFromSes
 export const CALENDAR = forwardRef(({ 
     onSessionClick, 
     events, 
-    onTodayClick, 
     onDateChange, 
     activeStart, activeEnd, 
     selectedSession, 
@@ -214,29 +213,35 @@ export const CALENDAR = forwardRef(({
     selectedDrills,
     currentUser,
     setIsDraggingEvent,
-    isMobile
+    isMobile,
+    setShowMobileSessionCreator
     }, ref) => {
 
     const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
     const headerToolBar = isMobile 
         ? {
             start: 'prev,next today', 
-            end: 'dayGridMonth,timeGridWeek,timeGridDay'
+            end: 'dayGridMonth,timeGridDay'
         } : {
             start: 'prev,next today', 
             end: 'dayGridMonth,timeGridWeek'
-        }
-
+        }   
+    
     const todayStart = DateTime.now().startOf('week').minus({ days: 1 });
     const currentWeekStart = activeStart || todayStart;
 
-    const onCurrentWeek = currentWeekStart.hasSame(todayStart, 'day');
     const currentWeekEnd = activeEnd ? activeEnd.minus({ days: 1 }) : currentWeekStart.endOf('week');
 
-    const weekStartStr = currentWeekStart.toFormat('MMM d');
-    const weekEndStr = (currentWeekStart.month === currentWeekEnd.month) 
-        ? currentWeekEnd.toFormat('d, yyyy') 
-        : currentWeekEnd.toFormat('MMM d, yyyy');
+
+    const isSingleDay = currentWeekStart.hasSame(currentWeekEnd, 'day');
+
+    const calendarTitle = isSingleDay 
+        ? currentWeekStart.toFormat('MMMM d, yyyy') // Single Day: "May 9, 2026"
+        : `${currentWeekStart.toFormat('MMM d')} - ${
+            currentWeekStart.month === currentWeekEnd.month 
+                ? currentWeekEnd.toFormat('d, yyyy') 
+                : currentWeekEnd.toFormat('MMM d, yyyy')
+            }`;
 
     const [isAnimating, setIsAnimating] = useState(false);
 
@@ -373,16 +378,17 @@ export const CALENDAR = forwardRef(({
 
         if (!error) event.remove();
     }
-    
+
     return (
         <div id="calendar-container">
-            <div id="calendar-date-container">
-                <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()} >{weekStartStr} - {weekEndStr}</h1>
-                <div id="calendar-date-middle">
-                    <button onClick={toggleTooltips} class="calenar-title-fade btn">toggle tooltips</button>
-                </div>
-                {!onCurrentWeek && (
-                    <button onClick={onTodayClick} class="calendar-title-fade btn">Back to current week</button>
+            <div id="calendar-date-container" >
+                <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()}>
+                    {calendarTitle} 
+                </h1>
+                {isMobile && (
+                    <button
+                        onClick={() => setShowMobileSessionCreator(true)}
+                    >Add Session</button>
                 )}
             </div>
             <div class="calendar-fade" className={isAnimating ? "calendar-fade" : ""}>
@@ -393,6 +399,11 @@ export const CALENDAR = forwardRef(({
                     eventOverlap={false}
                     selectOverlap={false}
                     initialView={initialView}
+                    showNonCurrentDates={false}
+                    height="auto"
+                    slotMinTime={"05:00:00"}
+                    slotMaxTime={"22:00:00"}
+                    expandRows={true}
                     eventClick={(info) => {
                         if (info.event.extendedProps.type === 'availability') return;
                         onSessionClick(info.event);
@@ -426,7 +437,7 @@ export const CALENDAR = forwardRef(({
                     }}
                     eventDidMount={(info) => {
                         if (isMobile) return;
-                        
+
                         if (tooltipsEnabled && info.event.extendedProps.type !== 'availability') {
                             const duration = info.event.extendedProps.duration || "-";
                             const notes = info.event.extendedProps.notes || "No notes";
