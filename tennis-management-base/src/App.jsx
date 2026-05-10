@@ -23,10 +23,6 @@ function App() {
         <div id="main-content-wrapper">
           <main id="main-content">
             <Routes>
-              <Route path="/" element={<Login />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-
               <Route path="/CoachDashboard" element={<CoachDashboard />} />
               <Route path="/CoachCalendar" element={<CoachCalendar />} />
               <Route path="/PlayerProfile" element={<PlayerProfile />} />
