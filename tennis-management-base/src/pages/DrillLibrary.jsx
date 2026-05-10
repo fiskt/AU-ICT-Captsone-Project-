@@ -1,29 +1,146 @@
 import { useState, useRef, useEffect } from 'react';
 import '../App.css';
-import './DrillLibrary.css';
 import { supabase } from '../supabaseClient';
 import { LOADING_OVERLAY } from '../Components/SharedComponents';
 
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const DIFFICULTY_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Elite'];
-const ATTRIBUTES = ['Speed', 'Agility', 'Technique', 'Strength', 'Fitness', 'Endurance'];
-const FILTERS = ['All', 'Speed', 'Agility', 'Technique', 'Strength', 'Fitness', 'Endurance'];
 
-const EMPTY_FORM = {
-    name: '',
-    type: '',
-    duration_mins: '',
-    description: '',
-    notes: '',
-    level: 'Intermediate',
-};
+// ── TAG INPUT COMPONENT ───────────────────────────────────────────────────────
+// Allows typing new tags, selecting existing ones, removing selected tags
+function TagInput({ selectedTags, onTagsChange, allTags }) {
+    const [inputValue, setInputValue] = useState('');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const inputRef = useRef(null);
+    const containerRef = useRef(null);
 
-// ── STAR COMPONENT ────────────────────────────────────────────────────────────
-function Stars({ level, size = '' }) {
+    // Filter suggestions: existing tags that match input and aren't already selected
+    const suggestions = allTags.filter(tag =>
+        tag.name.toLowerCase().includes(inputValue.toLowerCase()) &&
+        !selectedTags.some(t => t.id === tag.id)
+    );
+
+    // Whether to show "Create new tag" option
+    const showCreateNew = inputValue.trim().length > 0 &&
+        !allTags.some(t => t.name.toLowerCase() === inputValue.trim().toLowerCase()) &&
+        !selectedTags.some(t => t.name.toLowerCase() === inputValue.trim().toLowerCase());
+
+    const addTag = (tag) => {
+        if (!selectedTags.some(t => t.id === tag.id)) {
+            onTagsChange([...selectedTags, tag]);
+        }
+        setInputValue('');
+        setShowSuggestions(false);
+        inputRef.current?.focus();
+    };
+
+    const createAndAddTag = () => {
+        const name = inputValue.trim();
+        if (!name) return;
+        // Temporary tag with no id — will get real id after Supabase insert
+        const tempTag = { id: 'temp-' + Date.now(), name };
+        onTagsChange([...selectedTags, tempTag]);
+        setInputValue('');
+        setShowSuggestions(false);
+        inputRef.current?.focus();
+    };
+
+    const removeTag = (tagId) => {
+        onTagsChange(selectedTags.filter(t => t.id !== tagId));
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (suggestions.length > 0 && !showCreateNew) {
+                addTag(suggestions[0]);
+            } else if (showCreateNew) {
+                createAndAddTag();
+            }
+        }
+        if (e.key === 'Backspace' && inputValue === '' && selectedTags.length > 0) {
+            removeTag(selectedTags[selectedTags.length - 1].id);
+        }
+        if (e.key === 'Escape') {
+            setShowSuggestions(false);
+        }
+    };
+
+    // Close suggestions when clicking outside
+    useEffect(() => {
+        const handler = (e) => {
+            if (containerRef.current && !containerRef.current.contains(e.target)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    return (
+        <div ref={containerRef} style={{ position: 'relative' }}>
+            <div
+                className="drill-tag-input-area"
+                onClick={() => inputRef.current?.focus()}
+            >
+                {selectedTags.map(tag => (
+                    <span key={tag.id} className="drill-tag-selected">
+                        {tag.name}
+                        <button
+                            className="drill-tag-remove"
+                            onClick={(e) => { e.stopPropagation(); removeTag(tag.id); }}
+                            type="button"
+                        >
+                            ×
+                        </button>
+                    </span>
+                ))}
+                <input
+                    ref={inputRef}
+                    className="drill-tag-text-input"
+                    type="text"
+                    placeholder={selectedTags.length === 0 ? 'Type a tag and press Enter...' : ''}
+                    value={inputValue}
+                    onChange={(e) => {
+                        setInputValue(e.target.value);
+                        setShowSuggestions(true);
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                    onKeyDown={handleKeyDown}
+                />
+            </div>
+
+            {showSuggestions && (suggestions.length > 0 || showCreateNew) && (
+                <div className="drill-tag-suggestions">
+                    {suggestions.map(tag => (
+                        <div
+                            key={tag.id}
+                            className="drill-tag-suggestion-item"
+                            onMouseDown={(e) => { e.preventDefault(); addTag(tag); }}
+                        >
+                            {tag.name}
+                        </div>
+                    ))}
+                    {showCreateNew && (
+                        <div
+                            className="drill-tag-suggestion-item drill-tag-suggestion-new"
+                            onMouseDown={(e) => { e.preventDefault(); createAndAddTag(); }}
+                        >
+                            + Create "{inputValue.trim()}"
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── STARS ─────────────────────────────────────────────────────────────────────
+function Stars({ level }) {
     const levelMap = { Beginner: 1, Intermediate: 2, Advanced: 3, Elite: 5 };
     const filled = levelMap[level] ?? 2;
     return (
-        <div className={`drill-stars ${size}`}>
+        <div className="drill-stars">
             {[1, 2, 3, 4, 5].map(i => (
                 <svg
                     key={i}
@@ -38,13 +155,17 @@ function Stars({ level, size = '' }) {
     );
 }
 
-// ── TYPE BADGE ────────────────────────────────────────────────────────────────
-function TypeBadge({ type }) {
-    if (!type) return null;
+// ── TAG CHIPS (display only) ──────────────────────────────────────────────────
+function TagChips({ tags }) {
+    if (!tags || tags.length === 0) return null;
     return (
-        <span className={`drill-type-badge badge-${type.toLowerCase()}`}>
-            {type}
-        </span>
+        <div className="drill-tags-row">
+            {tags.map(tag => (
+                <span key={tag.id} className="drill-tag-chip accent">
+                    {tag.name}
+                </span>
+            ))}
+        </div>
     );
 }
 
@@ -57,7 +178,7 @@ function DrillCard({ drill, onView, onEdit, onDelete }) {
     return (
         <div className="drill-card" onClick={() => onView(drill)}>
             <div className="drill-card-top">
-                <TypeBadge type={drill.type} />
+                <TagChips tags={drill.tags} />
                 <div className="drill-card-actions">
                     <button
                         className="drill-icon-btn"
@@ -89,10 +210,21 @@ function DrillCard({ drill, onView, onEdit, onDelete }) {
     );
 }
 
-// ── ADD / EDIT MODAL ──────────────────────────────────────────────────────────
-function DrillFormModal({ mode, drill, onSave, onClose, onDelete }) {
+// ── DRILL FORM MODAL ──────────────────────────────────────────────────────────
+function DrillFormModal({ mode, drill, allTags, onSave, onClose, onDelete }) {
+    const EMPTY_FORM = {
+        name: '',
+        duration_mins: '',
+        description: '',
+        notes: '',
+        level: 'Intermediate',
+        tags: [],
+    };
+
     const [form, setForm] = useState(
-        mode === 'edit' && drill ? { ...drill } : { ...EMPTY_FORM }
+        mode === 'edit' && drill
+            ? { ...drill, tags: drill.tags || [] }
+            : { ...EMPTY_FORM }
     );
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
@@ -100,8 +232,8 @@ function DrillFormModal({ mode, drill, onSave, onClose, onDelete }) {
     const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
     const handleSubmit = async () => {
-        if (!form.name.trim() || !form.type || !form.description.trim()) {
-            setError('Name, attribute and description are required.');
+        if (!form.name.trim() || !form.description.trim()) {
+            setError('Name and description are required.');
             return;
         }
         setSaving(true);
@@ -117,8 +249,8 @@ function DrillFormModal({ mode, drill, onSave, onClose, onDelete }) {
                     <span className="drill-modal-title">
                         {mode === 'add' ? 'Add New Drill' : 'Edit Drill'}
                     </span>
-                    <button className="drill-icon-btn close" onClick={onClose}>
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button className="drill-icon-btn" onClick={onClose} style={{ border: 'none', background: 'transparent' }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
@@ -126,17 +258,7 @@ function DrillFormModal({ mode, drill, onSave, onClose, onDelete }) {
 
                 <div className="drill-modal-body">
                     {error && (
-                        <div style={{
-                            padding: '10px 12px',
-                            backgroundColor: 'var(--danger-bg-color)',
-                            border: '2px solid var(--danger-border-color)',
-                            borderRadius: '8px',
-                            color: 'var(--danger-body-color)',
-                            fontFamily: "'DM Sans Light', sans-serif",
-                            fontSize: '13px'
-                        }}>
-                            {error}
-                        </div>
+                        <div className="drill-error-banner">{error}</div>
                     )}
 
                     <div className="drill-form-group">
@@ -149,31 +271,33 @@ function DrillFormModal({ mode, drill, onSave, onClose, onDelete }) {
                         />
                     </div>
 
-                    <div className="drill-form-row">
-                        <div className="drill-form-group">
-                            <label className="drill-form-label">Target Attribute *</label>
-                            <select
-                                className="drill-form-select"
-                                value={form.type}
-                                onChange={e => update('type', e.target.value)}
-                            >
-                                <option value="" disabled>Select...</option>
-                                {ATTRIBUTES.map(a => (
-                                    <option key={a} value={a.toLowerCase()}>{a}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="drill-form-group">
-                            <label className="drill-form-label">Duration (mins)</label>
-                            <input
-                                className="drill-form-input"
-                                type="number"
-                                min="1"
-                                placeholder="e.g. 15"
-                                value={form.duration_mins}
-                                onChange={e => update('duration_mins', e.target.value)}
-                            />
-                        </div>
+                    <div className="drill-form-group">
+                        <label className="drill-form-label">Tags</label>
+                        <TagInput
+                            selectedTags={form.tags}
+                            onTagsChange={(tags) => update('tags', tags)}
+                            allTags={allTags}
+                        />
+                        <span style={{
+                            fontFamily: "'DM Sans Light', sans-serif",
+                            fontSize: '11px',
+                            color: 'var(--content-input-placeholder-color)',
+                            marginTop: '4px'
+                        }}>
+                            Type a tag and press Enter. New tags will be saved for future use.
+                        </span>
+                    </div>
+
+                    <div className="drill-form-group">
+                        <label className="drill-form-label">Duration (mins)</label>
+                        <input
+                            className="drill-form-input"
+                            type="number"
+                            min="1"
+                            placeholder="e.g. 15"
+                            value={form.duration_mins}
+                            onChange={e => update('duration_mins', e.target.value)}
+                        />
                     </div>
 
                     <div className="drill-form-group">
@@ -237,7 +361,7 @@ function DrillFormModal({ mode, drill, onSave, onClose, onDelete }) {
                             </svg>
                             Delete
                         </button>
-                        <div className="right">
+                        <div className="modal-right">
                             <button className="drill-btn drill-btn-ghost" onClick={onClose} disabled={saving}>
                                 Cancel
                             </button>
@@ -262,8 +386,8 @@ function DeleteModal({ drill, onConfirm, onClose, deleting }) {
             <div className="drill-modal">
                 <div className="drill-modal-header">
                     <span className="drill-modal-title">Delete Drill</span>
-                    <button className="drill-icon-btn close" onClick={onClose}>
-                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button className="drill-icon-btn" onClick={onClose} style={{ border: 'none', background: 'transparent' }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
@@ -304,7 +428,7 @@ function DrillDetail({ drill, onBack, onEdit, onDelete }) {
             </button>
 
             <div id="drill-detail-header">
-                <TypeBadge type={drill.type} />
+                <TagChips tags={drill.tags} />
                 <div id="drill-detail-title">{drill.name}</div>
 
                 <div id="drill-detail-meta">
@@ -314,7 +438,9 @@ function DrillDetail({ drill, onBack, onEdit, onDelete }) {
                     </div>
                     <div className="drill-meta-item">
                         <span className="drill-meta-label">Duration</span>
-                        <span className="drill-meta-value">{drill.duration_mins} min</span>
+                        <span className="drill-meta-value">
+                            {drill.duration_mins ? `${drill.duration_mins} min` : 'Not set'}
+                        </span>
                     </div>
                     <div className="drill-meta-item">
                         <span className="drill-meta-label">Date Added</span>
@@ -380,93 +506,164 @@ function useToast() {
     return { toast, show };
 }
 
-// ── MAIN DRILL LIBRARY PAGE ───────────────────────────────────────────────────
+// ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function DrillLibrary() {
     const [drills, setDrills] = useState([]);
+    const [allTags, setAllTags] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
     const [search, setSearch] = useState('');
-    const [activeFilter, setActiveFilter] = useState('All');
+    const [activeTagFilter, setActiveTagFilter] = useState(null); // null = All
     const [view, setView] = useState('list');
     const [selectedDrill, setSelectedDrill] = useState(null);
     const [modal, setModal] = useState(null);
     const [deleting, setDeleting] = useState(false);
     const { toast, show: showToast } = useToast();
 
-    // ── Fetch drills from Supabase ──
-    const fetchDrills = async () => {
+    // ── Fetch drills and tags ──
+    const fetchData = async () => {
         setIsLoading(true);
         setFetchError(null);
-        const { data, error } = await supabase
-            .from('drill_library')
+
+        // Fetch all tags
+        const { data: tagsData, error: tagsError } = await supabase
+            .from('drill_tags')
             .select('*')
+            .order('name');
+
+        if (tagsError) {
+            console.error('Error fetching tags:', tagsError);
+        } else {
+            setAllTags(tagsData || []);
+        }
+
+        // Fetch drills with their tags via junction table
+        const { data: drillsData, error: drillsError } = await supabase
+            .from('drill_library')
+            .select(`
+                *,
+                drill_library_tags (
+                    drill_tags ( id, name )
+                )
+            `)
             .order('date_added', { ascending: false });
 
-        if (error) {
-            console.error('Error fetching drills:', error);
+        if (drillsError) {
+            console.error('Error fetching drills:', drillsError);
             setFetchError('Failed to load drills. Please try again.');
         } else {
-            setDrills(data || []);
+            // Flatten tags from junction table
+            const drillsWithTags = (drillsData || []).map(drill => ({
+                ...drill,
+                tags: (drill.drill_library_tags || []).map(jt => jt.drill_tags).filter(Boolean),
+            }));
+            setDrills(drillsWithTags);
         }
+
         setIsLoading(false);
     };
 
-    useEffect(() => {
-        fetchDrills();
-    }, []);
+    useEffect(() => { fetchData(); }, []);
 
-    // ── Escape key closes modals ──
+    // ── Escape closes modals ──
     useEffect(() => {
         const handler = (e) => { if (e.key === 'Escape') setModal(null); };
         document.addEventListener('keydown', handler);
         return () => document.removeEventListener('keydown', handler);
     }, []);
 
+    // ── Ensure new tags are persisted and return their real ids ──
+    const ensureTagsExist = async (tags) => {
+        const resolvedTags = [];
+        for (const tag of tags) {
+            if (!String(tag.id).startsWith('temp-')) {
+                resolvedTags.push(tag);
+                continue;
+            }
+            // New tag — insert into drill_tags
+            const { data, error } = await supabase
+                .from('drill_tags')
+                .insert([{ name: tag.name }])
+                .select()
+                .single();
+
+            if (error) {
+                // Tag might already exist (race condition) — try to find it
+                const { data: existing } = await supabase
+                    .from('drill_tags')
+                    .select('*')
+                    .eq('name', tag.name)
+                    .single();
+                if (existing) resolvedTags.push(existing);
+            } else {
+                resolvedTags.push(data);
+                // Add to allTags state
+                setAllTags(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+            }
+        }
+        return resolvedTags;
+    };
+
+    // ── Save drill tags to junction table ──
+    const saveDrillTags = async (drillId, tags) => {
+        // Delete existing tag links for this drill
+        await supabase
+            .from('drill_library_tags')
+            .delete()
+            .eq('drill_id', drillId);
+
+        if (tags.length === 0) return;
+
+        // Insert new tag links
+        const inserts = tags.map(tag => ({ drill_id: drillId, tag_id: tag.id }));
+        const { error } = await supabase
+            .from('drill_library_tags')
+            .insert(inserts);
+
+        if (error) console.error('Error saving drill tags:', error);
+    };
+
     // ── Filtering ──
     const filtered = drills.filter(d => {
         const matchesSearch =
             d.name?.toLowerCase().includes(search.toLowerCase()) ||
-            d.description?.toLowerCase().includes(search.toLowerCase());
-        const matchesFilter =
-            activeFilter === 'All' || d.type === activeFilter.toLowerCase();
-        return matchesSearch && matchesFilter;
+            d.description?.toLowerCase().includes(search.toLowerCase()) ||
+            d.tags?.some(t => t.name.toLowerCase().includes(search.toLowerCase()));
+
+        const matchesTag = !activeTagFilter ||
+            d.tags?.some(t => t.id === activeTagFilter);
+
+        return matchesSearch && matchesTag;
     });
 
-    // ── Stats ──
-    const attributeCount = new Set(drills.map(d => d.type).filter(Boolean)).size;
+    // ── Unique tags used across all drills (for filter chips) ──
+    const usedTags = allTags.filter(tag =>
+        drills.some(d => d.tags?.some(t => t.id === tag.id))
+    );
 
     // ── Handlers ──
-    const handleView = (drill) => {
-        setSelectedDrill(drill);
-        setView('detail');
-    };
-
-    const handleEdit = (drill) => {
-        setSelectedDrill(drill);
-        setModal('edit');
-    };
-
-    const handleDeleteRequest = (drill) => {
-        setSelectedDrill(drill);
-        setModal('delete');
-    };
+    const handleView = (drill) => { setSelectedDrill(drill); setView('detail'); };
+    const handleEdit = (drill) => { setSelectedDrill(drill); setModal('edit'); };
+    const handleDeleteRequest = (drill) => { setSelectedDrill(drill); setModal('delete'); };
 
     const handleSave = async (form) => {
+        const resolvedTags = await ensureTagsExist(form.tags || []);
+
         if (modal === 'add') {
-            // Optimistic insert
-            const optimisticDrill = {
+            // Optimistic
+            const optimistic = {
                 ...form,
                 id: 'temp-' + Date.now(),
                 date_added: new Date().toISOString(),
+                tags: resolvedTags,
             };
-            setDrills(prev => [optimisticDrill, ...prev]);
+            setDrills(prev => [optimistic, ...prev]);
             setModal(null);
 
             const { data, error } = await supabase
                 .from('drill_library')
                 .insert([{
                     name: form.name,
-                    type: form.type,
                     duration_mins: form.duration_mins ? parseInt(form.duration_mins) : null,
                     description: form.description,
                     notes: form.notes || null,
@@ -477,27 +674,27 @@ export default function DrillLibrary() {
 
             if (error) {
                 console.error('Error inserting drill:', error);
-                // Roll back optimistic update
-                setDrills(prev => prev.filter(d => d.id !== optimisticDrill.id));
+                setDrills(prev => prev.filter(d => d.id !== optimistic.id));
                 showToast('Failed to add drill. Please try again.', 'red');
             } else {
-                // Replace optimistic entry with real data
+                await saveDrillTags(data.id, resolvedTags);
                 setDrills(prev => prev.map(d =>
-                    d.id === optimisticDrill.id ? data : d
+                    d.id === optimistic.id ? { ...data, tags: resolvedTags } : d
                 ));
                 showToast('Drill added successfully', 'green');
             }
+
         } else {
             // Optimistic update
-            setDrills(prev => prev.map(d => d.id === form.id ? { ...form } : d));
-            if (selectedDrill?.id === form.id) setSelectedDrill({ ...form });
+            const updated = { ...form, tags: resolvedTags };
+            setDrills(prev => prev.map(d => d.id === form.id ? updated : d));
+            if (selectedDrill?.id === form.id) setSelectedDrill(updated);
             setModal(null);
 
             const { error } = await supabase
                 .from('drill_library')
                 .update({
                     name: form.name,
-                    type: form.type,
                     duration_mins: form.duration_mins ? parseInt(form.duration_mins) : null,
                     description: form.description,
                     notes: form.notes || null,
@@ -508,8 +705,9 @@ export default function DrillLibrary() {
             if (error) {
                 console.error('Error updating drill:', error);
                 showToast('Failed to update drill. Please try again.', 'red');
-                fetchDrills(); // Re-fetch to restore correct state
+                fetchData();
             } else {
+                await saveDrillTags(form.id, resolvedTags);
                 showToast('Drill updated', 'orange');
             }
         }
@@ -518,8 +716,6 @@ export default function DrillLibrary() {
     const handleDeleteConfirm = async () => {
         if (!selectedDrill) return;
         setDeleting(true);
-
-        // Optimistic delete
         const backup = [...drills];
         setDrills(prev => prev.filter(d => d.id !== selectedDrill.id));
 
@@ -530,7 +726,7 @@ export default function DrillLibrary() {
 
         if (error) {
             console.error('Error deleting drill:', error);
-            setDrills(backup); // Restore
+            setDrills(backup);
             showToast('Failed to delete drill. Please try again.', 'red');
         } else {
             if (view === 'detail') setView('list');
@@ -542,12 +738,10 @@ export default function DrillLibrary() {
         setSelectedDrill(null);
     };
 
-    // ── Loading state ──
-    if (isLoading) {
-        return <LOADING_OVERLAY caption="drill library" />;
-    }
+    // ── Loading ──
+    if (isLoading) return <LOADING_OVERLAY caption="drill library" />;
 
-    // ── Detail View ──
+    // ── Detail view ──
     if (view === 'detail' && selectedDrill) {
         return (
             <>
@@ -561,6 +755,7 @@ export default function DrillLibrary() {
                     <DrillFormModal
                         mode="edit"
                         drill={selectedDrill}
+                        allTags={allTags}
                         onSave={handleSave}
                         onClose={() => setModal(null)}
                         onDelete={handleDeleteRequest}
@@ -582,12 +777,11 @@ export default function DrillLibrary() {
         );
     }
 
-    // ── List View ──
+    // ── List view ──
     return (
         <>
             <div id="drill-library-page">
 
-                {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                     <div>
                         <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>
@@ -598,31 +792,15 @@ export default function DrillLibrary() {
                             fontSize: '13px',
                             color: 'var(--content-subhead-color)'
                         }}>
-                            Manage your coaching drill catalogue — add, edit, and organise.
+                            Manage your coaching drill catalogue.
                         </p>
                     </div>
                 </div>
 
-                {/* Fetch error banner */}
                 {fetchError && (
-                    <div style={{
-                        padding: '12px 16px',
-                        backgroundColor: 'var(--danger-bg-color)',
-                        border: '2px solid var(--danger-border-color)',
-                        borderRadius: '8px',
-                        color: 'var(--danger-body-color)',
-                        fontFamily: "'DM Sans Light', sans-serif",
-                        fontSize: '13px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                    }}>
+                    <div className="drill-error-banner">
                         {fetchError}
-                        <button
-                            className="drill-btn drill-btn-danger"
-                            onClick={fetchDrills}
-                            style={{ marginLeft: '12px' }}
-                        >
+                        <button className="drill-btn drill-btn-danger" onClick={fetchData}>
                             Retry
                         </button>
                     </div>
@@ -633,12 +811,12 @@ export default function DrillLibrary() {
                     <div className="drill-stat-card">
                         <span className="drill-stat-label">Total Drills</span>
                         <span className="drill-stat-value accent">{drills.length}</span>
-                        <span className="drill-stat-sub">Across all attributes</span>
+                        <span className="drill-stat-sub">In your library</span>
                     </div>
                     <div className="drill-stat-card">
-                        <span className="drill-stat-label">Attributes</span>
-                        <span className="drill-stat-value">{attributeCount}</span>
-                        <span className="drill-stat-sub">Active categories</span>
+                        <span className="drill-stat-label">Tags</span>
+                        <span className="drill-stat-value">{allTags.length}</span>
+                        <span className="drill-stat-sub">Across all drills</span>
                     </div>
                     <div className="drill-stat-card">
                         <span className="drill-stat-label">Filtered</span>
@@ -660,10 +838,8 @@ export default function DrillLibrary() {
                     </div>
                 </div>
 
-                {/* Main Panel */}
+                {/* Main panel */}
                 <div id="drill-main-panel">
-
-                    {/* Toolbar */}
                     <div id="drill-toolbar">
                         <div id="drill-search-wrapper">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -672,20 +848,47 @@ export default function DrillLibrary() {
                             <input
                                 id="drill-search"
                                 type="text"
-                                placeholder="Search drills..."
+                                placeholder="Search drills or tags..."
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                             />
                         </div>
 
-                        <div id="drill-filter-chips">
-                            {FILTERS.map(f => (
+                        {/* Tag filter chips */}
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            <button
+                                style={{
+                                    padding: '6px 14px',
+                                    borderRadius: '100px',
+                                    border: '2px solid',
+                                    borderColor: !activeTagFilter ? 'var(--accent-color)' : 'var(--content-input-border-color)',
+                                    background: !activeTagFilter ? 'var(--accent-color)' : 'var(--content-bg-color)',
+                                    color: !activeTagFilter ? 'white' : 'var(--content-subhead-color)',
+                                    fontFamily: "'DM Mono Light', sans-serif",
+                                    fontSize: '11px',
+                                    cursor: 'pointer',
+                                }}
+                                onClick={() => setActiveTagFilter(null)}
+                            >
+                                All
+                            </button>
+                            {usedTags.map(tag => (
                                 <button
-                                    key={f}
-                                    className={`drill-filter-chip ${activeFilter === f ? 'active' : ''}`}
-                                    onClick={() => setActiveFilter(f)}
+                                    key={tag.id}
+                                    style={{
+                                        padding: '6px 14px',
+                                        borderRadius: '100px',
+                                        border: '2px solid',
+                                        borderColor: activeTagFilter === tag.id ? 'var(--accent-color)' : 'var(--content-input-border-color)',
+                                        background: activeTagFilter === tag.id ? 'var(--accent-color)' : 'var(--content-bg-color)',
+                                        color: activeTagFilter === tag.id ? 'white' : 'var(--content-subhead-color)',
+                                        fontFamily: "'DM Mono Light', sans-serif",
+                                        fontSize: '11px',
+                                        cursor: 'pointer',
+                                    }}
+                                    onClick={() => setActiveTagFilter(tag.id)}
                                 >
-                                    {f}
+                                    {tag.name}
                                 </button>
                             ))}
                         </div>
@@ -700,7 +903,6 @@ export default function DrillLibrary() {
                         </div>
                     </div>
 
-                    {/* Grid or Empty State */}
                     {filtered.length > 0 ? (
                         <div id="drill-grid">
                             {filtered.map(drill => (
@@ -726,13 +928,10 @@ export default function DrillLibrary() {
                             <div className="drill-empty-sub">
                                 {drills.length === 0
                                     ? 'Start building your coaching catalogue by adding your first drill.'
-                                    : "Try adjusting your search or filter to find what you're looking for."}
+                                    : "Try adjusting your search or filter."}
                             </div>
                             {drills.length === 0 && (
-                                <button
-                                    className="drill-btn drill-btn-primary"
-                                    onClick={() => setModal('add')}
-                                >
+                                <button className="drill-btn drill-btn-primary" onClick={() => setModal('add')}>
                                     <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
                                     </svg>
@@ -744,10 +943,10 @@ export default function DrillLibrary() {
                 </div>
             </div>
 
-            {/* Modals */}
             {modal === 'add' && (
                 <DrillFormModal
                     mode="add"
+                    allTags={allTags}
                     onSave={handleSave}
                     onClose={() => setModal(null)}
                 />
@@ -756,6 +955,7 @@ export default function DrillLibrary() {
                 <DrillFormModal
                     mode="edit"
                     drill={selectedDrill}
+                    allTags={allTags}
                     onSave={handleSave}
                     onClose={() => setModal(null)}
                     onDelete={handleDeleteRequest}
@@ -770,7 +970,6 @@ export default function DrillLibrary() {
                 />
             )}
 
-            {/* Toast */}
             <div id="drill-toast" className={toast.visible ? 'show' : ''}>
                 <div className={`drill-toast-dot ${toast.type}`}></div>
                 <span>{toast.message}</span>
