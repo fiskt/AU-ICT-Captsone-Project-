@@ -18,8 +18,6 @@ function App() {
       <div id="layout">
         <COACH_SIDEBAR />
 
-        <TOPBAR />
-
         <div id="main-content-wrapper">
           <main id="main-content">
             <Routes>
