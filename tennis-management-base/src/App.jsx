@@ -10,6 +10,7 @@ import CoachDashboard from './pages/CoachDashboard';
 import PlayerProfile from './pages/PlayerProfile';
 import DrillLibrary from './pages/DrillLibrary';
 import Testing from './pages/Testing';
+import PlayerDashboard from './pages/PlayerDashboard';  
 import OtherUsers from './pages/OtherUsers';
 
 const AUTH_ROUTES = ['/', '/login', '/register'];
@@ -36,6 +37,7 @@ function AppLayout() {
             <Route path="/DrillLibrary" element={<DrillLibrary />} />
             <Route path="/Testing" element={<Testing />} />
             <Route path="/OtherUsers" element={<OtherUsers />} />
+            <Route path="/PlayerDashboard" element={<PlayerDashboard />} />
           </Routes>
         </main>
       </div>

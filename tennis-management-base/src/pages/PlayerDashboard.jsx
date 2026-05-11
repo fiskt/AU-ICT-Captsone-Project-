@@ -1,5 +1,6 @@
 import { useState } from "react";
 import '../App.css';
+import "../App.css";
 import "./CoachDashboard.css";
 import { PLAYER_SIDEBAR, TOPBAR } from "../Components/SharedComponents";
 
