@@ -2,7 +2,6 @@
 
 #calendar-box {
     width: 80%;
-    overflow-y: hidden;
 }
 
 .editor-box {
@@ -16,6 +15,7 @@
     display: flex;
     gap: 20px;
     align-items: center;
+
 }
 
 #calendar-date-middle {
@@ -34,21 +34,19 @@
     margin-bottom: 20px;
 }
 
-
 #calendar-container {
+    width: 100%;
+    height: 100%;
     padding: 10px;
-    overflow-y: hidden;
+    overflow: auto;
+}
+
+.fc-view-harness {
+    overflow: auto;
 }
 
 #draggable-session-container {
     width: 100%;
-    height: 90px;
-    padding: 10px;
-    background-color: white;
-    border: 2px solid var(--content-input-border-color);
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
 }
 
 .session-icon {
@@ -67,10 +65,6 @@
     cursor: grab;
 }
 
-#session-creator-input-container {
-    height: 75%;
-    overflow-y: auto;
-}
 
 #session-editor-input-container {
     height: 100%;
@@ -186,39 +180,6 @@
     padding: 3px;
 }
 
-#session-editor-container {
-    width: 100%;
-    height: 100%;
-    background-color: #00000050;
-    position: absolute;
-    z-index: 99;
-    margin: -20px;
-    align-items: center;
-    justify-content: center;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-#session-editor {
-    width: 70%;
-    height: 80%;
-    display: flex;
-    flex-direction: column;
-    animation: calendar-entry-fade 0.3s ease-in;
-}
-
-#session-editor-header {
-    font-family: 'Bebas', sans-serif;
-    color: var(--content-head-color);
-    margin: 0;
-}
-
-.session-people {
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-}
 
 .availability-event {
     background-color: color-mix(in srgb, var(--sidebar-bg-color), transparent 80%);
@@ -245,6 +206,14 @@
     opacity: 100% !important;
 }
 
+.short-event .fc-event-time {
+    display: none !important;
+}
+
+.fc-event {
+    padding: 0 3px 0 3px;
+}
+
 .fc-event-title {
     font-family: 'DM Mono Light', sans-serif;
     color: var(--content-body-color);
@@ -263,70 +232,370 @@
     text-align: center;
 }
 
-#content-menu {
-  width: 100px;
-  position: fixed;
-  z-index: 200;
-  background-color: white;
-  font-family: 'DM Mono Light', sans-serif;
-  font-size: 70%;
-  text-align: center;
-  list-style: none;
-  padding: 5px;
-  border: 2px solid var(--content-input-border-color);
-  border-radius: 8px;
+.session-people span {
+    color: black;
 }
 
-#content-menu li {
-  text-decoration: none;
-  cursor: pointer;
-  border: 2px solid gray;
-  padding: 2px;
-  border-radius: 5px;
-  margin: 5px 0 5px 0;
+.calendar-trash-zone {
+    width: 200px;
+    height: 70px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease-in-out;
+    
+    position: absolute;
+    bottom: 20px;
+    left: 10px;
+    z-index: 99; 
+    
+    opacity: 0;
+    transform: translateY(20px);
+    pointer-events: none; 
 }
 
-#content-menu li:hover {
-  background-color: #dddddd;
+.calendar-trash-zone .trash-label {
+    font-family: 'Bebas', sans-serif;
+    font-size: 1.1rem;
+    color: #999;
+    transition: color 0.2s ease-in-out;
 }
 
+.calendar-trash-zone.active-dragging {
+    background-color: color-mix(in srgb, var(--danger-bg-color), transparent 10%) !important;
+    border: 2px dashed var(--danger-border-color) !important;
+    opacity: 1 !important;
+    transform: scale(1.01);
+}
 
-.session-people, .session-drill {
-    text-align: left;
-  font-family: 'DM Sans Light', sans-serif;
-  background-color: white;
-  
-  border: 2px solid var(--content-input-border-color);
-  padding: 8px;
-  border-radius: 8px;
-  width: 100%;
-  color: var(--content-input-placeholder-color);
-  font-size: small;
+.calendar-trash-zone.active-dragging .trash-label {
+    color: #e74c3c !important;
+    animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.03); }
+}
+
+#session-creator-middle-left, #session-creator-middle-right {
+    width: 50%;
+    flex: 1;
+}
+
+#session-creator.content-box {
+    display: grid;
+    grid-template-rows: 40px 1fr;
+    overflow: auto; 
+}
+
+.content-header {
+    margin: 0;
+    padding-bottom: 10px;
+}
+
+.drill-library-container .session-people-container {
+    overflow-y: auto;
+    background-color: white;
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 8px;
+    padding: 10px;
+    gap: 10px;
+}
+
+#add-drill-container {
+    width: 100%;
+    height: 100%;
+    background-color: #00000050;
+    position: absolute;
+    z-index: 101;
+    margin: -20px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#session-drill-library {
+    width: 70%;
+    height: 80%;
+    display: flex;
+    flex-direction: column;
+    animation: calendar-entry-fade 0.3s ease-in;
+}
+
+#session-editor-container {
+    width: 100%;
+    height: 100%;
+    background-color: #00000050;
+    position: absolute;
+    z-index: 99;
+    margin: -20px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+
+    animation: calendar-entry-fade 0.3s ease-in;
+}
+
+#session-editor {
+    width: 70%;
+    height: 80%;
+
+    grid-template-areas: 
+        'session-editor-top-left session-editor-top-left session-editor-top-right'
+        'session-editor-middle-left session-editor-middle-middle session-editor-middle-right'
+        'session-editor-bottom-left session-editor-bottom-middle session-editor-bottom-right';
+
+    grid-template-columns: 15% 35% 50%;
+    grid-template-rows: 10% 80% 10%;
+    display: grid;
+
+    background-color: white;
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 8px;
+
+    padding: 10px;
+}
+
+#session-editor-header {
+    font-family: 'Bebas', sans-serif;
+    color: var(--content-head-color);
+    margin: 0;
+}
+
+#session-editor-top-left {
+    grid-area: session-editor-top-left;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+}
+
+#session-editor-top-right {
+    grid-area: session-editor-top-right;
+    display: flex;
+    justify-content: right;
+    align-items: center;
 }
 
 #session-editor-middle-left {
-    display: grid !important;
-    grid-template-areas:
-        'session-editor-name'
-        'session-editor-duration'
-        'session-editor-notes'
-        'session-editor-people';
-    grid-template-rows: 30px 30px 80px 50% !important;
-    gap: 35px;
+    grid-area: session-editor-middle-left;
+    display: flex;
+    flex-direction: column;
 }
 
-#session-editor-name {
-    grid-area: session-editor-name;
+#session-editor-middle-middle {
+    grid-area: session-editor-middle-middle;
+    display: flex;
 }
 
-#session-editor-duration {
-    grid-area: session-editor-duration;
+#session-editor-middle-right {
+    grid-area: session-editor-middle-right;
+    display: flex;
 }
 
-#session-editor-notes {
-    grid-area: session-editor-notes;
+#session-editor-bottom-left {
+    grid-area: session-editor-bottom-left;
+    display: flex;
+    justify-content: left;
+    align-items: center;
 }
 
-#session-editor-people {
-    grid-area: session-editor-people;
+#session-editor-bottom-middle {
+    grid-area: session-editor-bottom-middle;
+}
+
+#session-editor-bottom-right {
+    grid-area: session-editor-bottom-right;
+    display: flex;
+    justify-content: right;
+    align-items: center;
+}
+
+#session-editor-drills-container, #session-editor-people-container,
+#session-creator-drills-container, #session-creator-people-container {
+    width: 100%;
+    height: 100%;
+}
+
+#session-editor-drills, #session-editor-people,
+#session-creator-drills, #session-creator-people {
+    overflow-y: auto !important;
+    background-color: white;
+    border-radius: 8px;
+    border: 2px solid var(--content-input-border-color);
+    padding: 10px;
+}
+
+#session-editor-drills #session-editor-add-drill-btn,
+#session-creator-drills #session-creator-add-drill-btn {
+    width: 100%;
+    height: 40px;
+}
+
+#session-editor-drills > * > div {
+    margin-bottom: 10px;
+}
+
+
+#session-creator {
+    height: 100%;
+    width: 35%;
+
+    grid-template-areas: 
+        'session-creator-top session-creator-top'
+        'session-creator-middle-left-top session-creator-middle-right-top'
+        'session-creator-middle-left-bottom session-creator-middle-right-bottom'
+        'session-creator-bottom session-creator-bottom';
+
+    grid-template-columns: 50% 50%;
+    grid-template-rows: 5% auto 65% 15%;
+    display: grid;
+
+    background-color: white;
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 8px;
+
+    padding: 10px;
+}
+
+#session-creator-top {
+    grid-area: session-creator-top;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+}
+
+#session-creator-middle-left-top {
+    grid-area: session-creator-middle-left-top;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+#session-creator-middle-left-bottom {
+    grid-area: session-creator-middle-left-bottom;
+    display: flex;
+    width: 100%;
+}
+
+#session-creator-middle-right-top {
+    grid-area: session-creator-middle-right-top;
+    display: flex;
+    width: 100%;
+}
+
+#session-creator-middle-right-bottom {
+    grid-area: session-creator-middle-right-bottom;
+    display: flex;
+    width: 100%;
+}
+
+#session-creator-bottom {
+    grid-area: session-creator-bottom;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#session-creator-drills-container {
+    width: 100%;
+    height: 100%;
+}
+
+#session-creator-people-container {
+    width: 100%;
+    height: 100%;
+}
+
+#session-creator-drills #session-creator-add-drill-btn {
+    width: 100%;
+    height: 40px;
+}
+
+#session-creator-drills > * > div {
+    margin-bottom: 10px;
+}
+
+@media (max-width: 768px) {
+    #session-creator {
+        display: none;
+    }
+
+    #calendar-box {
+        width: 100%;
+        border: none;
+        background-color: transparent;
+        padding: 0;
+    }
+
+}
+
+#mobile-calendar-toolbar {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+#mobile-session-creator-container, #mobile-session-editor-container {
+    width: 100%;
+    height: 100%;
+    background-color: #00000050;
+    position: absolute;
+    z-index: 99;
+    margin: -20px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+
+    animation: calendar-entry-fade 0.3s ease-in;
+}
+
+#mobile-session-creator, #mobile-session-editor {
+    width: 95%;
+    height: 85%;
+    background-color: white;
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 8px;
+    padding: 5px;
+    overflow-y: auto;
+}
+
+#mobile-session-creator button {
+    margin: 10px 5px 10px 5px;
+    height: 40px;
+}
+
+#mobile-session-creator-times, #mobile-session-editor-times {
+    border-radius: 8px;
+    border: 2px solid var(--content-input-border-color);
+    background-color: white;
+    padding: 10px;
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+    justify-content: space-between;
+    font-family: 'DM Mono Light', sans-serif;
+    font-size: small;
+}
+
+.mobile-session-creator-times-container {
+    justify-content: center;
+    align-content: center;
+    margin: 0 15% 0 15%;
+}
+
+.mobile-session-creator-times-container select {
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 8px;
+    background-color: white;
+    color: black;
+    padding: 5px 10px 5px 10px;
+}
+
+#mobile-session-creator-bottom {
+    justify-content: space-between;
 }
