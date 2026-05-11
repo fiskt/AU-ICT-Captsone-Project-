@@ -119,7 +119,6 @@ export function COACH_SIDEBAR() {
 
             <div id="sidebar" className={mobileOpen ? 'sidebar-mobile-open' : ''}>
                 <div id="sidebar-logo">
-                    {/* Place your logo at: tennis-management-base/public/hpt.png */}
                     <img
                         src="/hpt.png"
                         alt="HPT"
