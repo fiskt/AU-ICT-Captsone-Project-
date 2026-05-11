@@ -199,12 +199,6 @@ export const OTHER_CALENDARS = forwardRef(({
         <div id="calendar-container">
             <div id="calendar-date-container">
                 <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()} >{weekStartStr} - {weekEndStr}</h1>
-                <div id="calendar-date-middle">
-                    <button onClick={toggleTooltips} class="calenar-title-fade btn">toggle tooltips</button>
-                </div>
-                {!onCurrentWeek && (
-                    <button onClick={onTodayClick} class="calendar-title-fade btn">Back to current week</button>
-                )}
             </div>
             <div class="calendar-fade" className={isAnimating ? "calendar-fade" : ""}>
                 <FullCalendar
@@ -220,7 +214,7 @@ export const OTHER_CALENDARS = forwardRef(({
                         onSessionClick(info.event);
                     }}
                     headerToolbar={{
-                        start: 'prev,next', 
+                        start: 'prev,next today', 
                         end: 'dayGridMonth,timeGridWeek'
                     }}
                     eventClassNames={(arg) => {

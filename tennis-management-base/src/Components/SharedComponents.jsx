@@ -152,8 +152,8 @@ export function COACH_SIDEBAR() {
                     <SIDEBAR_BUTTON label="Calendar"     path="/CoachCalendar"  icon={Icons.calendar}  />
                     <SIDEBAR_BUTTON label="Players"      path="/PlayerProfile"  icon={Icons.players}   />
                     <SIDEBAR_BUTTON label="Drill Library" path="/DrillLibrary"  icon={Icons.drills}    />
-                    <SIDEBAR_BUTTON label="Load Tracking" path="/LoadTracking"  icon={Icons.load}      />
-                    <SIDEBAR_BUTTON label="Testing"      path="/Testing"        icon={Icons.testing}   />
+                    {/* <SIDEBAR_BUTTON label="Load Tracking" path="/LoadTracking"  icon={Icons.load}      /> */}
+                    {/* <SIDEBAR_BUTTON label="Testing"      path="/Testing"        icon={Icons.testing}   /> */}
                     <SIDEBAR_BUTTON label="Other Users"  path="/OtherUsers"     icon={Icons.users}     />
                 </div>
 
