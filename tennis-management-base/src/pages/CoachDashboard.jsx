@@ -1,7 +1,7 @@
 import { useState } from "react";
 import '../App.css';
 import './CoachDashboard.css';
-import { COACH_SIDEBAR, TOPBAR} from './Components/SharedComponents';
+import { COACH_SIDEBAR, TOPBAR} from '../Components/SharedComponents';
 
 import {
     LineChart,

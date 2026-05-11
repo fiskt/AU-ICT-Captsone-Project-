@@ -1,7 +1,7 @@
 import { useState } from "react";
-import "./App.css";
-import "./Dashboard.css";
-import { PLAYER_SIDEBAR, TOPBAR } from "./Components/SharedComponents";
+import '../App.css';
+import "./CoachDashboard.css";
+import { PLAYER_SIDEBAR, TOPBAR } from "../Components/SharedComponents";
 
 const nextSession = {
     date: "2026-05-12",
