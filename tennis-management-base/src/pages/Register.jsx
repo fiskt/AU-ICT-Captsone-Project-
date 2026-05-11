@@ -117,7 +117,6 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 style={styles.input}
-                placeholder={role === 'coach' ? 'you@tennis.com.au' : 'you@example.com'}
               />
             </div>
 
