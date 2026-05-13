@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import logo from '../assets/logo.png';
 import background from '../assets/background.webp';
@@ -22,7 +22,7 @@ export default function Register() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const [registered, setRegistered] = useState(false);
 
   const passChecks = checks.map((c) => ({ ...c, passed: c.test(password) }));
   const allChecksPassed = passChecks.every((c) => c.passed);
@@ -50,12 +50,12 @@ export default function Register() {
 
     setLoading(true);
 
-    // 1. Sign up — store role, first_name, last_name in user_metadata
-    //    This avoids any separate DB insert and works without triggers
     const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        // After clicking the confirmation link, Supabase redirects here
+        emailRedirectTo: 'http://localhost:5173/auth/callback',
         data: {
           role,
           first_name: firstName,
@@ -70,8 +70,7 @@ export default function Register() {
       return;
     }
 
-    // 2. Also insert into signin_details for your existing data structure
-    //    If this fails we still let the user in since auth succeeded
+    // Insert into signin_details — non-blocking
     await supabase.from('signin_details').insert({
       id: data.user.id,
       first_name: firstName,
@@ -81,13 +80,48 @@ export default function Register() {
     });
 
     setLoading(false);
-    if (role === 'coach') {
-      navigate('/CoachDashboard');
-    } else {
-      navigate('/PlayerDashboard');
-    }
+    setRegistered(true); // Show "check your email" screen
   };
 
+  // ── Check your email screen ──────────────────────────────────────────────
+  if (registered) {
+    return (
+      <div style={styles.page}>
+        <img src={background} alt="" style={styles.bg} />
+        <img src={logo} alt="Logo" style={styles.logo} />
+
+        <div style={styles.card}>
+          <div style={styles.cardHeader}>
+            <h1 style={styles.cardTitle}>CHECK YOUR EMAIL</h1>
+          </div>
+          <div style={styles.cardBody}>
+            <div style={styles.emailIcon}>📧</div>
+            <p style={styles.emailMsg}>
+              We've sent a confirmation link to <strong>{email}</strong>.
+            </p>
+            <p style={styles.emailSub}>
+              Click the link in the email to verify your account and you'll be taken straight to your dashboard.
+            </p>
+            <p style={styles.emailSub} >
+              Didn't receive it? Check your spam folder or{' '}
+              <span
+                style={{ color: '#C8714E', cursor: 'pointer', textDecoration: 'underline' }}
+                onClick={() => setRegistered(false)}
+              >
+                try again
+              </span>.
+            </p>
+            <p style={styles.switchText}>
+              Already verified?{' '}
+              <Link to="/login" style={styles.switchLink}>Log in</Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Registration form ────────────────────────────────────────────────────
   return (
     <div style={styles.page}>
       <img src={background} alt="" style={styles.bg} />
@@ -135,6 +169,7 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 style={styles.input}
+                placeholder={role === 'coach' ? 'you@tennis.com.au' : 'you@example.com'}
               />
             </div>
 
@@ -201,6 +236,9 @@ const styles = {
   cardHeader: { backgroundColor: '#C8714E', padding: '22px 20px', textAlign: 'center' },
   cardTitle: { margin: 0, fontFamily: 'Bebas, sans-serif', fontSize: '32px', color: '#ffffff', letterSpacing: '2px' },
   cardBody: { backgroundColor: '#ffffff', padding: '28px 36px 32px' },
+  emailIcon: { fontSize: '48px', textAlign: 'center', marginBottom: '16px' },
+  emailMsg: { fontSize: '14px', fontFamily: 'DM Sans Light, sans-serif', color: '#000', textAlign: 'center', marginBottom: '12px' },
+  emailSub: { fontSize: '13px', fontFamily: 'DM Sans Light, sans-serif', color: '#6B6760', textAlign: 'center', marginBottom: '10px' },
   roleToggle: { display: 'flex', borderRadius: '8px', border: '2px solid #DDDBD6', overflow: 'hidden', marginBottom: '20px' },
   roleBtn: { flex: 1, padding: '12px 0', fontSize: '15px', fontFamily: 'DM Sans Light, sans-serif', fontWeight: '500', border: 'none', background: 'transparent', color: '#6B6760', cursor: 'pointer', transition: 'background 0.2s' },
   roleBtnActive: { background: '#ffffff', color: '#000000', boxShadow: '0 1px 4px rgba(0,0,0,0.12)' },
