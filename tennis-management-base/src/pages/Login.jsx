@@ -29,7 +29,7 @@ export default function Login() {
     if (role === 'coach') {
       navigate('/CoachDashboard');
     } else {
-      navigate('/PlayerProfile');
+      navigate('/PlayerDashboard');
     }
   };
 
