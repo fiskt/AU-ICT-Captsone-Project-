@@ -214,7 +214,6 @@ export function PLAYER_SIDEBAR() {
                 </div>
 
                 <div id="sidebar-nav">
-                    <NAV_SECTION_LABEL label="MAIN" />
                     <SIDEBAR_BUTTON label="Dashboard" path="/PlayerDashboard" icon={Icons.dashboard} />
                     <SIDEBAR_BUTTON label="Calendar"  path="/PlayerCalendar"  icon={Icons.calendar}  />
                 </div>
