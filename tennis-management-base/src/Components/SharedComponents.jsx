@@ -143,7 +143,6 @@ export function COACH_SIDEBAR() {
                 </div>
 
                 <div id="sidebar-nav">
-                    <NAV_SECTION_LABEL label="MAIN" />
                     <SIDEBAR_BUTTON label="Dashboard"          path="/CoachDashboard" icon={Icons.dashboard} />
                     <SIDEBAR_BUTTON label="Calendar"           path="/CoachCalendar"  icon={Icons.calendar}  />
                     <SIDEBAR_BUTTON label="Players"            path="/PlayerProfile"  icon={Icons.players}   />
