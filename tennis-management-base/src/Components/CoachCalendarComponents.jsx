@@ -413,9 +413,6 @@ export const CALENDAR = forwardRef(({
                         onClick={() => setShowMobileSessionCreator(true)}
                     >Add Session</button>
                 )}
-                <button
-                    onClick={() => setShowOtherUserAvail(!showOtherUserAvail)}
-                >Toggle Availability</button>
             </div>
             <div className={`calendar-fade isAnimating ? "calendar-fade" : ""`}>
                 <FullCalendar
@@ -497,7 +494,7 @@ export const CALENDAR = forwardRef(({
                     editable={true}
                     eventReceive = {(info) => {    
                         if (info.event.extendedProps.type === 'availability') {
-                            pushAvailability({ event: info.event, coachId: currentUser.id});
+                            pushAvailability({ event: info.event, coachId: '1'});
                         } else {
                             const sessionData = {
                                 name: info.event.title,

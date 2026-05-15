@@ -45,20 +45,8 @@ export default function CoachCalendar() {
     }, []);
 
     // current user
-    const [currentUser, setCurrentUser] = useState();
-
-    async function fetchCurrentUserTEMP() {
-        const { data, error } = await supabase
-            .from('signin_details')
-            .select('*')
-            .limit(1)
-            .single()
-
-        if (!error) setCurrentUser(data);
-        console.log(data);
-        console.log("current user id: ", data.id);
-    }
-
+    let currentUserID = '863b773a-bfb3-445f-9fb9-f3a76be43d95';
+    
     const [isDraggingEvent, setIsDraggingEvent] = useState(false);
 
     const calendarRef = useRef(null);
@@ -501,13 +489,12 @@ useEffect(() => {
     };
 
     useEffect(() => {
-        fetchCurrentUserTEMP();
-        fetchCalendarData();
         fetchDrills();
         fetchDrillTags();
         fetchDrillLibraryTags();
         fetchPlayers();
         fetchCoaches();
+        fetchCalendarData();
     }, []);
 
     async function fetchOtherUserSessions(people) {
@@ -532,11 +519,13 @@ useEffect(() => {
             const duration = Duration.fromISOTime(ses.duration);
             return {
                 id: ses.id,
+                title: "",
                 start: startTime.toISO(),
                 end: endTime.toISO(),
                 extendedProps: {
                     type: 'other_availability',
                     duration: duration,
+                    notes: ""
                 }
             };
         })
@@ -545,18 +534,11 @@ useEffect(() => {
         setIsDataLoading(false);
     }
 
-    useEffect(() => {
-        setSelectedPeople([...selectedCoaches, ...selectedPlayers]);
-        fetchOtherUserSessions(selectedPeople);
-    }, [selectedCoaches, selectedPlayers, selectedPeople]);
-
     async function fetchCalendarData() {
         setIsDataLoading(true);
-
-        const currentUserID = currentUser.id;
         
         // fetch data from the database
-        const sessionData = await supabase
+        const { data, error } = await supabase
             .from('sessions')
             .select(`
                 *,
@@ -564,13 +546,8 @@ useEffect(() => {
             `)
             .eq('session_people.user_id', currentUserID);
 
-        const availData = await supabase
-            .from('coach_availability')
-            .select('*')
-            .eq('coach_id', currentUserID);
-
         // set the session data for the calendar events
-        const session = (sessionData.data || []).map(ses => {
+        const session = (data || []).map(ses => {
             const startTime = DateTime.fromISO(ses.start_datetime);
             const endTime = DateTime.fromISO(ses.end_datetime);
             const duration = Duration.fromISOTime(ses.duration);
@@ -587,26 +564,7 @@ useEffect(() => {
             };
         })
 
-        // set data for availability events
-        const availability = (availData.data || []).map(ava => {
-            const startTime = DateTime.fromISO(ava.start_datetime);
-            const endTime = DateTime.fromISO(ava.end_datetime);
-            const duration = Duration.fromISOTime(ava.duration);
-            return {
-                id: ava.avail_id,
-                title: ava.notes || "",
-                start: startTime.toISO(),
-                end: endTime.toISO(),
-                extendedProps: {
-                    type: 'availability',
-                    duration: duration,
-                    notes: ava.notes
-                }
-            };
-        })
-
-        // set copies of the events to the calendar
-        setCalendarEvents([...session, ...availability]);
+        setCalendarEvents(session);
         setIsDataLoading(false);
     }
 
@@ -627,12 +585,12 @@ useEffect(() => {
 
         const newCoaches = (tempSession.selectedCoaches || []).map(coachId => ({
             session_id: tempSession.id,
-            coach_id: coachId
+            user_id: coachId
         }));
 
         const newPlayers = (tempSession.selectedPlayers || []).map(playerId => ({
             session_id: tempSession.id,
-            player_id: playerId
+            user_id: playerId
         }));
 
         const newDrills = (tempSession.selectedDrills || []).map((drill, index) => ({
@@ -707,7 +665,7 @@ useEffect(() => {
                     
                     handleDelete={sessionDeleteConfirmation}
 
-                    currentUser={currentUser}
+                    currentUser={currentUserID}
 
                     setIsDraggingEvent={setIsDraggingEvent}
 

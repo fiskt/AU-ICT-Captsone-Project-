@@ -65,57 +65,67 @@ export default function CoachCalendar() {
 
     async function fetchPlayers() {
         const { data, error } = await supabase
-            .from('players')
+            .from('signin_details')
             .select('*')
+            .eq('role', 'player');
 
         if (error) {
             console.log("Error when fetching players: ", error.message);
             setPlayers([]);
         } else {
             setPlayers(data);
-            console.log(players);
+            console.log("players", players);
         }
     }
 
     async function fetchCoaches() {
         const { data, error } = await supabase
-            .from('coaches')
+            .from('signin_details')
             .select('*')
+            .eq('role', 'coach');
 
         if (error) {
             console.log("Error when fetching coaches: ", error.message);
             setCoaches([]);
         } else {
             setCoaches(data);
-            console.log(coaches);
+            console.log("coaches", coaches);
         }
     }
 
     async function fetchSessionCoaches(sessionId) {
         const { data, error } = await supabase
-            .from('session_coaches')
-            .select('coach_id')
-            .eq('session_id', sessionId);
+            .from('session_people')
+            .select(`
+                user_id,
+                signin_details!user_id ( role )    
+            `)
+            .eq('session_id', sessionId)
+            .eq('signin_details.role', 'coach');
 
         if (error) {
             console.log("Error when fetching selected session coaches: ", error.message);
             return [];
         } else {
-            return data.map(item => item.coach_id);
+            return data.map(item => item.user_id);
         }
     }
 
     async function fetchSessionPlayers(sessionId) {
         const { data, error } = await supabase
-            .from('session_players')
-            .select('player_id')
-            .eq('session_id', sessionId);
+            .from('session_people')
+            .select(`
+                user_id,
+                signin_details!user_id ( role )
+            `)
+            .eq('session_id', sessionId)
+            .eq('signin_details.role', 'player');
 
         if (error) {
             console.log("Error when fetching selected session players: ", error.message);
             return [];
         } else {
-            return data.map(item => item.player_id);
+            return data.map(item => item.user_id);
         }
     }
 
@@ -136,8 +146,6 @@ export default function CoachCalendar() {
                 fetchSessionCoaches(selectedSession.id),
                 fetchSessionPlayers(selectedSession.id)
             ]);
-
-
 
             setTempSession({
                 id: selectedSession.id,
@@ -179,93 +187,40 @@ export default function CoachCalendar() {
     async function fetchCalendarData() {
         if (!selectedUser) return;
         setIsDataLoading(true);
+
+        let sessionEvents = [];
         
-        let sessionIds = [];
-        let formattedSessions = [];
+        const { data, error } = await supabase
+            .from('sessions')
+            .select(`
+                *,
+                session_people!inner(user_id)
+            `)
+            .eq('session_people.user_id', selectedUser);
 
-        if (selectedUser.table === 'session_coaches') {
-            const { data, error } = await supabase 
-                .from(selectedUser.table)
-                .select('*')
-                .eq('coach_id', selectedUser.user_id);
-
-            if (!error) sessionIds = (data || []).map(cs => cs.session_id);
-        } else if (selectedUser.table === 'session_players') {
-            const { data, error } = await supabase 
-                .from(selectedUser.table)
-                .select('*')
-                .eq('player_id', selectedUser.user_id);
-
-            if (!error) sessionIds = (data || []).map(cs => cs.session_id);
+        if (!error) {
+            sessionEvents = (data || []).map(ses => {
+                const startTime = DateTime.fromISO(ses.start_datetime);
+                const endTime = DateTime.fromISO(ses.end_datetime);
+                const duration = Duration.fromISOTime(ses.duration);
+                return {
+                    id: ses.id,
+                    title: ses.name,
+                    start: startTime.toISO(),
+                    end: endTime.toISO(),
+                    extendedProps: {
+                        type: 'session',
+                        duration: duration,
+                        notes: ses.notes
+                    }
+                }
+            });
         }
 
-        console.log("sessino ids: ", sessionIds);
-
-        if (sessionIds.length > 0) {
-            const { data, error } = await supabase
-                .from('sessions')
-                .select('*')
-                .in('id', sessionIds);
-
-                formattedSessions = (data || []).map(ses => {
-                    const startTime = DateTime.fromISO(ses.time);
-                    const duration = Duration.fromISOTime(ses.duration);
-                    return {
-                        id: ses.id,
-                        title: ses.name,
-                        start: startTime.toISO(),
-                        end: startTime.plus(duration).toISO(),
-                        extendedProps: {
-                            type: 'session',
-                            duration: duration.toISO(),
-                            people: ses.people,
-                            notes: ses.notes
-                        }
-                    };
-                });
-        }
-
-        let formattedAvail = [];
-        if (selectedUser.table === 'session_coaches') {
-            const { data, error } = await supabase
-                .from('coach_availability')
-                .select('*')
-                .eq('coach_id', selectedUser.user_id);
-
-            if (!error) {
-                formattedAvail = (data || []).map(ava => {
-                    const startTime = DateTime.fromISO(ava.start_datetime);
-                    const endTime = DateTime.fromISO(ava.end_datetime);
-                    const duration = Duration.fromISOTime(ava.duration);
-                    return {
-                        id: ava.avail_id,
-                        title: ava.notes || "",
-                        start: startTime.toISO(),
-                        end: endTime.toISO(),
-                        extendedProps: {
-                            type: 'availability',
-                            duration: duration,
-                            notes: ava.notes
-                        }
-                    };
-                });
-            }
-        }
-        
         // set copies of the events to the calendar
-        setCalendarEvents([...formattedSessions, ...formattedAvail]);
+        setCalendarEvents(sessionEvents);
         setIsDataLoading(false);
     }
-
-    // session creator/editor duration dropdown options
-    const durationOptions = [
-        { label: "30 mins", val: "00:30:00" },
-        { label: "60 mins", val: "00:60:00" },
-        { label: "90 mins", val: "01:30:00" },
-        { label: "120 mins", val: "02:00:00" },
-        { label: "150 mins", val: "02:30:00" },
-        { label: "180 mins", val: "03:00:00" },
-    ];
 
     // auto save current session inputs in local storage and restore the saved inputs
     const [sessionSettings, setSessionSettings] = useState(() => {
@@ -277,13 +232,6 @@ export default function CoachCalendar() {
             sessionPeople: []
         };
     });
-
-    const [availSettings, setAvailSettings] = useState({
-            availNotes: "",
-            availStart: "",
-            availEnd: "",
-            availDuration: "01:00:00"
-    })
 
     useEffect(() => {
         localStorage.setItem('session_creator_draft', JSON.stringify(sessionSettings));
@@ -421,17 +369,6 @@ export default function CoachCalendar() {
                                         setTempSession({ ...tempSession, name: val })
                                     }
                                     id="session-editor-name"
-                                />
-                                <DROPDOWN_INPUT 
-                                    label="DURATION" 
-                                    input_id="session-duration-creator" 
-                                    box_w="100%" box_h="30px" 
-                                    options={durationOptions}
-                                    value={tempSession?.duration || ""}
-                                    onChange={(val) => 
-                                        setTempSession({ ...tempSession, duration: val })
-                                    }
-                                    id="session-editor-duration"
                                 />
                                 <TYPING_INPUT 
                                     label="NOTES" 
