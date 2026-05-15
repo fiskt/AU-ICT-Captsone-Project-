@@ -2,6 +2,7 @@
 
 #calendar-box {
     width: 80%;
+    min-height: 750px;
 }
 
 .editor-box {
@@ -43,28 +44,52 @@
 
 .fc-view-harness {
     overflow: auto;
+    min-height: 750px;
 }
 
 #draggable-session-container {
     width: 100%;
+    cursor: grab;
+    color: white;
+    font-family: 'DM Mono Light';
+    font-size: small;
 }
 
 .session-icon {
-    font-family: 'DM Mono Light';
-    font-size: small;
     display: flex;
     flex-direction: column;
     text-align: left;
     padding: 5px;
-    color: white;
     background-color: var(--accent-color);
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    height: 100%;
+    width: 100%;
+}
+
+.invalid-session-icon {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    padding: 5px;
+    background-color: #00000070;
+    border: 2px solid #00000075;
     border-radius: 8px;
     height: 100%;
     width: 100%;
 
-    cursor: grab;
+    background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 40px,
+        #00000025 40px,
+        #00000025 90px
+    ) !important;
 }
 
+.draggable-session-warning {
+    color: var(--danger-body-color) !important;
+}
 
 #session-editor-input-container {
     height: 100%;
@@ -82,6 +107,58 @@
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+}
+
+#session-drill-library .content-box-middle {
+    display: flex;
+    flex-direction: column;
+    padding: 5px 5px 0 5px;
+}
+
+#session-drill-library .content-box-middle #session-drill-library-grid-container {
+    overflow-y: auto;
+}
+
+#session-drill-library .content-box-middle #session-drill-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto;
+    gap: 10px;
+}
+
+#session-drill-library-filter {
+    width: 100%;
+    height: 50px;
+    align-content: center;
+    display: flex;
+    gap: 10px;
+}
+
+#session-drill-library .content-box-middle input {
+    width: 40%;
+    height: 40px;
+    background-color: white;
+    color: black;
+}
+
+#session-drill-library .content-box-middle select,
+#session-drill-library .content-box-middle select::picker(select) {
+    appearance: base-select;
+}
+
+select {
+  border: 2px solid var(--content-input-border-color);
+  background-color: white;
+  padding: 8px;
+  border-radius: 8px;
+  color: black;
+    height: 40px;
+}
+
+select::picker(select) {
+  background-color: white;
+  border: 2px solid var(--content-input-border-color);
 }
 
 .calendar-event-tooltip {
@@ -206,6 +283,25 @@
     opacity: 100% !important;
 }
 
+.other-avail-event {
+    background-color: color-mix(in srgb, var(--sidebar-bg-color), transparent 80%);
+    border-radius: 0;
+    border-color: color-mix(in srgb, var(--sidebar-bg-color), transparent 80%);
+    
+    background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 10px,
+        green 10px,
+        green 20px
+    ) !important;
+}
+
+.other-avail-event .fc-event-time,
+.other-avail-event .fc-event-title {
+    display: none !important;
+}
+
 .short-event .fc-event-time {
     display: none !important;
 }
@@ -316,6 +412,7 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+    backdrop-filter: blur(4px) ;
 }
 
 #session-drill-library {
@@ -339,6 +436,7 @@
     flex-direction: column;
 
     animation: calendar-entry-fade 0.3s ease-in;
+    backdrop-filter: blur(4px);
 }
 
 #session-editor {
@@ -428,6 +526,7 @@
     border-radius: 8px;
     border: 2px solid var(--content-input-border-color);
     padding: 10px;
+    height: 100%;
 }
 
 #session-editor-drills #session-editor-add-drill-btn,
@@ -452,7 +551,7 @@
         'session-creator-bottom session-creator-bottom';
 
     grid-template-columns: 50% 50%;
-    grid-template-rows: 5% auto 65% 15%;
+    grid-template-rows: 5% 15% 65% auto;
     display: grid;
 
     background-color: white;
@@ -460,6 +559,8 @@
     border-radius: 8px;
 
     padding: 10px;
+    overflow-y: auto;
+    min-height: 750px;
 }
 
 #session-creator-top {
