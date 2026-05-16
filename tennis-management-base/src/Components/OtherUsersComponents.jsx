@@ -59,15 +59,14 @@ export function USERS_LIST({ coaches = [], players = [], selectedUser, setSelect
                         {
                             <ul class="user-list">
                                 {coaches.map((coach) => {
-                                    const isActive = selectedUser === coach.id;
+                                    const isActive = selectedUser === coach;
 
                                     return (
                                         <li 
                                         key={coach.id}
                                         className={`${isActive ? 'active' : ''}`}
                                         onClick={() => {
-                                            setSelectedUser(coach.id);
-                                            console.log(coach.id);
+                                            setSelectedUser(coach);
                                         }}
                                     >
                                         <span>{coach.first_name} {coach.last_name}</span>
@@ -85,14 +84,14 @@ export function USERS_LIST({ coaches = [], players = [], selectedUser, setSelect
                         {
                             <ul class="user-list">
                                 {players.map((player) => {
-                                    const isActive = selectedUser === player.id;
+                                    const isActive = selectedUser === player;
 
                                     return (
                                     <li 
                                         key={player.id}
                                         className={`${isActive ? 'active' : ''}`}
                                         onClick={() => {
-                                            setSelectedUser(player.id);
+                                            setSelectedUser(player);
                                             console.log(player.id);
                                         }}
                                     >
@@ -148,6 +147,7 @@ export const OTHER_CALENDARS = forwardRef(({
     onDateChange, 
     activeStart, activeEnd, 
     selectedSession, 
+    selectedUser,
     isMobile
     }, ref) => {
 
@@ -179,12 +179,17 @@ export const OTHER_CALENDARS = forwardRef(({
 
     const [isAnimating, setIsAnimating] = useState(false);
 
+    const currentViewText = selectedUser
+        ? "Current calendar: " + selectedUser.first_name + " " + selectedUser.last_name
+        : 'No user selected.'
+
     return (
         <div id="calendar-container">
-            <div id="calendar-date-container" >
+            <div id="calendar-date-container">
                 <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()}>
                     {calendarTitle} 
                 </h1>
+                <span>{currentViewText}</span>
             </div>
             <div className={`calendar-fade isAnimating ? "calendar-fade" : ""`}>
                 <FullCalendar

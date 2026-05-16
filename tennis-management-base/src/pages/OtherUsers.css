@@ -148,47 +148,41 @@ button.active {
 }
 
 #session-details-drills-container, #session-details-people-container,
-#session-creator-drills-container, #session-creator-people-container {
+#mobile-session-details-drills-container, #mobile-session-details-people-container {
     width: 100%;
-    height: 100%;
 }
 
 #session-details-drills, #session-details-people,
-#session-creator-drills, #session-creator-people {
+#mobile-session-details-drills, #mobile-session-details-people {
     overflow-y: auto !important;
     background-color: white;
     border-radius: 8px;
     border: 2px solid var(--content-input-border-color);
     padding: 10px;
-    height: 100%;
-}
-
-#session-details-drills #session-details-add-drill-btn,
-#session-creator-drills #session-creator-add-drill-btn {
-    width: 100%;
-    height: 40px;
 }
 
 #session-details-drills > * > div {
     margin-bottom: 10px;
 }
 
-#session-details .input-box-wrapper {
+#session-details .input-box-wrapper,
+#mobile-session-details .input-box-wrapper {
     border: 2px solid var(--content-input-border-color);
     border-radius: 8px;
     padding: 5px;
     font-family: 'DM Mono Light', sans-serif;
     font-size: small;
-    width: 100%;
 }
 
-#session-details-people ul {
+#session-details-people ul,
+#mobile-session-details-people ul {
     list-style: none;
     padding: 0;
     text-align: left;
 }
 
-#session-details-people li {
+#session-details-people li,
+#mobile-session-details-people li {
     font-family: 'DM Mono Sans', sans-serif;
     font-size: small;
     color: black;
@@ -196,6 +190,7 @@ button.active {
 }
 
 #session-details-people div,
+#mobile-session-details-people div,
 #users-list .users-role-title {
     width: 100%;
     border-bottom: 1px solid var(--content-input-border-color);
@@ -218,7 +213,55 @@ button.active {
     width: 100%;
 }
 
-#details-box {
+#user-selector {
     min-height: 750px;
     overflow-y: auto;
+}
+
+#mobile-session-details-container {
+    width: 100%;
+    height: 100%;
+    background-color: #00000050;
+    position: absolute;
+    z-index: 99;
+    margin: -20px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+
+    animation: calendar-entry-fade 0.3s ease-in;
+}
+
+#mobile-session-details {
+    width: 95%;
+    height: 85%;
+    background-color: white;
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 8px;
+    padding: 5px;
+    overflow-y: auto;
+}
+
+#mobile-session-details-top {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.session-details-notes, .session-details-name {
+    height: auto;
+    text-wrap: auto;
+    text-align: left;
+    overflow-y: auto;
+    max-height: 170px;
+}
+
+#calendar-date-container {
+    justify-content: space-between;
+}
+
+#calendar-date-container span {
+    font-family: 'DM Mono Light', sans-serif;
+    font-size: 12px;
 }

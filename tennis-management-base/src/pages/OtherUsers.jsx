@@ -180,6 +180,7 @@ export default function CoachCalendar() {
         setIsDataLoading(true);
 
         let sessionEvents = [];
+        console.log("selected user: ", selectedUser);
         
         const { data, error } = await supabase
             .from('sessions')
@@ -187,7 +188,7 @@ export default function CoachCalendar() {
                 *,
                 session_people!inner(user_id)
             `)
-            .eq('session_people.user_id', selectedUser);
+            .eq('session_people.user_id', selectedUser.id);
 
         if (!error) {
             sessionEvents = (data || []).map(ses => {
@@ -240,7 +241,7 @@ export default function CoachCalendar() {
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
             
             {/* User selector */}
-            <div class="content-box" id="details-box">
+            <div class="content-box" id='user-selector'>
                 <h2 class="content-header">Users</h2>
                 <div class="content-box-top">
                     <div id="user-filter-container">
@@ -284,7 +285,7 @@ export default function CoachCalendar() {
 
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
-                <CALENDAR 
+                <OTHER_CALENDARS 
                     events={calendarEvents}
                     activeStart={weekStart} activeEnd={weekEnd}
                     onDateChange={handleDateChange}
@@ -295,13 +296,15 @@ export default function CoachCalendar() {
 
                     selectedSession={selectedSession}
 
+                    selectedUser={selectedUser}
+
                     isMobile={isMobile}
 
                     ref={calendarRef}
                 />
             </div>
             
-            {/* Session editor */}
+            {/* Session details */}
             { selectedSession && showSessionDetails && !isMobile && (
                 <div 
                     id="session-details-container" 
@@ -326,11 +329,11 @@ export default function CoachCalendar() {
                             <div id="session-details-middle-left">
                                 <div class="input-container">
                                     <span class="input-container-label">NAME</span>
-                                    <div class="input-box-wrapper">{selectedSession.title}</div>
+                                    <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
                                 </div>
                                 <div class="input-container">
                                     <span class="input-container-label">NOTES</span>
-                                    <div class="input-box-wrapper">{selectedSession.extendedProps.notes}</div>
+                                    <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
                                 </div>
                             </div>
 
@@ -375,103 +378,53 @@ export default function CoachCalendar() {
             )}
 
             {isMobile && showSessionDetails && selectedSession && (
-                <div id="mobile-session-editor-container">
-                    <div id="mobile-session-editor">
-                        <h2 class="content-header">Session Details</h2>
-                        <TYPING_INPUT 
-                            label="NAME *" 
-                            num_rows="1" 
-                            input_id="session-name-creator" 
-                            box_w="100%" box_h="30px" 
-                            sample_txt="Session name"
-                            value={tempSession?.name || ""}
-                            onChange={(val) => 
-                                setTempSession({ ...tempSession, name: val })
-                            }
-                            id="session-editor-name"
-                        />
-
-                        <TYPING_INPUT 
-                            label="NOTES" 
-                            num_rows="6" 
-                            input_id="session-notes-creator" 
-                            box_w="100%" box_h="80px" 
-                            sample_txt="Session notes" 
-                            value={tempSession?.notes || ""}
-                            onChange={(val) => 
-                                setTempSession({ ...tempSession, notes: val })
-                            }
-                            id="session-editor-notes"
-                        />
-
-                        <div class="input-container">
-                            <span class="input-container-label">TIMES *</span>
-                            <div id="mobile-session-editor-times">
-                                <div class="mobile-session-creator-times-container">
-                                    <p>Start</p>
-                                    <select
-                                        value={selectedSession.start}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setMobileSessionStart(val);
-                                            updateSessionField('sessionStart', val);
-                                        }}
-                                    >
-                                        {mobileSessionCreatorTimes.map(time => (
-                                            <option
-                                                key={time.name}
-                                                value={time.val}
-                                            >
-                                                {time.name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div class="mobile-session-creator-times-container">
-                                    <p>End</p>
-                                    <select
-                                        value={selectedSession.end}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setMobileSessionEnd(val);
-                                            updateSessionField('sessionEnd', val);
-                                        }}
-                                    >
-                                        {validEndTimes.map(time => (
-                                            <option
-                                                key={time.name}
-                                                value={time.val}
-                                            >
-                                                {time.name}
-                                            </option>
-                                            
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-            
-                        <div class="input-container" >
-                            <span class="input-container-label">PEOPLE *</span>
-                            <div id="session-editor-people">
-                                <PEOPLE_SELECTOR 
-                                    role="COACHES" people={coaches} 
-                                    selectedPeople={editedSessionCoaches} 
-                                    setSelectedPeople={setEditedSessionCoaches}  
-                                />
-                                <PEOPLE_SELECTOR 
-                                    role="PLAYERS" people={players} 
-                                    selectedPeople={editedSessionPlayers} 
-                                    setSelectedPeople={setEditedSessionPlayers} 
-                                />
-                            </div>
+                <div id="mobile-session-details-container">
+                    <div id="mobile-session-details">
+                        <div id="mobile-session-details-top">
+                            <h2 class="content-header">Session Details</h2>
+                            <button id="mobile-close-session-details" onClick={() => {
+                                setShowSessionDetails(false);
+                                setSelectedSession(null);
+                            }}>Close</button>
                         </div>
 
                         <div class="input-container">
+                            <span class="input-container-label">NAME</span>
+                            <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
+                        </div>
+                        <div class="input-container">
+                            <span class="input-container-label">NOTES</span>
+                            <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
+                        </div>
+
+                        <div class="input-container" id="mobile-session-details-people-container">
+                            <span class="input-container-label">PEOPLE</span>
+                            <div id="mobile-session-details-people">
+                                <div>Coaches</div>
+                                <ul>
+                                    {selectedSessionPeople
+                                        .filter(coach => coach.role === 'coach')
+                                        .map(coach => (
+                                            <li key={coach.id}>{coach.first_name} {coach.last_name}</li>
+                                        ))
+                                    }
+                                </ul>
+                                <div>Players</div>
+                                <ul>
+                                    {selectedSessionPeople
+                                        .filter(player => player.role === 'player')
+                                        .map(player => (
+                                            <li key={player.id}>{player.first_name} {player.last_name}</li>
+                                        ))
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="input-container" id="session-details-drills-container">
                             <span class="input-container-label">DRILLS</span>
-                            <div id="session-editor-drills">
-                                <SESSION_CREATOR_DRILLS
+                            <div id="session-details-drills">
+                                <SESSION_DETAILS_DRILLS
                                     selectedDrills={selectedSessionDrills}
                                 />
                             </div>
