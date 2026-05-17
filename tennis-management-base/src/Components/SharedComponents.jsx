@@ -256,6 +256,7 @@ export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_t
                         placeholder={sample_txt}
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
+                        maxLength={maxLength}
                     />
                 ) : (
                     <input
@@ -264,6 +265,7 @@ export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_t
                         placeholder={sample_txt}
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
+                        maxLength={maxLength}
                     />
                 )}
             </div>
