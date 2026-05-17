@@ -5,36 +5,6 @@ import "../App.css";
 import "./CoachDashboard.css";
 import { PLAYER_SIDEBAR, TOPBAR } from "../Components/SharedComponents";
 
-const nextSession = {
-    date: "2026-05-12",
-    time: "10:30",
-    duration: "60 min",
-    coach: "Coach Daniel",
-    session: "Serve Accuracy Training",
-    location: "Court 2",
-};
-
-const weeklyActivities = [
-    {
-        date: "Mon, 12 May",
-        time: "10:30",
-        session: "Serve Accuracy Training",
-        status: "Upcoming",
-    },
-    {
-        date: "Wed, 14 May",
-        time: "15:00",
-        session: "Footwork & Agility",
-        status: "Upcoming",
-    },
-    {
-        date: "Fri, 16 May",
-        time: "09:00",
-        session: "Match Simulation",
-        status: "Upcoming",
-    },
-];
-
 const strengths = [
     "Consistent forehand rally",
     "Good court coverage",
@@ -87,6 +57,10 @@ export default function PlayerDashboard() {
     const [durationMinutes, setDurationMinutes] = useState("");
     const [notes, setNotes] = useState("");
 
+    const [latestFeedback, setLatestFeedback] = useState(null);
+
+    const [weeklySessions, setWeeklySessions] = useState([]);
+
     async function fetchPendingFeedback() {
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -112,23 +86,49 @@ export default function PlayerDashboard() {
 
         setSessions(sessionData);
 
+        // Upcomming sessions
         const now = new Date();
 
         const upcomingSession = sessionData.find(session =>
-            new Date(session.start_datetime) >= now
+            new Date(session.end_datetime) >= now
         );
 
         setNextSessionData(upcomingSession || null);
 
+        // WeeklyAct
+        const today = new Date();
+
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay() + 1);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        const thisWeekSessions = sessionData.filter(session => {
+            const sessionDate = new Date(session.start_datetime);
+            return sessionDate >= startOfWeek && sessionDate <= endOfWeek;
+        });
+
+        setWeeklySessions(thisWeekSessions);
         const { data: feedbackData, error: feedbackError } = await supabase
             .from("session_feedback")
-            .select("session_id")
+            .select("*")
             .eq("player_id", user.id);
 
         if (feedbackError) {
             console.log("Error fetching feedback:", feedbackError.message);
             return;
         }
+
+        // To fetch last rating
+        const latest = [...feedbackData]
+            .sort((a, b) =>
+                new Date(b.created_at) - new Date(a.created_at)
+            )[0];
+
+        setLatestFeedback(latest || null);
 
         const ratedSessionIDs = feedbackData.map(f => f.session_id);
 
@@ -202,17 +202,31 @@ export default function PlayerDashboard() {
                         <div className="statsGrid">
                             <div className="statCard">
                                 <p className="cardLabel">THIS WEEK</p>
-                                <h2 className="cardValue">3</h2>
+                                <h2 className="cardValue">{weeklySessions.length}</h2>
                             </div>
 
                             <div className="statCard">
                                 <p className="cardLabel">NEXT SESSION</p>
-                                <h2 className="cardValue">10:30</h2>
+                                <h2 className="cardValue">
+                                    {nextSessionData
+                                        ? new Date(nextSessionData.start_datetime).toLocaleTimeString(
+                                            "en-AU",
+                                            {
+                                                hour: "2-digit",
+                                                minute: "2-digit"
+                                            }
+                                        )
+                                        : "--"}
+                                </h2>
                             </div>
 
                             <div className="statCard">
                                 <p className="cardLabel">LAST RATING</p>
-                                <h2 className="cardValue">8/10</h2>
+                                <h2 className="cardValue">
+                                    {latestFeedback
+                                        ? `${latestFeedback.intensity}/10`
+                                        : "--"}
+                                </h2>
                             </div>
 
                             <div className="statCard">
@@ -231,15 +245,20 @@ export default function PlayerDashboard() {
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">NEXT SESSION</p>
-                                        <h3>{nextSession.session}</h3>
+                                        <h3>{nextSessionData ? nextSessionData.name : "No upcoming session"}</h3>
                                     </div>
 
                                     <div className="playerSessionHighlight">
-                                        <p><strong>Date:</strong> {nextSession.date}</p>
-                                        <p><strong>Time:</strong> {nextSession.time}</p>
-                                        <p><strong>Duration:</strong> {nextSession.duration}</p>
-                                        <p><strong>Coach:</strong> {nextSession.coach}</p>
-                                        <p><strong>Location:</strong> {nextSession.location}</p>
+                                        {nextSessionData ? (
+                                            <div className="playerSessionHighlight">
+                                                <p><strong>Date:</strong> {new Date(nextSessionData.start_datetime).toLocaleDateString("en-AU")}</p>
+                                                <p><strong>Time:</strong> {new Date(nextSessionData.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</p>
+                                                <p><strong>Duration:</strong> {nextSessionData.duration}</p>
+                                                <p><strong>Notes:</strong> {nextSessionData.notes || "No notes"}</p>
+                                            </div>
+                                        ) : (
+                                            <p>No upcoming session found.</p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -251,21 +270,42 @@ export default function PlayerDashboard() {
                                     </div>
 
                                     <div className="sessionList">
-                                        {weeklyActivities.map((activity, index) => (
-                                            <div className="sessionItem" key={index}>
-                                                <div className="sessionMain">
-                                                    <p className="sessionClient">{activity.session}</p>
-                                                    <p className="sessionName">{activity.status}</p>
-                                                </div>
+                                        {weeklySessions.length > 0 ? (
+                                            weeklySessions.map((session) => (
+                                                <div className="sessionItem" key={session.id}>
+                                                    <div className="sessionMain">
+                                                        <p className="sessionClient">{session.name}</p>
+                                                        <p className="sessionName">
+                                                            {new Date(session.end_datetime) < new Date()
+                                                                ? "Completed"
+                                                                : "Upcoming"}
+                                                        </p>
+                                                    </div>
 
-                                                <div className="sessionInfo">
-                                                    <span>{activity.date}</span>
-                                                    <span>{activity.time}</span>
+                                                    <div className="sessionInfo">
+                                                        <span>
+                                                            {new Date(session.start_datetime).toLocaleDateString("en-AU", {
+                                                                weekday: "short",
+                                                                day: "numeric",
+                                                                month: "short"
+                                                            })}
+                                                        </span>
+
+                                                        <span>
+                                                            {new Date(session.start_datetime).toLocaleTimeString("en-AU", {
+                                                                hour: "2-digit",
+                                                                minute: "2-digit"
+                                                            })}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))
+                                        ) : (
+                                            <p>No sessions this week.</p>
+                                        )}
                                     </div>
                                 </div>
+
 
                                 {/* FEEDBACK FORM */}
                                 <div className="chartBox">
