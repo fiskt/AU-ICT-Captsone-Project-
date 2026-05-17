@@ -11,6 +11,7 @@ export default function CoachCalendar() {
     const sessionEditorRef = useRef(null);
     const calendarRef = useRef(null);
     const [showSessionDetails, setShowSessionDetails] = useState(false);
+    const [showCollapsedUsers, setShowCollapsedUsers] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
 
     const [calendarEvents, setCalendarEvents] = useState([]);
@@ -143,33 +144,6 @@ export default function CoachCalendar() {
     const [weekStart, setWeekStart] = useState(DateTime.now().startOf('week'));
     const [weekEnd, setWeekEnd] = useState(DateTime.now().endOf('week'));
 
-    const [tempSession, setTempSession] = useState(null);
-
-    useEffect(() => {
-    const loadSessionData = async () => {
-        if (selectedSession) {
-            setIsDataLoading(true);
-
-            fetchSelectedSessionPeople();
-            fetchSelectedSessionDrills();
-
-            setTempSession({
-                id: selectedSession.id,
-                name: selectedSession.title,
-                duration: selectedSession.extendedProps.duration,
-                notes: selectedSession.extendedProps.notes,
-                selectedCoaches: selectedSessionCoaches, 
-                selectedPlayers: selectedSessionPlayers 
-            });
-        } else {
-            setTempSession(null);
-        }
-        setIsDataLoading(false);
-    };
-
-    loadSessionData();
-}, [selectedSession]);
-
     const handleDateChange = (start, end) => { 
         setWeekStart(DateTime.fromJSDate(start));
         setWeekEnd(DateTime.fromJSDate(end));
@@ -209,7 +183,6 @@ export default function CoachCalendar() {
             });
         }
 
-        // set copies of the events to the calendar
         setCalendarEvents(sessionEvents);
         setIsDataLoading(false);
     }
@@ -241,47 +214,65 @@ export default function CoachCalendar() {
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
             
             {/* User selector */}
-            <div class="content-box" id='user-selector'>
-                <h2 class="content-header">Users</h2>
-                <div class="content-box-top">
-                    <div id="user-filter-container">
-                        <div class="content-box-middle">
-                            <input
-                                class="typing-input-box"
-                                placeholder='Search user'
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            >
-                            </input>
-                        </div>
-                        <div class="content-box-bottom" id="users-filter-btn">
-                                <button 
-                                    onClick={() => setSearchFilter("coaches")}
-                                    className={`user-filter-btn ${searchFilter === 'coaches' ? 'active' : ''}`}
-                                >Coach</button>
-                                <button 
-                                    onClick={() => setSearchFilter("players")}
-                                    className={`user-filter-btn ${searchFilter === 'players' ? 'active' : ''}`}
-                                >Player</button>
-                                <button
-                                    class="user-filter-btn"
-                                    onClick={() => {
-                                        setSearchFilter("all");
-                                        setSearchQuery("");
-                                    }}
-                                >Reset</button>
+            { !showCollapsedUsers && (
+                <div class="content-box" id='user-selector'>
+                    <div class="user-selector-top">
+                        <h2 class="content-header">Users</h2>
+                        { isMobile && (
+                            <button
+                                onClick={() => setShowCollapsedUsers(true)}
+                            >Show Less</button>
+                        )}
+                    </div>
+                    <div class="content-box-top">
+                        <div id="user-filter-container">
+                            <div class="content-box-middle">
+                                <input
+                                    class="typing-input-box"
+                                    placeholder='Search user'
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                >
+                                </input>
+                            </div>
+                            <div class="content-box-bottom" id="users-filter-btn">
+                                    <button 
+                                        onClick={() => setSearchFilter("coaches")}
+                                        className={`user-filter-btn ${searchFilter === 'coaches' ? 'active' : ''}`}
+                                    >Coach</button>
+                                    <button 
+                                        onClick={() => setSearchFilter("players")}
+                                        className={`user-filter-btn ${searchFilter === 'players' ? 'active' : ''}`}
+                                    >Player</button>
+                                    <button
+                                        class="user-filter-btn"
+                                        onClick={() => {
+                                            setSearchFilter("all");
+                                            setSearchQuery("");
+                                        }}
+                                    >Reset</button>
+                            </div>
                         </div>
                     </div>
+                    <div class="content-box-middle">
+                        <USERS_LIST 
+                            coaches={filteredCoaches} players={filteredPlayers} 
+                            selectedUser={selectedUser}
+                            setSelectedUser={setSelectedUser} 
+                        />
+                    </div>
+                </div> 
+            )}
+
+            { showCollapsedUsers && isMobile && (
+                <div class="user-selector-top" id="collapsed-users">
+                    <h2 class="content-header">USERS</h2>
+                    <button
+                        onClick={() => setShowCollapsedUsers(false)}
+                    >Show More</button>
                 </div>
-                <div class="content-box-middle">
-                    <USERS_LIST 
-                        coaches={filteredCoaches} players={filteredPlayers} 
-                        selectedUser={selectedUser}
-                        setSelectedUser={setSelectedUser} 
-                    />
-                </div>
-            </div> 
+            )}
 
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
@@ -305,7 +296,7 @@ export default function CoachCalendar() {
             </div>
             
             {/* Session details */}
-            { selectedSession && showSessionDetails && !isMobile && (
+            { !showCollapsedUsers && selectedSession && showSessionDetails && !isMobile && (
                 <div 
                     id="session-details-container" 
                     onClick={(e) => {
@@ -316,68 +307,68 @@ export default function CoachCalendar() {
                     }}
                 >
                     <div id="session-details" ref={sessionEditorRef}>
-                            <div id="session-details-top-left">
-                                <h2 id="session-details-header">Session Details</h2>
-                            </div>
-                            <div id="session-details-top-right">
-                                <button id="close-session-details" onClick={() => {
-                                    setShowSessionDetails(false);
-                                    setSelectedSession(null);
-                                }}>Close</button>
-                            </div>
+                        <div id="session-details-top-left">
+                            <h2 id="session-details-header">Session Details</h2>
+                        </div>
+                        <div id="session-details-top-right">
+                            <button id="close-session-details" onClick={() => {
+                                setShowSessionDetails(false);
+                                setSelectedSession(null);
+                            }}>Close</button>
+                        </div>
 
-                            <div id="session-details-middle-left">
-                                <div class="input-container">
-                                    <span class="input-container-label">NAME</span>
-                                    <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
-                                </div>
-                                <div class="input-container">
-                                    <span class="input-container-label">NOTES</span>
-                                    <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
-                                </div>
+                        <div id="session-details-middle-left">
+                            <div class="input-container">
+                                <span class="input-container-label">NAME</span>
+                                <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
                             </div>
+                            <div class="input-container">
+                                <span class="input-container-label">NOTES</span>
+                                <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
+                            </div>
+                        </div>
 
-                            <div id="session-details-middle-middle">
-                                <div class="input-container" id="session-details-people-container">
-                                    <span class="input-container-label">PEOPLE</span>
-                                    <div id="session-details-people">
-                                        <div>Coaches</div>
-                                        <ul>
-                                            {selectedSessionPeople
-                                                .filter(coach => coach.role === 'coach')
-                                                .map(coach => (
-                                                    <li key={coach.id}>{coach.first_name} {coach.last_name}</li>
-                                                ))
-                                            }
-                                        </ul>
-                                        <div>Players</div>
-                                        <ul>
-                                            {selectedSessionPeople
-                                                .filter(player => player.role === 'player')
-                                                .map(player => (
-                                                    <li key={player.id}>{player.first_name} {player.last_name}</li>
-                                                ))
-                                            }
-                                        </ul>
-                                    </div>
+                        <div id="session-details-middle-middle">
+                            <div class="input-container" id="session-details-people-container">
+                                <span class="input-container-label">PEOPLE</span>
+                                <div id="session-details-people">
+                                    <div>Coaches</div>
+                                    <ul>
+                                        {selectedSessionPeople
+                                            .filter(coach => coach.role === 'coach')
+                                            .map(coach => (
+                                                <li key={coach.id}>{coach.first_name} {coach.last_name}</li>
+                                            ))
+                                        }
+                                    </ul>
+                                    <div>Players</div>
+                                    <ul>
+                                        {selectedSessionPeople
+                                            .filter(player => player.role === 'player')
+                                            .map(player => (
+                                                <li key={player.id}>{player.first_name} {player.last_name}</li>
+                                            ))
+                                        }
+                                    </ul>
                                 </div>
                             </div>
+                        </div>
 
-                            <div id="session-details-middle-right">
-                                <div class="input-container" id="session-details-drills-container">
-                                    <span class="input-container-label">DRILLS</span>
-                                    <div id="session-details-drills">
-                                        <SESSION_DETAILS_DRILLS
-                                            selectedDrills={selectedSessionDrills}
-                                        />
-                                    </div>
+                        <div id="session-details-middle-right">
+                            <div class="input-container" id="session-details-drills-container">
+                                <span class="input-container-label">DRILLS</span>
+                                <div id="session-details-drills">
+                                    <SESSION_DETAILS_DRILLS
+                                        selectedDrills={selectedSessionDrills}
+                                    />
                                 </div>
                             </div>
+                        </div>
                     </div>
                 </div>
             )}
 
-            {isMobile && showSessionDetails && selectedSession && (
+            { isMobile && showSessionDetails && selectedSession && (
                 <div id="mobile-session-details-container">
                     <div id="mobile-session-details">
                         <div id="mobile-session-details-top">

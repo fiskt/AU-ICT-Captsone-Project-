@@ -216,6 +216,8 @@ button.active {
 #user-selector {
     min-height: 750px;
     overflow-y: auto;
+
+    animation: entry-fade 0.3s ease-in;
 }
 
 #mobile-session-details-container {
@@ -264,4 +266,29 @@ button.active {
 #calendar-date-container span {
     font-family: 'DM Mono Light', sans-serif;
     font-size: 12px;
+}
+
+.user-selector-top {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.user-selector-top button {
+    height: 30px;
+}
+
+#collapsed-users {
+    background: white;
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 8px;
+    padding: 5px;
+
+    animation: entry-fade 0.3s ease-in;
+}
+
+@keyframes entry-fade {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
 }
