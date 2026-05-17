@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "../supabaseClient";
 import '../App.css';
 import "../App.css";
 import "./CoachDashboard.css";
@@ -64,12 +65,121 @@ const coachUpdates = [
     },
 ];
 
+function getIntensityZone(intensity) {
+    if (intensity >= 1 && intensity <= 3) return "easy";
+    if (intensity >= 4 && intensity <= 6) return "medium";
+    if (intensity >= 7 && intensity <= 10) return "hard";
+}
+
+function durationToMinutes(duration) {
+    if (!duration) return 0;
+
+    const [hours, minutes, seconds] = duration.split(":").map(Number);
+    return hours * 60 + minutes + Math.round(seconds / 60);
+}
+
 export default function PlayerDashboard() {
-    const [feedback, setFeedback] = useState({
-        energy: "",
-        difficulty: "",
-        comment: "",
-    });
+    const [sessions, setSessions] = useState([]);
+    const [nextSessionData, setNextSessionData] = useState(null);
+    const [pendingSession, setPendingSession] = useState(null);
+
+    const [intensity, setIntensity] = useState("");
+    const [durationMinutes, setDurationMinutes] = useState("");
+    const [notes, setNotes] = useState("");
+
+    async function fetchPendingFeedback() {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            console.log("No user logged in");
+            return;
+        }
+
+        const { data: sessionData, error } = await supabase
+            .from("sessions")
+            .select(`
+            *,
+            session_people!inner(user_id)
+        `)
+            .eq("session_people.user_id", user.id)
+            .order("start_datetime", { ascending: true });
+
+        if (error) {
+            console.log("Error fetching sessions:", error.message);
+            setSessions([]);
+            return;
+        }
+
+        setSessions(sessionData);
+
+        const now = new Date();
+
+        const upcomingSession = sessionData.find(session =>
+            new Date(session.start_datetime) >= now
+        );
+
+        setNextSessionData(upcomingSession || null);
+
+        const { data: feedbackData, error: feedbackError } = await supabase
+            .from("session_feedback")
+            .select("session_id")
+            .eq("player_id", user.id);
+
+        if (feedbackError) {
+            console.log("Error fetching feedback:", feedbackError.message);
+            return;
+        }
+
+        const ratedSessionIDs = feedbackData.map(f => f.session_id);
+
+        const unrated = sessionData.find(session =>
+            new Date(session.end_datetime) < now &&
+            !ratedSessionIDs.includes(session.id)
+        );
+
+        setPendingSession(unrated || null);
+
+        if (unrated) {
+            setDurationMinutes(durationToMinutes(unrated.duration));
+        }
+    }
+
+    // Fetch Unrated Session
+    useEffect(() => {
+        fetchPendingFeedback();
+    }, []);
+
+    async function handleSave() {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        const intensityNum = Number(intensity);
+        const durationMins = Number(durationMinutes);
+
+        const payload = {
+            session_id: pendingSession.id,
+            player_id: user.id,
+            intensity: intensityNum,
+            duration_minutes: durationMins,
+            rpe_load: intensityNum * durationMins,
+            intensity_zone: getIntensityZone(intensityNum),
+            feedback_notes: notes
+        };
+
+        const { error } = await supabase
+            .from("session_feedback")
+            .insert([payload]);
+
+        if (error) {
+            alert("Failed to save: " + error.message);
+        } else {
+            alert("Feedback saved!");
+            setIntensity("");
+            setDurationMinutes("");
+            setNotes("");
+            fetchPendingFeedback();
+        }
+    }
+
 
     return (
         <div id="layout">
@@ -159,51 +269,79 @@ export default function PlayerDashboard() {
 
                                 {/* FEEDBACK FORM */}
                                 <div className="chartBox">
+
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">PLAYER FEEDBACK</p>
-                                        <h3>Activity Feedback Form</h3>
+                                        <h3>Session Feedback</h3>
                                     </div>
 
-                                    <div className="feedbackForm">
-                                        <label>Energy Level</label>
-                                        <select
-                                            value={feedback.energy}
-                                            onChange={(e) =>
-                                                setFeedback({ ...feedback, energy: e.target.value })
-                                            }
-                                        >
-                                            <option value="">Select energy level</option>
-                                            <option>Low</option>
-                                            <option>Medium</option>
-                                            <option>High</option>
-                                        </select>
+                                    {!pendingSession ? (
 
-                                        <label>Session Difficulty</label>
-                                        <select
-                                            value={feedback.difficulty}
-                                            onChange={(e) =>
-                                                setFeedback({ ...feedback, difficulty: e.target.value })
-                                            }
-                                        >
-                                            <option value="">Select difficulty</option>
-                                            <option>Easy</option>
-                                            <option>Moderate</option>
-                                            <option>Hard</option>
-                                        </select>
+                                        <p>No pending feedback!</p>
 
-                                        <label>Comment</label>
-                                        <textarea
-                                            placeholder="How did you feel during the session?"
-                                            value={feedback.comment}
-                                            onChange={(e) =>
-                                                setFeedback({ ...feedback, comment: e.target.value })
-                                            }
-                                        />
+                                    ) : (
 
-                                        <button className="dashboardBtn">
-                                            Submit Feedback
-                                        </button>
-                                    </div>
+                                        <div className="feedbackForm">
+
+                                            <p>
+                                                <strong>{pendingSession.name}</strong>
+                                            </p>
+
+                                            <p>
+                                                {new Date(
+                                                    pendingSession.start_datetime
+                                                ).toLocaleString("en-AU")}
+                                            </p>
+
+                                            <label>Session Intensity</label>
+
+                                            <select
+                                                value={intensity}
+                                                onChange={(e) => setIntensity(e.target.value)}
+                                            >
+                                                <option value="">Select intensity</option>
+
+                                                <option value="1">1</option>
+                                                <option value="2">2</option>
+                                                <option value="3">3</option>
+
+                                                <option value="4">4</option>
+                                                <option value="5">5</option>
+                                                <option value="6">6</option>
+
+                                                <option value="7">7</option>
+                                                <option value="8">8</option>
+                                                <option value="9">9</option>
+                                                <option value="10">10</option>
+                                            </select>
+
+                                            <label>Actual Duration (minutes)</label>
+
+                                            <input
+                                                type="number"
+                                                value={durationMinutes}
+                                                onChange={(e) =>
+                                                    setDurationMinutes(e.target.value)
+                                                }
+                                            />
+
+                                            <label>Comment</label>
+
+                                            <textarea
+                                                placeholder="How did you feel during the session?"
+                                                value={notes}
+                                                onChange={(e) => setNotes(e.target.value)}
+                                            />
+
+                                            <button
+                                                className="dashboardBtn"
+                                                onClick={handleSave}
+                                            >
+                                                Submit Feedback
+                                            </button>
+
+                                        </div>
+                                    )}
                                 </div>
 
                             </div>

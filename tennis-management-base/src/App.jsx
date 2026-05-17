@@ -12,10 +12,11 @@ import PlayerProfile from './pages/PlayerProfile';
 import PlayerDashboard from './pages/PlayerDashboard';
 import DrillLibrary from './pages/DrillLibrary';
 import Testing from './pages/Testing';
+import SessionFeedback from './pages/SessionFeedback'
 import OtherUsers from './pages/OtherUsers';
 
 const AUTH_ROUTES   = ['/', '/login', '/register', '/auth/callback'];
-const PLAYER_ROUTES = ['/PlayerDashboard', '/PlayerCalendar'];
+const PLAYER_ROUTES = ['/PlayerDashboard', '/PlayerCalendar', '/SessionFeedback'];
 
 function AppLayout() {
   const location = useLocation();
@@ -43,6 +44,7 @@ function AppLayout() {
             <Route path="/PlayerDashboard" element={<PlayerDashboard />} />
             <Route path="/DrillLibrary"    element={<DrillLibrary />} />
             <Route path="/Testing"         element={<Testing />} />
+            <Route path="/SessionFeedback" element={<SessionFeedback />} />
             <Route path="/OtherUsers"      element={<OtherUsers />} />
           </Routes>
         </main>

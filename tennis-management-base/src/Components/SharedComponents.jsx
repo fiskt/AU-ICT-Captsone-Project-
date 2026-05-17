@@ -11,6 +11,7 @@ import PlayerProfile from '../pages/PlayerProfile'
 import DrillLibrary from '../pages/DrillLibrary'
 import LoadTracking from '../pages/LoadTracking'
 import Testing from '../pages/Testing'
+import SessionFeedback from '../pages/SessionFeedback'
 import OtherUsers from '../pages/OtherUsers'
 
 import PlayerCalendar from '../pages/PlayerCalendar'
@@ -214,8 +215,9 @@ export function PLAYER_SIDEBAR() {
                 </div>
 
                 <div id="sidebar-nav">
-                    <SIDEBAR_BUTTON label="Dashboard" path="/PlayerDashboard" icon={Icons.dashboard} />
-                    <SIDEBAR_BUTTON label="Calendar"  path="/PlayerCalendar"  icon={Icons.calendar}  />
+                    <SIDEBAR_BUTTON label="Dashboard" path="/PlayerDashboard"         icon={Icons.dashboard} />
+                    <SIDEBAR_BUTTON label="Session Feedback"  path="/SessionFeedback" icon={Icons.testing}/>
+                    <SIDEBAR_BUTTON label="Calendar"  path="/PlayerCalendar"          icon={Icons.calendar}  />
                 </div>
 
                 <div id="sidebar-bottom">
