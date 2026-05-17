@@ -241,7 +241,7 @@ export function TOPBAR() {
 }
 
 // ── TYPING INPUT ──────────────────────────────────────────────────────────────
-export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_txt, value, onChange }) {
+export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_txt, value, onChange, maxLength }) {
     const multiline = num_rows > 1;
     const size = { width: box_w, height: box_h };
     return (
