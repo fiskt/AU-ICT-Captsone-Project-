@@ -1,16 +1,14 @@
 import '../App.css'
 import '../pages/CoachCalendar.css'
-import '../pages/OtherUsers.css'
-import '../pages/DrillLibrary.css'
 
-import { DateTime, Info, Interval, Duration } from 'luxon'
+import { DateTime, Info, Interval, Duration } from 'luxon';
 import { useState, useEffect, useRef, forwardRef } from 'react';
 
-import FullCalendar from '@fullcalendar/react'
-import dayGridPlugin from '@fullcalendar/daygrid' 
-import timeGridPlugin from '@fullcalendar/timegrid' 
-import { Draggable } from '@fullcalendar/interaction'
-import interactionPlugin from '@fullcalendar/interaction'
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import { Draggable } from '@fullcalendar/interaction';
+import interactionPlugin from '@fullcalendar/interaction';
 
 import 'tippy.js/dist/tippy.css'
 import tippy from 'tippy.js';
@@ -18,136 +16,14 @@ import tippy from 'tippy.js';
 import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
-
-
-function Stars({ level, size = '' }) {
-    const levelMap = { Beginner: 1, Intermediate: 2, Advanced: 3, Elite: 5 };
-    const filled = levelMap[level] ?? 2;
-    return (
-        <div className={`drill-stars ${size}`}>
-            {[1, 2, 3, 4, 5].map(i => (
-                <svg
-                    key={i}
-                    className={`drill-star ${i <= filled ? 'filled' : 'empty'}`}
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-            ))}
-        </div>
-    );
-}
-
-// ── TYPE BADGE ────────────────────────────────────────────────────────────────
-function TypeBadge({ type }) {
-    if (!type) return null;
-    return (
-        <span className={`drill-type-badge badge-${type.toLowerCase()}`}>
-            {type}
-        </span>
-    );
-}
-
-export function USERS_LIST({ coaches = [], players = [], selectedUser, setSelectedUser }) {
-    return (
-        <div class="input-container" id="users-list-container">
-            <div class="input-box-wrapper" id="users-list">
-                {(coaches.length > 0) &&
-                    <div>
-                        <div className="users-role-title">Coaches</div>
-                        {
-                            <ul class="user-list">
-                                {coaches.map((coach) => {
-                                    const isActive = selectedUser === coach;
-
-                                    return (
-                                        <li 
-                                        key={coach.id}
-                                        className={`${isActive ? 'active' : ''}`}
-                                        onClick={() => {
-                                            setSelectedUser(coach);
-                                        }}
-                                    >
-                                        <span>{coach.first_name} {coach.last_name}</span>
-                                    </li>
-                                    );
-                                })}
-                            </ul>
-                        }
-                    </div>
-                }
-
-                {(players.length > 0) && 
-                    <div>
-                        <div className="users-role-title">Players</div>
-                        {
-                            <ul class="user-list">
-                                {players.map((player) => {
-                                    const isActive = selectedUser === player;
-
-                                    return (
-                                    <li 
-                                        key={player.id}
-                                        className={`${isActive ? 'active' : ''}`}
-                                        onClick={() => {
-                                            setSelectedUser(player);
-                                            console.log(player.id);
-                                        }}
-                                    >
-                                        <span>{player.first_name} {player.last_name}</span>
-                                    </li>
-                                    );
-                                })}
-                            </ul>
-                        }
-                    </div>
-                }
-            </div>
-        </div>
-    );
-}
-
-
-export function SESSION_DETAILS_DRILLS({ selectedDrills }) {
-    return (
-        <>
-            {selectedDrills.map((drill, index) => (
-                <div key={drill.instanceId || `${drill.id}-${index}`}>
-                    <DRILL_CARD 
-                        drill={drill} 
-                    />
-                </div>
-            ))}
-        </>
-    );
-}
-
-function DRILL_CARD({ drill }) {
-    return (
-        <div 
-            className="drill-card" 
-            key={drill.id}
-        >
-            <div className="drill-card-top">
-                <TypeBadge type={drill.type} />
-            </div>
-            <div className="drill-card-name">{drill.name}</div>
-            <div className="drill-card-name">{drill.description}</div>
-            <div className="drill-card-footer">
-            <Stars level={drill.level} />
-            </div>
-        </div>
-    );
-}
-
-export const OTHER_CALENDARS = forwardRef(({ 
+export const PLAYER_CALENDAR = forwardRef(({ 
     onSessionClick, 
     events, 
     onDateChange, 
     activeStart, activeEnd, 
     selectedSession, 
-    selectedUser,
+    selectedCoaches,
+    selectedPlayers,
     isMobile
     }, ref) => {
 
@@ -166,7 +42,6 @@ export const OTHER_CALENDARS = forwardRef(({
 
     const currentWeekEnd = activeEnd ? activeEnd.minus({ days: 1 }) : currentWeekStart.endOf('week');
 
-
     const isSingleDay = currentWeekStart.hasSame(currentWeekEnd, 'day');
 
     const calendarTitle = isSingleDay 
@@ -179,17 +54,12 @@ export const OTHER_CALENDARS = forwardRef(({
 
     const [isAnimating, setIsAnimating] = useState(false);
 
-    const currentViewText = selectedUser
-        ? "Current calendar: " + selectedUser.first_name + " " + selectedUser.last_name
-        : 'No user selected.'
-
     return (
         <div id="calendar-container">
-            <div id="calendar-date-container">
+            <div id="calendar-date-container" >
                 <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()}>
                     {calendarTitle} 
                 </h1>
-                <span>{currentViewText}</span>
             </div>
             <div className={`calendar-fade isAnimating ? "calendar-fade" : ""`}>
                 <FullCalendar

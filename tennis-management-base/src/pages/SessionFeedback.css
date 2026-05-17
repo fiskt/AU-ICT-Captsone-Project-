@@ -1,0 +1,168 @@
+/* SessionFeedback Page */
+
+#sf-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+}
+
+.sf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sf-subtitle {
+  font-family: 'DM Sans Light', sans-serif;
+  font-size: 13px;
+  color: var(--content-subhead-color);
+  margin-top: 4px;
+}
+
+.sf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.sf-card {
+  background: white;
+  border: 2px solid var(--content-input-border-color);
+  border-radius: 14px;
+  padding: 16px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.sf-card:hover {
+  transform: translateY(-2px);
+}
+
+.sf-card.rated {
+  background: #ecfdf5;
+  border-color: #22c55e;
+}
+
+.sf-card.not-rated {
+  background: #fef2f2;
+  border-color: #ef4444;
+}
+
+.sf-card-date {
+  font-family: 'DM Mono Light', sans-serif;
+  font-size: 11px;
+  color: var(--content-subhead-color);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.sf-card-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 17px;
+  color: var(--content-head-color);
+  margin: 8px 0 6px;
+}
+
+.sf-card-info {
+  font-family: 'DM Sans Light', sans-serif;
+  font-size: 13px;
+  color: var(--content-body-color);
+  margin: 4px 0;
+}
+
+.sf-status {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-family: 'DM Mono Light', sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sf-status.rated {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.sf-status.not-rated {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.sf-form-box {
+  background: white;
+  border: 2px solid var(--content-input-border-color);
+  border-radius: 14px;
+  padding: 18px;
+  margin-top: 10px;
+}
+
+.sf-form-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 18px;
+  color: var(--content-head-color);
+  margin-bottom: 12px;
+}
+
+.sf-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.sf-label {
+  font-family: 'DM Mono Light', sans-serif;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--content-subhead-color);
+  text-transform: uppercase;
+}
+
+.sf-input,
+.sf-textarea {
+  border: 2px solid var(--content-input-border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: 'DM Sans Light', sans-serif;
+  font-size: 13px;
+  outline: none;
+}
+
+.sf-textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.sf-input:focus,
+.sf-textarea:focus {
+  border-color: var(--content-head-color);
+}
+
+.sf-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sf-btn-primary {
+  background: var(--content-head-color);
+  color: white;
+}
+
+.sf-btn-ghost {
+  background: transparent;
+  color: var(--content-subhead-color);
+}
+
+.sf-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

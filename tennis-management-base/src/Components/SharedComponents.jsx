@@ -11,6 +11,7 @@ import PlayerProfile from '../pages/PlayerProfile'
 import DrillLibrary from '../pages/DrillLibrary'
 import LoadTracking from '../pages/LoadTracking'
 import Testing from '../pages/Testing'
+import SessionFeedback from '../pages/SessionFeedback'
 import OtherUsers from '../pages/OtherUsers'
 
 import PlayerCalendar from '../pages/PlayerCalendar'
@@ -214,8 +215,9 @@ export function PLAYER_SIDEBAR() {
                 </div>
 
                 <div id="sidebar-nav">
-                    <SIDEBAR_BUTTON label="Dashboard" path="/PlayerDashboard" icon={Icons.dashboard} />
-                    <SIDEBAR_BUTTON label="Calendar"  path="/PlayerCalendar"  icon={Icons.calendar}  />
+                    <SIDEBAR_BUTTON label="Dashboard" path="/PlayerDashboard"         icon={Icons.dashboard} />
+                    <SIDEBAR_BUTTON label="Session Feedback"  path="/SessionFeedback" icon={Icons.testing}/>
+                    <SIDEBAR_BUTTON label="Calendar"  path="/PlayerCalendar"          icon={Icons.calendar}  />
                 </div>
 
                 <div id="sidebar-bottom">
@@ -241,7 +243,7 @@ export function TOPBAR() {
 }
 
 // ── TYPING INPUT ──────────────────────────────────────────────────────────────
-export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_txt, value, onChange }) {
+export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_txt, value, onChange, maxLength }) {
     const multiline = num_rows > 1;
     const size = { width: box_w, height: box_h };
     return (
@@ -256,6 +258,7 @@ export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_t
                         placeholder={sample_txt}
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
+                        maxLength={maxLength}
                     />
                 ) : (
                     <input
@@ -264,6 +267,7 @@ export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_t
                         placeholder={sample_txt}
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
+                        maxLength={maxLength}
                     />
                 )}
             </div>

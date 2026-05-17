@@ -86,30 +86,52 @@ export function PEOPLE_SELECTOR({ role, people = [], selectedPeople = [], setSel
     );
 }
 
-export function DRAGGABLE_SESSION({ sessionSettings }) {
+export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlayers }) {
     const sessionRef = useRef(null);
 
+    // ensure session has a name
+    const sessionHasName = sessionSettings.sessionName?.trim().length > 0;
+
+    // ensure session has at least 1 person selected
+    const sessionHasPeople = sessionCoaches.length > 0 || sessionPlayers.length > 0;
+
+    const sessionIsValid = sessionHasName && sessionHasPeople;
+
+    let sessionWarningText = "Drag into the calendar to schedule the session.";
+    
+    if (!sessionHasName) {
+        sessionWarningText = "Session name cannot be empty";
+    } else if (!sessionHasPeople) {
+        sessionWarningText = "Sessions require at least 1 participant.";
+    } else if (!sessionIsValid) {
+        sessionWarningText = "Missing session name and participants.";
+    }
+
     useEffect(() => {
+        if (!sessionIsValid) return;
         let session = new Draggable(sessionRef.current, {
             eventData: () => {
                 return {
                     title: sessionSettings.sessionName,
                     duration: sessionSettings.sessionDuration,
+                    start: sessionSettings.sessionStart,
+                    end: sessionSettings.sessionEnd,
                     extendedProps: {
                         notes: sessionSettings.sessionNotes,
-                        people: sessionSettings.sessionPeople
+                        people: sessionSettings.sessionPeople,
+                        type: 'session'
                     }
                 };
             }
         })
         return () => session.destroy();
-    }, [sessionSettings]);
+    }, [sessionSettings, sessionHasName, sessionHasPeople, sessionIsValid]);
 
     return (
         <div class="input-container" id="draggable-session-container">
-            <span class="input-container-label">SESSION</span>
+            <span class={`input-container-label ${sessionIsValid ? '' : 'draggable-session-warning'}`}>{sessionWarningText}</span>
             <div class="input-box-wrapper" id="draggable-session">
-                <div ref={sessionRef} class="draggable-icon session-icon">
+                <div ref={sessionRef} class={`draggable-icon ${sessionIsValid ? 'session-icon' : 'invalid-session-icon'}`}>
                     <span>00:00 - 00:00</span>
                     <span>{sessionSettings.sessionName}</span>
                 </div>
@@ -214,7 +236,8 @@ export const CALENDAR = forwardRef(({
     currentUser,
     setIsDraggingEvent,
     isMobile,
-    setShowMobileSessionCreator
+    setShowMobileSessionCreator,
+    showOtherUserAvail, setShowOtherUserAvail
     }, ref) => {
 
     const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
@@ -270,12 +293,12 @@ export const CALENDAR = forwardRef(({
         if (data) {
             const sessionCoaches = selectedCoaches.map(coachID => ({
                 session_id: data.id,
-                coach_id: coachID
+                user_id: coachID
             }));
 
             const sessionPlayers = selectedPlayers.map(playerID => ({
                 session_id: data.id,
-                player_id: playerID
+                user_id: playerID
             }));
 
             const sessionDrills = selectedDrills.map((drill, index) => ({
@@ -285,8 +308,8 @@ export const CALENDAR = forwardRef(({
             }));
 
             await Promise.all([
-                sessionCoaches.length > 0 && supabase.from('session_coaches').insert(sessionCoaches),
-                sessionPlayers.length > 0 && supabase.from('session_players').insert(sessionPlayers),
+                sessionCoaches.length > 0 && supabase.from('session_people').insert(sessionCoaches),
+                sessionPlayers.length > 0 && supabase.from('session_people').insert(sessionPlayers),
                 sessionDrills.length > 0 && supabase.from('session_drills').insert(sessionDrills)
             ]);
 
@@ -319,7 +342,7 @@ export const CALENDAR = forwardRef(({
     }
 
     async function updateSessionTimes(event) {
-        if (!event.id || !event.start || !event.end) return;
+        if (!event.id) return;
 
         const start = DateTime.fromJSDate(event.start);
         const end = DateTime.fromJSDate(event.end);
@@ -391,7 +414,7 @@ export const CALENDAR = forwardRef(({
                     >Add Session</button>
                 )}
             </div>
-            <div class="calendar-fade" className={isAnimating ? "calendar-fade" : ""}>
+            <div className={`calendar-fade isAnimating ? "calendar-fade" : ""`}>
                 <FullCalendar
                     plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
                     ref={ref}
@@ -421,7 +444,15 @@ export const CALENDAR = forwardRef(({
                             classes.push('availability-event');
                         } 
 
-                        if (selectedSession && arg.event.id === selectedSession.id) {
+                        if (arg.event.extendedProps.type === 'other_availability') {
+                            classes.push('other-avail-event');
+                        }
+
+                        if (
+                            selectedSession 
+                            && arg.event.id === selectedSession.id 
+                            && arg.event.extendedProps.type === 'session'
+                        ) {
                             classes.push('selected-session');
                         } 
                         
@@ -463,11 +494,11 @@ export const CALENDAR = forwardRef(({
                     editable={true}
                     eventReceive = {(info) => {    
                         if (info.event.extendedProps.type === 'availability') {
-                            pushAvailability({ event: info.event, coachId: currentUser.id});
+                            pushAvailability({ event: info.event, coachId: '1'});
                         } else {
                             const sessionData = {
                                 name: info.event.title,
-                                notes: info.event.extendedProps.notes || "",
+                                notes: info.event.extendedProps.notes || ""
                             }
                             pushSession({ event: info.event, sessionSettings: sessionData });
                         }
@@ -482,11 +513,13 @@ export const CALENDAR = forwardRef(({
                         }
                     }}
                     eventResize={(info) => {
+                        console.log("event resized");
                         if (isMobile) return;
 
                         if (info.event.extendedProps.type === 'availability') {
                             updateAvailability(info.event);
                         } else if (info.event.extendedProps.type === 'session') {
+                            console.log("update session times ran");
                             updateSessionTimes(info.event);
                         }
                     }}
