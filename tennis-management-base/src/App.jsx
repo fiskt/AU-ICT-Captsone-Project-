@@ -15,7 +15,7 @@ import Testing from './pages/Testing';
 import SessionFeedback from './pages/SessionFeedback'
 import OtherUsers from './pages/OtherUsers';
 
-const AUTH_ROUTES   = ['/', '/login', '/register', '/auth/callback'];
+const AUTH_ROUTES   = ['/', '/Login', '/Register', '/auth/callback'];
 const PLAYER_ROUTES = ['/PlayerDashboard', '/PlayerCalendar', '/SessionFeedback'];
 
 function AppLayout() {
@@ -23,19 +23,20 @@ function AppLayout() {
   const isAuthPage   = AUTH_ROUTES.includes(location.pathname);
   const isPlayerPage = PLAYER_ROUTES.includes(location.pathname);
 
+  const loginLocation = location.pathname === 'Login' || location.pathname === 'Register';
+
   return (
     <div id="layout">
-      {!isAuthPage && isPlayerPage  && <PLAYER_SIDEBAR />}
-      {!isAuthPage && !isPlayerPage && <COACH_SIDEBAR />}
-
-      <TOPBAR />
+      {!isAuthPage && isPlayerPage && !loginLocation && <PLAYER_SIDEBAR />}
+      {!isAuthPage && !isPlayerPage && !loginLocation && <COACH_SIDEBAR />}
+      {!isAuthPage && !loginLocation && <TOPBAR />}
 
       <div id={isAuthPage ? undefined : 'main-content-wrapper'}>
         <main id={isAuthPage ? undefined : 'main-content'}>
           <Routes>
             <Route path="/"               element={<Login />} />
-            <Route path="/login"          element={<Login />} />
-            <Route path="/register"       element={<Register />} />
+            <Route path="/Login"          element={<Login />} />
+            <Route path="/Register"       element={<Register />} />
             <Route path="/auth/callback"  element={<AuthCallback />} />
 
             <Route path="/CoachDashboard"  element={<CoachDashboard />} />

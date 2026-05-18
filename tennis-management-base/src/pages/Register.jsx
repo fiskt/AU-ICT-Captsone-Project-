@@ -113,7 +113,7 @@ export default function Register() {
             </p>
             <p style={styles.switchText}>
               Already verified?{' '}
-              <Link to="/login" style={styles.switchLink}>Log in</Link>
+              <Link to="/Login" style={styles.switchLink}>Log in</Link>
             </p>
           </div>
         </div>
@@ -220,7 +220,7 @@ export default function Register() {
 
           <p style={styles.switchText}>
             Already have an account?{' '}
-            <Link to="/login" style={styles.switchLink}>Log in</Link>
+            <Link to="/Login" style={styles.switchLink}>Log in</Link>
           </p>
         </div>
       </div>

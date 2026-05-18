@@ -121,7 +121,7 @@ export default function Login() {
 
           <p style={styles.switchText}>
             Don't have an account?{' '}
-            <Link to="/register" style={styles.switchLink}>Register</Link>
+            <Link to="/Register" style={styles.switchLink}>Register</Link>
           </p>
         </div>
       </div>
