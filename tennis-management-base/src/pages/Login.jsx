@@ -40,7 +40,6 @@ export default function Login() {
       return;
     }
 
-    // Role is stored in user_metadata at registration
     const userRole = data.user.user_metadata?.role;
 
     if (userRole !== role) {
