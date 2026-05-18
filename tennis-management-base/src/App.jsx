@@ -28,7 +28,7 @@ function AppLayout() {
       {!isAuthPage && isPlayerPage  && <PLAYER_SIDEBAR />}
       {!isAuthPage && !isPlayerPage && <COACH_SIDEBAR />}
 
-      <TOPBAR />
+      {!isAuthPage && <TOPBAR />}
 
       <div id={isAuthPage ? undefined : 'main-content-wrapper'}>
         <main id={isAuthPage ? undefined : 'main-content'}>
