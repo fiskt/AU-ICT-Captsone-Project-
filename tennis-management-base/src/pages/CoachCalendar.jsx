@@ -45,7 +45,7 @@ export default function CoachCalendar() {
     }, []);
 
     // current user
-    let currentUserID = '863b773a-bfb3-445f-9fb9-f3a76be43d95';
+    let currentUserID = '1035092c-3201-4ed7-ac82-8c76b8c998c7';
     
     const [isDraggingEvent, setIsDraggingEvent] = useState(false);
 
@@ -1081,7 +1081,7 @@ useEffect(() => {
                                 <div class="mobile-session-creator-times-container">
                                     <p>Start</p>
                                     <select
-                                        value={selectedSession.start}
+                                        value={DateTime.fromJSDate(selectedSession.start).toFormat('HH:mm:ss')}
                                         onChange={(e) => {
                                             const val = e.target.value;
                                             setMobileSessionStart(val);
@@ -1102,7 +1102,7 @@ useEffect(() => {
                                 <div class="mobile-session-creator-times-container">
                                     <p>End</p>
                                     <select
-                                        value={selectedSession.end}
+                                        value={DateTime.fromJSDate(selectedSession.end).toFormat('HH:mm:ss')}
                                         onChange={(e) => {
                                             const val = e.target.value;
                                             setMobileSessionEnd(val);
