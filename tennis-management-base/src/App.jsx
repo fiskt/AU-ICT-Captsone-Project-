@@ -10,6 +10,7 @@ import CoachCalendar from './pages/CoachCalendar';
 import CoachDashboard from './pages/CoachDashboard';
 import PlayerProfile from './pages/PlayerProfile';
 import PlayerDashboard from './pages/PlayerDashboard';
+import PlayerCalendar from './pages/PlayerCalendar';
 import DrillLibrary from './pages/DrillLibrary';
 import Testing from './pages/Testing';
 import SessionFeedback from './pages/SessionFeedback'
@@ -43,6 +44,7 @@ function AppLayout() {
             <Route path="/CoachCalendar"   element={<CoachCalendar />} />
             <Route path="/PlayerProfile"   element={<PlayerProfile />} />
             <Route path="/PlayerDashboard" element={<PlayerDashboard />} />
+            <Route path="/PlayerCalendar" element={<PlayerCalendar />} />
             <Route path="/DrillLibrary"    element={<DrillLibrary />} />
             <Route path="/Testing"         element={<Testing />} />
             <Route path="/SessionFeedback" element={<SessionFeedback />} />

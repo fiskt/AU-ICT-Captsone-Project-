@@ -42,7 +42,7 @@ export default function PlayerCalendar() {
     }, []);
 
     // current user
-    let currentUserID = '863b773a-bfb3-445f-9fb9-f3a76be43d95';
+    let currentUserID = 'b8d09d7e-e6cc-4461-a92c-bc5edaa49386';
 
     const calendarRef = useRef(null);
     const [showSessionDetails, setShowSessionDetails] = useState(false);
