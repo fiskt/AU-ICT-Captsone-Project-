@@ -497,6 +497,16 @@ useEffect(() => {
         fetchCalendarData();
     }, []);
 
+
+    // change calendar view when switching from mobile/desktop
+    useEffect(() => {
+        const calendarApi = calendarRef.current?.getApi();
+        if (!calendarApi) return;
+
+        calendarApi.changeView(isMobile ? "timeGridDay" : "dayGridMonth");
+        calendarApi.updateSize();
+    }, [isMobile]);
+
     async function fetchOtherUserSessions(people) {
         if (people.length === 0) return;
         setIsDataLoading(true);
