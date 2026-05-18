@@ -13,6 +13,7 @@ import PlayerDashboard from './pages/PlayerDashboard';
 import DrillLibrary from './pages/DrillLibrary';
 import Testing from './pages/Testing';
 import SessionFeedback from './pages/SessionFeedback'
+import FeedbackSummary from './pages/PlayerFeedbackSummary'
 import OtherUsers from './pages/OtherUsers';
 
 const AUTH_ROUTES   = ['/', '/Login', '/Register', '/auth/callback'];
@@ -46,6 +47,7 @@ function AppLayout() {
             <Route path="/DrillLibrary"    element={<DrillLibrary />} />
             <Route path="/Testing"         element={<Testing />} />
             <Route path="/SessionFeedback" element={<SessionFeedback />} />
+            <Route path="/PlayerFeedbackSummary" element={<FeedbackSummary />} />
             <Route path="/OtherUsers"      element={<OtherUsers />} />
           </Routes>
         </main>

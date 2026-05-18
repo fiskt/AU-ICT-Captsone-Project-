@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import '../App.css';
 import './Dashboard.css';
 import { COACH_SIDEBAR, TOPBAR } from '../Components/SharedComponents';
@@ -113,6 +114,8 @@ const upcomingSessions = [
 
 
 export default function Dashboard() {
+    // NAVIGATE TO OTHER PAGES
+    const navigate = useNavigate();
 
     // DEFAULT STATE
     const [selectedPlayer, setSelectedPlayer] = useState("All Players");
@@ -317,26 +320,50 @@ export default function Dashboard() {
                                         <h3>RPE Intensity Zones</h3>
 
                                         <div className="intensityCards">
-                                            
-                                            <div className="intensityCard easy">
+
+                                            <div className="intensityCard easy"
+                                                onClick={() =>
+                                                    navigate("/PlayerFeedbackSummary", {
+                                                        state: {
+                                                            zone: "easy",
+                                                            player: selectedPlayer
+                                                        }
+                                                    })
+                                                }>
                                                 <p className="cardLabel">EASY</p>
                                                 <h2>{intensitySummary.easy}</h2>
                                                 <span>1–3 RPE</span>
                                             </div>
 
-                                            <div className="intensityCard medium">
+                                            <div className="intensityCard medium"
+                                                onClick={() =>
+                                                    navigate("/PlayerFeedbackSummary", {
+                                                        state: {
+                                                            zone: "medium",
+                                                            player: selectedPlayer
+                                                        }
+                                                    })
+                                                }>
                                                 <p className="cardLabel">MEDIUM</p>
                                                 <h2>{intensitySummary.medium}</h2>
                                                 <span>4–6 RPE</span>
                                             </div>
 
-                                            <div className="intensityCard hard">
+                                            <div className="intensityCard hard"
+                                                onClick={() =>
+                                                    navigate("/PlayerFeedbackSummary", {
+                                                        state: {
+                                                            zone: "hard",
+                                                            player: selectedPlayer
+                                                        }
+                                                    })
+                                                }>
                                                 <p className="cardLabel">HARD</p>
                                                 <h2>{intensitySummary.hard}</h2>
                                                 <span>7–10 RPE</span>
                                             </div>
                                         </div>
-                                </div>
+                                    </div>
                                 </div>
 
                             </div>
