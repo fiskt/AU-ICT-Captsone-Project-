@@ -1,7 +1,7 @@
 import { useState } from "react";
 import '../App.css';
-import './CoachDashboard.css';
-import { COACH_SIDEBAR, TOPBAR} from '../Components/SharedComponents';
+import './Dashboard.css';
+import { COACH_SIDEBAR, TOPBAR } from '../Components/SharedComponents';
 
 import {
     LineChart,
@@ -20,103 +20,64 @@ const weeklyData = [
     {
         week: "2026-03-30",
         player: "Alex Johnson",
-        plannedRPE: 6.2,
-        actualRPE: 6.5,
-        discrepancy: 0.3,
+        plannedLoad: 420,
+        actualLoad: 460,
     },
     {
         week: "2026-03-30",
         player: "Maria Garcia",
-        plannedRPE: 6.2,
-        actualRPE: 4.0,
-        discrepancy: -0.2,
+        plannedLoad: 380,
+        actualLoad: 350,
     },
     {
         week: "2026-04-06",
         player: "Alex Johnson",
-        plannedRPE: 7.5,
-        actualRPE: 7.8,
-        discrepancy: 0.3,
+        plannedLoad: 520,
+        actualLoad: 610,
     },
     {
         week: "2026-04-06",
         player: "Maria Garcia",
-        plannedRPE: 7.5,
-        actualRPE: 5.5,
-        discrepancy: 0.0,
+        plannedLoad: 450,
+        actualLoad: 400,
     },
     {
         week: "2026-04-13",
         player: "Alex Johnson",
-        plannedRPE: 5.0,
-        actualRPE: 4.8,
-        discrepancy: -0.2,
+        plannedLoad: 600,
+        actualLoad: 640,
     },
     {
         week: "2026-04-13",
         player: "Maria Garcia",
-        plannedRPE: 5.0,
-        actualRPE: 3.2,
-        discrepancy: 0.2,
+        plannedLoad: 300,
+        actualLoad: 250,
     },
     {
         week: "2026-04-20",
         player: "Alex Johnson",
-        plannedRPE: 8.2,
-        actualRPE: 8.5,
-        discrepancy: 0.3,
+        plannedLoad: 200,
+        actualLoad: 180,
     },
     {
         week: "2026-04-20",
         player: "Maria Garcia",
-        plannedRPE: 8.2,
-        actualRPE: 3.8,
-        discrepancy: 0.6,
+        plannedLoad: 200,
+        actualLoad: 180,
     },
 ];
-const sessionData = [
-    {
-        week: "2026-04-01",
-        easy: 0,
-        medium: 1,
-        hard: 1,
-    },
-    {
-        week: "2026-04-03",
-        easy: 0,
-        medium: 1,
-        hard: 1,
-    },
-    {
-        week: "2026-04-05",
-        easy: 0,
-        medium: 0,
-        hard: 2,
-    },
-    {
-        week: "2026-04-07",
-        easy: 0,
-        medium: 2,
-        hard: 0,
-    },
-    {
-        week: "2026-04-09",
-        easy: 0,
-        medium: 0,
-        hard: 2,
-    },
-    {
-        week: "2026-04-11",
-        easy: 2,
-        medium: 0,
-        hard: 0,
-    },
-    {
-        week: "2026-04-13",
-        easy: 0,
-        medium: 1,
-        hard: 1,
-    },
+const weeklyIntensityData = [
+    { week: "Week 1", player: "Alex Johnson", easy: 1, medium: 2, hard: 1 },
+    { week: "Week 1", player: "Maria Garcia", easy: 2, medium: 1, hard: 0 },
+
+    { week: "Week 2", player: "Alex Johnson", easy: 0, medium: 1, hard: 3 },
+    { week: "Week 2", player: "Maria Garcia", easy: 1, medium: 2, hard: 1 },
+
+    { week: "Week 3", player: "Alex Johnson", easy: 2, medium: 1, hard: 1 },
+    { week: "Week 3", player: "Maria Garcia", easy: 1, medium: 3, hard: 0 },
+
+    { week: "Week 4", player: "Alex Johnson", easy: 1, medium: 1, hard: 2 },
+    { week: "Week 4", player: "Maria Garcia", easy: 0, medium: 2, hard: 2 },
 ];
 
 const upcomingSessions = [
@@ -153,13 +114,58 @@ const upcomingSessions = [
 
 export default function Dashboard() {
 
-    // STATE
-    const [selectedPlayer, setSelectedPlayer] = useState("Alex Johnson");
+    // DEFAULT STATE
+    const [selectedPlayer, setSelectedPlayer] = useState("All Players");
 
     // FILTERED DATA
-    const filteredData = weeklyData.filter(
-        (d) => d.player === selectedPlayer
-    );
+    const filteredData =
+        selectedPlayer === "All Players"
+            ? Object.values(
+                weeklyData.reduce((acc, item) => {
+                    if (!acc[item.week]) {
+                        acc[item.week] = {
+                            week: item.week,
+                            plannedLoad: 0,
+                            actualLoad: 0,
+                        };
+                    }
+
+                    acc[item.week].plannedLoad += item.plannedLoad;
+                    acc[item.week].actualLoad += item.actualLoad;
+
+                    return acc;
+                }, {})
+            )
+            : weeklyData.filter((d) => d.player === selectedPlayer);
+
+    const filteredIntensityData =
+        selectedPlayer === "All Players"
+            ? Object.values(
+                weeklyIntensityData.reduce((acc, item) => {
+                    if (!acc[item.week]) {
+                        acc[item.week] = {
+                            week: item.week,
+                            easy: 0,
+                            medium: 0,
+                            hard: 0,
+                        };
+                    }
+
+                    acc[item.week].easy += item.easy;
+                    acc[item.week].medium += item.medium;
+                    acc[item.week].hard += item.hard;
+
+                    return acc;
+                }, {})
+            )
+            : weeklyIntensityData.filter(
+                (item) => item.player === selectedPlayer
+            );
+    const intensitySummary = {
+        easy: filteredIntensityData.reduce((sum, item) => sum + item.easy, 0),
+        medium: filteredIntensityData.reduce((sum, item) => sum + item.medium, 0),
+        hard: filteredIntensityData.reduce((sum, item) => sum + item.hard, 0),
+    };
 
     return (
         <div id="layout">
@@ -182,34 +188,35 @@ export default function Dashboard() {
                                 value={selectedPlayer}
                                 onChange={(e) => setSelectedPlayer(e.target.value)}
                             >
+                                <option>All Players</option>
                                 <option>Alex Johnson</option>
                                 <option>Maria Garcia</option>
                             </select>
                         </div>
 
                         {/* STATS */}
-                        <div className="statsGrid">
+                        <div id="drill-stats-row">
 
-                            <div className="statCard">
-                                <p className="cardLabel">TOTAL SESSIONS</p>
-                                <h2 className="cardValue">124</h2>
+                            <div className="drill-stat-card">
+                                <span className="drill-stat-label">Total Sessions</span>
+                                <span className="drill-stat-value accent">124</span>
+                                <span className="drill-stat-sub">Sessions logged</span>
                             </div>
 
-                            <div className="statCard">
-                                <p className="cardLabel">ACTIVE CLIENTS</p>
-                                <h2 className="cardValue">12</h2>
+                            <div className="drill-stat-card">
+                                <p className="drill-stat-label">ACTIVE CLIENTS</p>
+                                <h2 className="drill-stat-value">12</h2>
                             </div>
 
-                            <div className="statCard">
-                                <p className="cardLabel">WEEKLY GROWTH</p>
-                                <h2 className="cardValue">+18%</h2>
+                            <div className="drill-stat-card">
+                                <p className="drill-stat-label">WEEKLY GROWTH</p>
+                                <h2 className="drill-stat-value">+18%</h2>
                             </div>
 
-                            <div className="statCard">
-                                <p className="cardLabel">AVG RPE</p>
-                                <h2 className="cardValue">7.2</h2>
+                            <div className="drill-stat-card">
+                                <p className="drill-stat-label">AVG RPE</p>
+                                <h2 className="drill-stat-value">7.2</h2>
                             </div>
-
                         </div>
 
                         {/* MAIN GRID */}
@@ -230,37 +237,77 @@ export default function Dashboard() {
                                         </h3>
                                     </div>
 
-                                    <ResponsiveContainer width="100%" height={320}>
-                                        <LineChart data={filteredData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
+                                    <ResponsiveContainer width="100%" height={340}>
+                                        <LineChart
+                                            data={filteredData}
+                                            margin={{
+                                                top: 10,
+                                                right: 10,
+                                                left: -20,
+                                                bottom: 0,
+                                            }}
+                                        >
+                                            <CartesianGrid
+                                                strokeDasharray="3 3"
+                                                vertical={false}
+                                                stroke="#f3f4f6"
+                                            />
 
-                                            <XAxis dataKey="week" />
-                                            <YAxis domain={[0, 10]} />
+                                            <XAxis
+                                                dataKey="week"
+                                                tick={{ fill: "#6b7280", fontSize: 12 }}
+                                                tickLine={false}
+                                                axisLine={false}
+                                            />
 
-                                            <Tooltip />
+                                            <YAxis
+                                                tick={{ fill: "#6b7280", fontSize: 12 }}
+                                                tickLine={false}
+                                                axisLine={false}
+                                            />
+
+                                            <Tooltip
+                                                contentStyle={{
+                                                    borderRadius: "12px",
+                                                    border: "none",
+                                                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                                                }}
+                                            />
 
                                             <Legend />
 
                                             <Line
                                                 type="monotone"
-                                                dataKey="plannedRPE"
-                                                stroke="#f97316"
+                                                dataKey="plannedLoad"
+                                                stroke="#f59e0b"
                                                 strokeWidth={3}
-                                                name="Planned RPE"
+                                                dot={{
+                                                    r: 4,
+                                                    strokeWidth: 2,
+                                                    fill: "#fff",
+                                                }}
+                                                activeDot={{ r: 7 }}
+                                                name="Planned Load"
                                             />
 
                                             <Line
                                                 type="monotone"
-                                                dataKey="actualRPE"
-                                                stroke="#111827"
-                                                strokeWidth={3}
-                                                name="Actual RPE"
+                                                dataKey="actualLoad"
+                                                stroke="#ec7842"
+                                                strokeWidth={4}
+                                                dot={{
+                                                    r: 5,
+                                                    strokeWidth: 2,
+                                                    fill: "#fff",
+                                                }}
+                                                activeDot={{ r: 8 }}
+                                                name="Actual Load"
                                             />
                                         </LineChart>
                                     </ResponsiveContainer>
                                 </div>
 
-                                {/* INTENSITY GRAPH */}
+                                {/* INTENSITY CARD */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">
@@ -268,23 +315,28 @@ export default function Dashboard() {
                                         </p>
 
                                         <h3>RPE Intensity Zones</h3>
-                                    </div>
 
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <BarChart data={sessionData}>
-                                            <CartesianGrid strokeDasharray="3 3" />
+                                        <div className="intensityCards">
+                                            
+                                            <div className="intensityCard easy">
+                                                <p className="cardLabel">EASY</p>
+                                                <h2>{intensitySummary.easy}</h2>
+                                                <span>1–3 RPE</span>
+                                            </div>
 
-                                            <XAxis dataKey="week" />
-                                            <YAxis />
+                                            <div className="intensityCard medium">
+                                                <p className="cardLabel">MEDIUM</p>
+                                                <h2>{intensitySummary.medium}</h2>
+                                                <span>4–6 RPE</span>
+                                            </div>
 
-                                            <Tooltip />
-                                            <Legend />
-
-                                            <Bar dataKey="easy" stackId="a" fill="#22c55e" />
-                                            <Bar dataKey="medium" stackId="a" fill="#facc15" />
-                                            <Bar dataKey="hard" stackId="a" fill="#ef4444" />
-                                        </BarChart>
-                                    </ResponsiveContainer>
+                                            <div className="intensityCard hard">
+                                                <p className="cardLabel">HARD</p>
+                                                <h2>{intensitySummary.hard}</h2>
+                                                <span>7–10 RPE</span>
+                                            </div>
+                                        </div>
+                                </div>
                                 </div>
 
                             </div>
