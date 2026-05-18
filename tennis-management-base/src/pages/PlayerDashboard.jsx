@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import '../App.css';
 import "../App.css";
-import "./CoachDashboard.css";
+import "./Dashboard.css";
 import { PLAYER_SIDEBAR, TOPBAR } from "../Components/SharedComponents";
 
 const strengths = [
@@ -199,15 +199,15 @@ export default function PlayerDashboard() {
                         </div>
 
                         {/* TOP STATS */}
-                        <div className="statsGrid">
-                            <div className="statCard">
-                                <p className="cardLabel">THIS WEEK</p>
-                                <h2 className="cardValue">{weeklySessions.length}</h2>
+                        <div id="drill-stats-row">
+                            <div className="drill-stat-card">
+                                <p className="drill-stat-label">THIS WEEK</p>
+                                <h2 className="drill-stat-value accent">{weeklySessions.length}</h2>
                             </div>
 
-                            <div className="statCard">
-                                <p className="cardLabel">NEXT SESSION</p>
-                                <h2 className="cardValue">
+                            <div className="drill-stat-card">
+                                <p className="drill-stat-label">NEXT SESSION</p>
+                                <h2 className="drill-stat-value">
                                     {nextSessionData
                                         ? new Date(nextSessionData.start_datetime).toLocaleTimeString(
                                             "en-AU",
@@ -218,20 +218,23 @@ export default function PlayerDashboard() {
                                         )
                                         : "--"}
                                 </h2>
+                                <p className="drill-stat-sub">
+                                    {nextSessionData ? nextSessionData.name : "No upcoming session"}
+                                </p>
                             </div>
 
-                            <div className="statCard">
-                                <p className="cardLabel">LAST RATING</p>
-                                <h2 className="cardValue">
+                            <div className="drill-stat-card">
+                                <p className="drill-stat-label">LAST RATING</p>
+                                <h2 className="drill-stat-value">
                                     {latestFeedback
                                         ? `${latestFeedback.intensity}/10`
                                         : "--"}
                                 </h2>
                             </div>
 
-                            <div className="statCard">
-                                <p className="cardLabel">FOCUS AREA</p>
-                                <h2 className="cardValue">SERVE</h2>
+                            <div className="drill-stat-card">
+                                <p className="drill-stat-label">FOCUS AREA</p>
+                                <h2 className="drill-stat-value">SERVE</h2>
                             </div>
                         </div>
 

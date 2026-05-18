@@ -36,7 +36,7 @@ export default function Register() {
       return;
     }
     if (role === 'coach' && !email.endsWith('@tennis.com.au')) {
-      setError('Coach accounts must use a @tennis.com.au email address.');
+      setError('This email is not authorised to register as a coach.');
       return;
     }
     if (!allChecksPassed) {
@@ -83,7 +83,6 @@ export default function Register() {
     setRegistered(true); // Show "check your email" screen
   };
 
-  // ── Check your email screen ──────────────────────────────────────────────
   if (registered) {
     return (
       <div style={styles.page}>
@@ -113,7 +112,7 @@ export default function Register() {
             </p>
             <p style={styles.switchText}>
               Already verified?{' '}
-              <Link to="/login" style={styles.switchLink}>Log in</Link>
+              <Link to="/Login" style={styles.switchLink}>Log in</Link>
             </p>
           </div>
         </div>
@@ -121,7 +120,6 @@ export default function Register() {
     );
   }
 
-  // ── Registration form ────────────────────────────────────────────────────
   return (
     <div style={styles.page}>
       <img src={background} alt="" style={styles.bg} />
@@ -169,7 +167,6 @@ export default function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 style={styles.input}
-                placeholder={role === 'coach' ? 'you@tennis.com.au' : 'you@example.com'}
               />
             </div>
 
@@ -220,7 +217,7 @@ export default function Register() {
 
           <p style={styles.switchText}>
             Already have an account?{' '}
-            <Link to="/login" style={styles.switchLink}>Log in</Link>
+            <Link to="/Login" style={styles.switchLink}>Log in</Link>
           </p>
         </div>
       </div>

@@ -199,8 +199,6 @@ export function SIMPLE_DRILL_CARD({ drill, addDrillToSession, removeDrillFromSes
                 {!isSelectedDrill && (
                     <TypeBadge type={drill.type} />
                 )}
-                
-                
             </div>
             <div className="drill-card-name">{drill.name}</div>
             {!isSelectedDrill && (

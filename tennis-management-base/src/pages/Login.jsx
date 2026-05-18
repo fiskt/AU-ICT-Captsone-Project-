@@ -40,7 +40,6 @@ export default function Login() {
       return;
     }
 
-    // Role is stored in user_metadata at registration
     const userRole = data.user.user_metadata?.role;
 
     if (userRole !== role) {
@@ -121,7 +120,7 @@ export default function Login() {
 
           <p style={styles.switchText}>
             Don't have an account?{' '}
-            <Link to="/register" style={styles.switchLink}>Register</Link>
+            <Link to="/Register" style={styles.switchLink}>Register</Link>
           </p>
         </div>
       </div>
