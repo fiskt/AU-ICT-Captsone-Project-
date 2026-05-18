@@ -196,6 +196,18 @@ export default function CoachCalendar() {
     }, [selectedUser]);
 
     useEffect(() => {
+        const fetchData = async () => {
+            await Promise.all([
+                fetchSelectedSessionPeople(),
+                fetchSelectedSessionDrills()
+            ]);
+        };
+        if (selectedSession) {
+            fetchData();
+        }
+    }, [fetchSelectedSessionPeople, fetchSelectedSessionDrills]);
+
+    useEffect(() => {
         const initializeUsers = async () => {
             setIsDataLoading(true);
             await Promise.all([
@@ -327,7 +339,6 @@ export default function CoachCalendar() {
                                 <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
                             </div>
                         </div>
-
                         <div id="session-details-middle-middle">
                             <div class="input-container" id="session-details-people-container">
                                 <span class="input-container-label">PEOPLE</span>

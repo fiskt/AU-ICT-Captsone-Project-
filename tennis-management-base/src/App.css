@@ -195,6 +195,7 @@ btn, button:hover {
   border-top: 0.3px solid var(--sidebar-body-color);
   border-bottom: 0.3px solid var(--sidebar-body-color);
   overflow-y: auto;
+  gap: 6px;
 }
 
 /* Icon span inside nav button */
@@ -213,6 +214,7 @@ btn, button:hover {
 
 .sidebar-nav-btn-txt {
   color: var(--sidebar-body-color);
+  font-size: 14px;
   opacity: 70%;
 }
 

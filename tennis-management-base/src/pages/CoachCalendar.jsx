@@ -877,8 +877,15 @@ useEffect(() => {
 
             {/* Drill library */}
             { showAddDrill && (
-                <div id="add-drill-container">
-                    <div class="content-box" id="session-drill-library">
+                <div 
+                    id="add-drill-container"
+                    onClick={(e) => {
+                        if (drillLibraryRef.current && !drillLibraryRef.current.contains(e.target)) {
+                            setShowAddDrill(false);
+                        }
+                    }}
+                >
+                    <div class="content-box" id="session-drill-library" ref={drillLibraryRef}>
                         <div class="content-box-top">
                             <div class="content-box-top-left">
                                 <h2 class="content-header">Drill Library</h2>
