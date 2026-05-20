@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 
 import { COACH_SIDEBAR, PLAYER_SIDEBAR, TOPBAR } from './Components/SharedComponents';
+import ProtectedRoute from './Components/ProtectedRoute';
 
 import Login          from './pages/Login';
 import Register       from './pages/Register';
@@ -27,7 +28,6 @@ function AppLayout() {
     const isPlayerRoute  = PLAYER_ROUTES.includes(location.pathname);
     const isCoachPreview = location.state?.isCoachPreview ?? false;
 
-    // Show player sidebar only if on a player route AND not in coach preview mode
     const showPlayerSidebar = isPlayerRoute && !isCoachPreview;
     const showCoachSidebar  = !isAuthPage && !showPlayerSidebar;
 
@@ -40,21 +40,23 @@ function AppLayout() {
             <div id={isAuthPage ? undefined : 'main-content-wrapper'}>
                 <main id={isAuthPage ? undefined : 'main-content'}>
                     <Routes>
-                        <Route path="/"               element={<Login />} />
-                        <Route path="/Login"           element={<Login />} />
-                        <Route path="/Register"        element={<Register />} />
-                        <Route path="/auth/callback"   element={<AuthCallback />} />
+                        {/* Public routes: no sign in required */}
+                        <Route path="/"              element={<Login />} />
+                        <Route path="/Login"         element={<Login />} />
+                        <Route path="/Register"      element={<Register />} />
+                        <Route path="/auth/callback" element={<AuthCallback />} />
 
-                        <Route path="/CoachDashboard"  element={<CoachDashboard />} />
-                        <Route path="/CoachCalendar"   element={<CoachCalendar />} />
-                        <Route path="/PlayerProfile"   element={<PlayerProfile />} />
-                        <Route path="/PlayerDashboard" element={<PlayerDashboard />} />
-                        <Route path="/PlayerCalendar"  element={<PlayerCalendar />} />
-                        <Route path="/DrillLibrary"    element={<DrillLibrary />} />
-                        <Route path="/Testing"         element={<Testing />} />
-                        <Route path="/SessionFeedback" element={<SessionFeedback />} />
-                        <Route path="/PlayerFeedbackSummary" element={<FeedbackSummary />} />
-                        <Route path="/OtherUsers"      element={<OtherUsers />} />
+                        {/* Protected routes: must be logged in */}
+                        <Route path="/CoachDashboard"  element={<ProtectedRoute><CoachDashboard /></ProtectedRoute>} />
+                        <Route path="/CoachCalendar"   element={<ProtectedRoute><CoachCalendar /></ProtectedRoute>} />
+                        <Route path="/PlayerProfile"   element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
+                        <Route path="/PlayerDashboard" element={<ProtectedRoute><PlayerDashboard /></ProtectedRoute>} />
+                        <Route path="/PlayerCalendar"  element={<ProtectedRoute><PlayerCalendar /></ProtectedRoute>} />
+                        <Route path="/DrillLibrary"    element={<ProtectedRoute><DrillLibrary /></ProtectedRoute>} />
+                        <Route path="/Testing"         element={<ProtectedRoute><Testing /></ProtectedRoute>} />
+                        <Route path="/SessionFeedback" element={<ProtectedRoute><SessionFeedback /></ProtectedRoute>} />
+                        <Route path="/PlayerFeedbackSummary" element={<ProtectedRoute><FeedbackSummary /></ProtectedRoute>} />
+                        <Route path="/OtherUsers"      element={<ProtectedRoute><OtherUsers /></ProtectedRoute>} />
                     </Routes>
                 </main>
             </div>
