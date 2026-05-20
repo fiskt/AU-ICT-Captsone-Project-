@@ -20,8 +20,6 @@ export default function CoachCalendar() {
     const [players, setPlayers] = useState([]);
 
     const [selectedSessionPeople, setSelectedSessionPeople] = useState([]);
-    const [selectedSessionPlayers, setSelectedSessionPlayers] = useState([]);
-    const [selectedSessionCoaches, setSelectedSessionCoaches] = useState([]);
     const [selectedSessionDrills, setSelectedSessionDrills] = useState([]);
 
     // detecting mobile window size
@@ -36,6 +34,13 @@ export default function CoachCalendar() {
     
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    useEffect(() => {
+        if (!isMobile) {
+            setShowCollapsedUsers(false);
+        }
+    }, [isMobile]);
+
 
     // filtering and searching users
     const [searchQuery, setSearchQuery] = useState("");
@@ -323,10 +328,18 @@ export default function CoachCalendar() {
                             <h2 id="session-details-header">Session Details</h2>
                         </div>
                         <div id="session-details-top-right">
-                            <button id="close-session-details" onClick={() => {
-                                setShowSessionDetails(false);
-                                setSelectedSession(null);
-                            }}>Close</button>
+                            <button 
+                                class="drill-icon-btn"
+                                id="close-session-editor" 
+                                onClick={() => {
+                                    setShowSessionDetails(false);
+                                    setSelectedSession(null);
+                                }}
+                            >
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
 
                         <div id="session-details-middle-left">
@@ -334,10 +347,12 @@ export default function CoachCalendar() {
                                 <span class="input-container-label">NAME</span>
                                 <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
                             </div>
-                            <div class="input-container">
-                                <span class="input-container-label">NOTES</span>
-                                <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
-                            </div>
+                            {selectedSession.extendedProps.notes.length > 0 && (
+                                <div class="input-container">
+                                    <span class="input-container-label">NOTES</span>
+                                    <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
+                                </div>
+                            )}
                         </div>
                         <div id="session-details-middle-middle">
                             <div class="input-container" id="session-details-people-container">
@@ -369,9 +384,13 @@ export default function CoachCalendar() {
                             <div class="input-container" id="session-details-drills-container">
                                 <span class="input-container-label">DRILLS</span>
                                 <div id="session-details-drills">
-                                    <SESSION_DETAILS_DRILLS
-                                        selectedDrills={selectedSessionDrills}
-                                    />
+                                    {selectedSessionDrills.length > 0 && (
+                                        <SESSION_DETAILS_DRILLS
+                                            selectedDrills={selectedSessionDrills}
+                                        />
+                                    )} {selectedSessionDrills.length === 0 && (
+                                        <span>No drills selected for this session.</span>
+                                    )}
                                 </div>
                             </div>
                         </div>

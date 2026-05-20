@@ -3,6 +3,8 @@ import '../pages/CoachCalendar.css'
 import '../pages/OtherUsers.css'
 import '../pages/DrillLibrary.css'
 
+import '../pages/CalendarStyle.css'
+
 import { DateTime, Info, Interval, Duration } from 'luxon'
 import { useState, useEffect, useRef, forwardRef } from 'react';
 
@@ -14,11 +16,6 @@ import interactionPlugin from '@fullcalendar/interaction'
 
 import 'tippy.js/dist/tippy.css'
 import tippy from 'tippy.js';
-
-import { createClient } from '@supabase/supabase-js';
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
-
-
 
 function Stars({ level, size = '' }) {
     const levelMap = { Beginner: 1, Intermediate: 2, Advanced: 3, Elite: 5 };
@@ -196,6 +193,7 @@ export const OTHER_CALENDARS = forwardRef(({
                     plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
                     ref={ref}
                     events={events}
+                    allDaySlot={false}
                     eventOverlap={false}
                     selectOverlap={false}
                     initialView={initialView}

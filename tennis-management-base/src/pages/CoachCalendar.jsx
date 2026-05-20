@@ -5,7 +5,6 @@ import { useState, useRef, useEffect } from 'react';
 
 import { DateTime, Duration } from 'luxon';
 import { createClient } from '@supabase/supabase-js';
-import { useActionData } from 'react-router-dom';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
@@ -64,14 +63,8 @@ export default function CoachCalendar() {
     const [selectedCoaches, setSelectedCoaches] = useState([]);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
 
-    const [selectedSessionCoaches, setSelectedSessionCoaches] = useState([]);
-    const [selectedSessionPlayers, setSelectedSessionPlayers] = useState([]);
     const [editedSessionCoaches, setEditedSessionCoaches] = useState([]);
     const [editedSessionPlayers, setEditedSessionPlayers] = useState([]);
-
-    const [selectedPeople, setSelectedPeople] = useState([]);
-    const [selectedSessionPeople, setSelectedSessionPeople] = useState([]);
-    const [editedSessionPeople, setEditedSessionPeople] = useState([]);
 
     // confirmation popup for deleting sessions
     const sessionDeleteConfirmation = () => {
@@ -81,22 +74,6 @@ export default function CoachCalendar() {
             deleteSession();
             setShowSessionEditor(false);
             setSelectedSession(null);
-        }
-    }
-
-    async function deleteSession() {
-        setIsDataLoading(true);
-        const { error } = await supabase
-            .from('sessions')
-            .delete()
-            .eq('id', selectedSession.id);
-
-        if (error) {
-            console.log("Error when deleting session. Please try again.");
-            setIsDataLoading(false);
-        } else {
-            selectedSession.remove();
-            fetchCalendarData();
         }
     }
 
@@ -292,9 +269,7 @@ export default function CoachCalendar() {
     const [drillSearchFilter, setDrillSearchFilter] = useState("ALL");
 
     const [selectedDrills, setSelectedDrills] = useState([]);
-    const [selectedSessionDrills, setSelectedSessionDrills] = useState([]);
     const [editedSessionDrills, setEditedSessionDrills] = useState([]);
-
 
     async function fetchDrills() {
         const { data, error } = await supabase
@@ -394,15 +369,10 @@ export default function CoachCalendar() {
         const q = drillSearchQuery.toLowerCase().trim();
 
         let drillTagsLink = null;
-
-        if (q === "" && drillSearchFilter === "ALL") {
-            setFilteredDrills(drills);
-        } else {
-            const tagID = drillSearchFilter;
-
+        if (drillSearchFilter !== "ALL") {
             drillTagsLink = new Set(
                 drillLibraryTags
-                    .filter(tag => tag.tag_id === tagID)
+                    .filter(tag => tag.tag_id === drillSearchFilter)
                     .map(tag => tag.drill_id)
             );
         }
@@ -414,7 +384,6 @@ export default function CoachCalendar() {
         });
 
         setFilteredDrills(filtered);
-
     }, [drills, drillSearchQuery, drillSearchFilter, drillLibraryTags]);
 
     // loading screen appears when data isnt fully loaded
@@ -471,17 +440,16 @@ export default function CoachCalendar() {
         loadSessionData();
     }, [selectedSession]);
 
-useEffect(() => {
-    if (tempSession) {
-        setTempSession(prev => ({
-            ...prev,
-            selectedCoaches: editedSessionCoaches,
-            selectedPlayers: editedSessionPlayers,
-            selectedDrills: editedSessionDrills
-        }));
-    }
-}, [editedSessionCoaches, editedSessionPlayers, editedSessionDrills]);
-
+    useEffect(() => {
+        if (tempSession) {
+            setTempSession(prev => ({
+                ...prev,
+                selectedCoaches: editedSessionCoaches,
+                selectedPlayers: editedSessionPlayers,
+                selectedDrills: editedSessionDrills
+            }));
+        }
+    }, [editedSessionCoaches, editedSessionPlayers, editedSessionDrills]);
 
     const handleDateChange = (start, end) => { 
         setWeekStart(DateTime.fromJSDate(start));
@@ -497,7 +465,6 @@ useEffect(() => {
         fetchCalendarData();
     }, []);
 
-
     // change calendar view when switching from mobile/desktop
     useEffect(() => {
         const calendarApi = calendarRef.current?.getApi();
@@ -506,43 +473,6 @@ useEffect(() => {
         calendarApi.changeView(isMobile ? "timeGridDay" : "dayGridMonth");
         calendarApi.updateSize();
     }, [isMobile]);
-
-    async function fetchOtherUserSessions(people) {
-        if (people.length === 0) return;
-        setIsDataLoading(true);
-        
-        // fetch data from the database
-        const { data, error } = await supabase
-            .from('sessions')
-            .select(`
-                *,
-                session_people!inner(user_id)
-            `)
-            .in('session_people.user_id', people);
-
-        if (error) return;
-
-        // set the session data for the calendar events
-        const session = (data || []).map(ses => {
-            const startTime = DateTime.fromISO(ses.start_datetime);
-            const endTime = DateTime.fromISO(ses.end_datetime);
-            const duration = Duration.fromISOTime(ses.duration);
-            return {
-                id: ses.id,
-                title: "",
-                start: startTime.toISO(),
-                end: endTime.toISO(),
-                extendedProps: {
-                    type: 'other_availability',
-                    duration: duration,
-                    notes: ""
-                }
-            };
-        })
-
-        setCalendarEvents([...session]);
-        setIsDataLoading(false);
-    }
 
     async function fetchCalendarData() {
         setIsDataLoading(true);
@@ -642,11 +572,26 @@ useEffect(() => {
         });
     }
 
+    async function deleteSession() {
+        setIsDataLoading(true);
+        const { error } = await supabase
+            .from('sessions')
+            .delete()
+            .eq('id', selectedSession.id);
+
+        if (error) {
+            console.log("Error when deleting session. Please try again.");
+            setIsDataLoading(false);
+        } else {
+            selectedSession.remove();
+            fetchCalendarData();
+        }
+    }
+
     return (
         <>
             {/* Loading overlay */}
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
-
 
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
@@ -893,19 +838,24 @@ useEffect(() => {
                             <div class="content-box-top-middle"></div>
                             <div class="content-box-top-right">
                                 <button
+                                    class="drill-icon-btn"
                                     onClick={() => setShowAddDrill(false)}
-                                >Close</button>
+                                >
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                         <div class="content-box-middle">
                             <div id="session-drill-library-filter">
                                 <input
                                     class="typing-input-box"
-                                    placeholder='Search drill'
+                                    placeholder='Search drill...'
                                     type="text"
                                     value={drillSearchQuery}
                                     onChange={(e) => setDrillSearchQuery(e.target.value)}
-                                ></input>
+                                />
                                 <select
                                     value={drillSearchFilter}
                                     onChange={(e) => setDrillSearchFilter(e.target.value)}
@@ -982,10 +932,18 @@ useEffect(() => {
                                 <h2 id="session-editor-header">Session Editor</h2>
                             </div>
                             <div id="session-editor-top-right">
-                                <button id="close-session-editor" onClick={() => {
-                                    setShowSessionEditor(false);
-                                    setSelectedSession(null);
-                                }}>Close</button>
+                                <button 
+                                    class="drill-icon-btn"
+                                    id="close-session-editor" 
+                                    onClick={() => {
+                                        setShowSessionEditor(false);
+                                        setSelectedSession(null);
+                                    }}
+                                >
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
 
                             <div id="session-editor-middle-left">
@@ -1050,13 +1008,30 @@ useEffect(() => {
                                     </div>
                                 </div>
                             </div>
-
+                            
                             <div id="session-editor-bottom-left">
-                                <button id="save-session-changes btn" onClick={saveSessionChanges}>Save Changes</button>
+                                <button 
+                                    class="drill-btn drill-btn-danger" 
+                                    id="delete-session" 
+                                    onClick={sessionDeleteConfirmation}
+                                >
+                                    <svg width="15" height="15" fill="none" stroke="#dc2626" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Delete
+                                </button>
                             </div>
                             <div id="session-editor-bottom-middle"></div>
                             <div id="session-editor-bottom-right">
-                                <button class="delete-btn" id="delete-session" onClick={sessionDeleteConfirmation}>Delete</button>
+                                <button 
+                                    class="drill-btn drill-btn-primary"
+                                    onClick={saveSessionChanges}
+                                >
+                                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Save Changes
+                                </button>
                             </div>
                     </div>
                 </div>

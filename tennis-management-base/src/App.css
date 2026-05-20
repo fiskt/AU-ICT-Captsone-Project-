@@ -419,11 +419,13 @@ btn, button:hover {
 .content-box-top-left, .content-box-bottom-left {
   justify-content: left;
   align-items: center;
+  display: flex;
 }
 
 .content-box-top-right, .content-box-bottom-right {
   justify-content: right;
   align-items: center;
+  display: flex;
 }
 
 .content-box-top-middle, .content-box-bottom-middle {
