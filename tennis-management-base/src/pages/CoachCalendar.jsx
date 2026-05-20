@@ -135,7 +135,7 @@ export default function CoachCalendar() {
             .from('session_people')
             .select(`
                 user_id,
-                signin_details!user_id ( role )    
+                signin_details!inner ( role )    
             `)
             .eq('session_id', sessionId)
             .eq('signin_details.role', 'coach');
@@ -153,7 +153,7 @@ export default function CoachCalendar() {
             .from('session_people')
             .select(`
                 user_id,
-                signin_details!user_id ( role )
+                signin_details!inner ( role )
             `)
             .eq('session_id', sessionId)
             .eq('signin_details.role', 'player');
@@ -976,7 +976,7 @@ useEffect(() => {
                             setSelectedSession(null);
                         }
                     }}
-                >
+                >   
                     <div id="session-editor" ref={sessionEditorRef}>
                             <div id="session-editor-top-left">
                                 <h2 id="session-editor-header">Session Editor</h2>
