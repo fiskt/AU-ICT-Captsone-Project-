@@ -218,7 +218,7 @@ export function COACH_SIDEBAR() {
 
             <div id="sidebar" className={mobileOpen ? 'sidebar-mobile-open' : ''}>
                 <div id="sidebar-logo">
-                    <img src="/hpt.png" alt="HPT" className="sidebar-logo-img"
+                    <img src="src/assets/logo.png" alt="HPT" className="sidebar-logo-img"
                         onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                     />
                     <div className="sidebar-logo-fallback" style={{ display: 'none' }}>
@@ -271,7 +271,7 @@ export function PLAYER_SIDEBAR() {
 
             <div id="sidebar" className={mobileOpen ? 'sidebar-mobile-open' : ''}>
                 <div id="sidebar-logo">
-                    <img src="/hpt.png" alt="HPT" className="sidebar-logo-img"
+                    <img src="src/assets/logo.png" alt="HPT" className="sidebar-logo-img"
                         onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                     />
                     <div className="sidebar-logo-fallback" style={{ display: 'none' }}>

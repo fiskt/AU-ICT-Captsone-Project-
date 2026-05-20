@@ -1,7 +1,6 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS, DELETE_CONFIRMATION } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
-
 
 import { DateTime, Duration } from 'luxon';
 import { createClient } from '@supabase/supabase-js';
@@ -65,17 +64,6 @@ export default function CoachCalendar() {
 
     const [editedSessionCoaches, setEditedSessionCoaches] = useState([]);
     const [editedSessionPlayers, setEditedSessionPlayers] = useState([]);
-
-    // confirmation popup for deleting sessions
-    const sessionDeleteConfirmation = () => {
-        const confirmed = window.confirm("Are you sure you want to delete this session? This action cannot be undone.");
-
-        if (confirmed) {
-            deleteSession();
-            setShowSessionEditor(false);
-            setSelectedSession(null);
-        }
-    }
 
     async function fetchPlayers() {
         const { data, error } = await supabase
@@ -572,8 +560,12 @@ export default function CoachCalendar() {
         });
     }
 
+    // delete session
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+
     async function deleteSession() {
-        setIsDataLoading(true);
+        setIsDeleting(true);
         const { error } = await supabase
             .from('sessions')
             .delete()
@@ -581,9 +573,14 @@ export default function CoachCalendar() {
 
         if (error) {
             console.log("Error when deleting session. Please try again.");
-            setIsDataLoading(false);
+            setIsDeleting(false);
+            setShowDeleteConfirmation(false);
         } else {
             selectedSession.remove();
+            setIsDeleting(false);
+            setShowDeleteConfirmation(false);
+            setShowSessionEditor(false);
+            setSelectedSession(null);
             fetchCalendarData();
         }
     }
@@ -592,6 +589,16 @@ export default function CoachCalendar() {
         <>
             {/* Loading overlay */}
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
+
+            {/* Delete confirmation */}
+            {showDeleteConfirmation && selectedSession && showSessionEditor && (
+                <DELETE_CONFIRMATION
+                    session={selectedSession}
+                    onConfirm={deleteSession}
+                    onClose={() => setShowDeleteConfirmation(false)}
+                    deleting={isDeleting}
+                />
+            )}
 
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
@@ -617,8 +624,6 @@ export default function CoachCalendar() {
                     selectedPlayers={selectedPlayers} setSelectedPlayers={setSelectedPlayers}
 
                     selectedDrills={selectedDrills}
-                    
-                    handleDelete={sessionDeleteConfirmation}
 
                     currentUser={currentUserID}
 
@@ -1013,7 +1018,7 @@ export default function CoachCalendar() {
                                 <button 
                                     class="drill-btn drill-btn-danger" 
                                     id="delete-session" 
-                                    onClick={sessionDeleteConfirmation}
+                                    onClick={() => setShowDeleteConfirmation(true)}
                                 >
                                     <svg width="15" height="15" fill="none" stroke="#dc2626" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

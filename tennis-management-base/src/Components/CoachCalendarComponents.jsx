@@ -88,6 +88,37 @@ export function PEOPLE_SELECTOR({ role, people = [], selectedPeople = [], setSel
     );
 }
 
+export function DELETE_CONFIRMATION({ session, onConfirm, onClose, deleting }) {
+    const sessionName = session.title.length > 0
+        ? session.title
+        : "this session";
+    return (
+        <div id="drill-modal-overlay">
+            <div className="drill-modal">
+                <div className="drill-modal-header">
+                    <span className="drill-modal-title">Delete Session</span>
+                    <button className="drill-icon-btn" onClick={onClose} style={{ border: 'none', background: 'transparent' }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div className="drill-modal-body">
+                    <div className="drill-delete-title">Delete "{sessionName}"?</div>
+                    <div className="drill-delete-body">
+                        This session will be permanently removed.
+                    </div>
+                </div>
+                <div className="drill-modal-footer">
+                    <button className="drill-btn drill-btn-danger-solid" onClick={onConfirm} disabled={deleting}>
+                        {deleting ? 'Deleting...' : 'Delete Drill'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlayers }) {
     const sessionRef = useRef(null);
 

@@ -981,6 +981,18 @@ btn, button:hover {
    DRILL MODAL — fixed overflow / clipping
    This is the fix for the modal being cut
    at the top of the screen
+
+   #drill-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.55);
+      z-index: 500;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      overflow-y: auto;
+      padding: 40px 20px 40px 20px;
+    }
 ══════════════════════════════════════════ */
 #drill-modal-overlay {
   /* Must be fixed to viewport, not relative to parent */
@@ -991,11 +1003,12 @@ btn, button:hover {
   z-index: 500;
   display: flex;
   /* flex-start + padding-top so tall modals don't go off screen top */
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   /* Scrollable overlay so very tall modals can scroll */
   overflow-y: auto;
   padding: 40px 20px 40px 20px;
+  left: 14%;
 }
 
 .drill-modal {
