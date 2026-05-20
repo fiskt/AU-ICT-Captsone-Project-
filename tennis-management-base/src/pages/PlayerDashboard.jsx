@@ -139,7 +139,7 @@ export default function PlayerDashboard() {
                     gap: '8px',
                 }}>
                     <span style={{ fontSize: '14px', color: '#7C3A1A' }}>
-                        👁 Previewing <strong>{previewPlayer}</strong>'s dashboard — <em style={{ fontSize: '12px' }}>read-only</em>
+                        Previewing <strong>{previewPlayer}</strong>'s dashboard <em style={{ fontSize: '12px' }}></em>
                     </span>
                     <button
                         onClick={() => navigate('/CoachDashboard')}
