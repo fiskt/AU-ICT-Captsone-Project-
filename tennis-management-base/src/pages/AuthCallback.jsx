@@ -25,7 +25,7 @@ export default function AuthCallback() {
         navigate('/PlayerDashboard');
       } else {
         // Fallback if role is missing
-        navigate('/login');
+        navigate('/Login');
       }
     };
 
