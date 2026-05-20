@@ -42,11 +42,6 @@
     overflow: auto;
 }
 
-.fc-view-harness {
-    overflow: auto;
-    min-height: 750px;
-}
-
 #draggable-session-container {
     width: 100%;
     cursor: grab;
@@ -247,17 +242,6 @@ select::picker(select) {
     transition: background-color 0.2s ease-in-out;
 }
 
-.fc-event:hover {
-    border-color: black;
-    transition: border-color 0.2s ease-in-out;
-}
-
-.fc-event {
-    border: 2px solid white;
-    padding: 3px;
-}
-
-
 .availability-event {
     background-color: color-mix(in srgb, var(--sidebar-bg-color), transparent 80%);
     border-radius: 0;
@@ -302,26 +286,6 @@ select::picker(select) {
     display: none !important;
 }
 
-.short-event .fc-event-time {
-    display: none !important;
-}
-
-.fc-event {
-    padding: 0 3px 0 3px;
-}
-
-.fc-event-title {
-    font-family: 'DM Mono Light', sans-serif;
-    color: var(--content-body-color);
-    font-size: 80%;
-}
-
-.fc-event-time {
-    border-bottom: 1px solid black;
-    font-family: 'DM Mono Light', sans-serif;
-    color: black;
-    font-size: 64% !important;
-}
 
 .delete-avail-btn {
     font-size: 50%;

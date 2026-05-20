@@ -21,13 +21,6 @@ export default function PlayerCalendar() {
         };
     });
 
-    const updateSessionField = (field, value) => {
-        setSessionSettings({
-            ...sessionSettings,
-            [field]: value 
-        });
-    }
-
     // detecting mobile window size
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -53,14 +46,8 @@ export default function PlayerCalendar() {
     const [coaches, setCoaches] = useState([]);
     const [players, setPlayers] = useState([]);
 
-    const [selectedCoaches, setSelectedCoaches] = useState([]);
-    const [selectedPlayers, setSelectedPlayers] = useState([]);
-
     const [selectedSessionCoaches, setSelectedSessionCoaches] = useState([]);
     const [selectedSessionPlayers, setSelectedSessionPlayers] = useState([]);
-
-    const [selectedPeople, setSelectedPeople] = useState([]);
-    const [selectedSessionPeople, setSelectedSessionPeople] = useState([]);
 
     async function fetchPlayers() {
         const { data, error } = await supabase
@@ -282,8 +269,8 @@ export default function PlayerCalendar() {
 
                     selectedSession={selectedSession}
                     
-                    selectedCoaches={selectedCoaches}
-                    selectedPlayers={selectedPlayers} 
+                    selectedCoaches={selectedSessionCoaches}
+                    selectedPlayers={selectedSessionPlayers} 
 
                     isMobile={isMobile}
 
@@ -391,7 +378,7 @@ export default function PlayerCalendar() {
                             <div id="mobile-session-details-people">
                                 <div>Coaches</div>
                                 <ul>
-                                    {selectedSessionPeople
+                                    {selectedSessionCoaches
                                         .filter(coach => coach.role === 'coach')
                                         .map(coach => (
                                             <li key={coach.id}>{coach.first_name} {coach.last_name}</li>
@@ -400,7 +387,7 @@ export default function PlayerCalendar() {
                                 </ul>
                                 <div>Players</div>
                                 <ul>
-                                    {selectedSessionPeople
+                                    {selectedSessionPlayers
                                         .filter(player => player.role === 'player')
                                         .map(player => (
                                             <li key={player.id}>{player.first_name} {player.last_name}</li>

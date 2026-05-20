@@ -2,6 +2,8 @@ import '../App.css'
 import '../pages/CoachCalendar.css'
 import '../pages/DrillLibrary.css'
 
+import '../pages/CalendarStyle.css'
+
 import { DateTime, Info, Interval, Duration } from 'luxon'
 import { useState, useEffect, useRef, forwardRef } from 'react';
 
@@ -417,6 +419,7 @@ export const CALENDAR = forwardRef(({
                     plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
                     ref={ref}
                     events={events}
+                    allDaySlot={false}
                     eventOverlap={false}
                     selectOverlap={false}
                     initialView={initialView}

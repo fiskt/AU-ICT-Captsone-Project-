@@ -152,6 +152,7 @@ button.active {
     width: 100%;
 }
 
+
 #session-details-drills, #session-details-people,
 #mobile-session-details-drills, #mobile-session-details-people {
     overflow-y: auto !important;
@@ -159,6 +160,15 @@ button.active {
     border-radius: 8px;
     border: 2px solid var(--content-input-border-color);
     padding: 10px;
+}
+
+#session-details-drills, #session-details-people {
+    height: 100%;
+}
+
+#session-details-drills span {
+    font-family: 'DM Mono Light', sans-serif;
+    font-size: 14px;
 }
 
 #session-details-drills > * > div {
