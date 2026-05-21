@@ -1,6 +1,6 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
 import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
-import { USERS_LIST, OTHER_CALENDARS } from '../Components/OtherUsersComponents.jsx';
+import { USERS_LIST, OTHER_CALENDARS, SESSION_DETAILS_DRILLS } from '../Components/OtherUsersComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
@@ -8,14 +8,39 @@ import { DateTime, Duration } from 'luxon';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
+    const sessionEditorRef = useRef(null);
     const calendarRef = useRef(null);
-    const [showSessionEditor, setShowSessionEditor] = useState(false);
+    const [showSessionDetails, setShowSessionDetails] = useState(false);
+    const [showCollapsedUsers, setShowCollapsedUsers] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
 
     const [calendarEvents, setCalendarEvents] = useState([]);
 
     const [coaches, setCoaches] = useState([]);
     const [players, setPlayers] = useState([]);
+
+    const [selectedSessionPeople, setSelectedSessionPeople] = useState([]);
+    const [selectedSessionDrills, setSelectedSessionDrills] = useState([]);
+
+    // detecting mobile window size
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+    
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        if (!isMobile) {
+            setShowCollapsedUsers(false);
+        }
+    }, [isMobile]);
+
 
     // filtering and searching users
     const [searchQuery, setSearchQuery] = useState("");
@@ -60,62 +85,61 @@ export default function CoachCalendar() {
 
     const [selectedUser, setSelectedUser] = useState();
 
-    const [selectedCoaches, setSelectedCoaches] = useState([]);
-    const [selectedPlayers, setSelectedPlayers] = useState([]);
+    async function fetchSelectedSessionPeople() {
+        const { data, error } = await supabase
+            .from('signin_details')
+            .select(`
+                *,
+                session_people!inner(session_id)
+            `)
+            .eq('session_people.session_id', selectedSession.id);
+
+        if (!error) {
+            setSelectedSessionPeople(data);
+        }
+    }
 
     async function fetchPlayers() {
         const { data, error } = await supabase
-            .from('players')
+            .from('signin_details')
             .select('*')
+            .eq('role', 'player');
 
         if (error) {
             console.log("Error when fetching players: ", error.message);
             setPlayers([]);
         } else {
             setPlayers(data);
-            console.log(players);
+            console.log("players", players);
         }
     }
 
     async function fetchCoaches() {
         const { data, error } = await supabase
-            .from('coaches')
+            .from('signin_details')
             .select('*')
+            .eq('role', 'coach');
 
         if (error) {
             console.log("Error when fetching coaches: ", error.message);
             setCoaches([]);
         } else {
             setCoaches(data);
-            console.log(coaches);
+            console.log("coaches", coaches);
         }
     }
 
-    async function fetchSessionCoaches(sessionId) {
+    async function fetchSelectedSessionDrills() {
         const { data, error } = await supabase
-            .from('session_coaches')
-            .select('coach_id')
-            .eq('session_id', sessionId);
+            .from('drill_library')
+            .select(`
+                *, 
+                session_drills!inner(session_id)
+            `)
+            .eq('session_drills.session_id', selectedSession.id);
 
-        if (error) {
-            console.log("Error when fetching selected session coaches: ", error.message);
-            return [];
-        } else {
-            return data.map(item => item.coach_id);
-        }
-    }
-
-    async function fetchSessionPlayers(sessionId) {
-        const { data, error } = await supabase
-            .from('session_players')
-            .select('player_id')
-            .eq('session_id', sessionId);
-
-        if (error) {
-            console.log("Error when fetching selected session players: ", error.message);
-            return [];
-        } else {
-            return data.map(item => item.player_id);
+        if (!error) {
+            setSelectedSessionDrills(data);
         }
     }
 
@@ -125,182 +149,47 @@ export default function CoachCalendar() {
     const [weekStart, setWeekStart] = useState(DateTime.now().startOf('week'));
     const [weekEnd, setWeekEnd] = useState(DateTime.now().endOf('week'));
 
-    const [tempSession, setTempSession] = useState(null);
-
-    useEffect(() => {
-    const loadSessionData = async () => {
-        if (selectedSession) {
-            setIsDataLoading(true);
-
-            const [sessionCoaches, sessionPlayers] = await Promise.all([
-                fetchSessionCoaches(selectedSession.id),
-                fetchSessionPlayers(selectedSession.id)
-            ]);
-
-
-
-            setTempSession({
-                id: selectedSession.id,
-                name: selectedSession.title,
-                duration: selectedSession.extendedProps.duration,
-                notes: selectedSession.extendedProps.notes,
-                selectedCoaches: sessionCoaches, 
-                selectedPlayers: sessionPlayers 
-            });
-        } else {
-            setTempSession(null);
-        }
-        setIsDataLoading(false);
-    };
-
-    loadSessionData();
-}, [selectedSession]);
-
     const handleDateChange = (start, end) => { 
         setWeekStart(DateTime.fromJSDate(start));
         setWeekEnd(DateTime.fromJSDate(end));
     };
 
-    // handles returning to current week
-    const handleShowToday = () => {
-        setWeekStart(DateTime.now().startOf('week'));
-        setWeekEnd(DateTime.now().endOf('week'));
-
-
-        if (calendarRef.current) {
-            const calendarApi = calendarRef.current.getApi();
-            calendarApi.today(); 
-        } else {
-            console.log("loading calendar....");
-        }
-    }
-
-
     async function fetchCalendarData() {
         if (!selectedUser) return;
         setIsDataLoading(true);
+
+        let sessionEvents = [];
+        console.log("selected user: ", selectedUser);
         
-        let sessionIds = [];
-        let formattedSessions = [];
+        const { data, error } = await supabase
+            .from('sessions')
+            .select(`
+                *,
+                session_people!inner(user_id)
+            `)
+            .eq('session_people.user_id', selectedUser.id);
 
-        if (selectedUser.table === 'session_coaches') {
-            const { data, error } = await supabase 
-                .from(selectedUser.table)
-                .select('*')
-                .eq('coach_id', selectedUser.user_id);
-
-            if (!error) sessionIds = (data || []).map(cs => cs.session_id);
-        } else if (selectedUser.table === 'session_players') {
-            const { data, error } = await supabase 
-                .from(selectedUser.table)
-                .select('*')
-                .eq('player_id', selectedUser.user_id);
-
-            if (!error) sessionIds = (data || []).map(cs => cs.session_id);
+        if (!error) {
+            sessionEvents = (data || []).map(ses => {
+                const startTime = DateTime.fromISO(ses.start_datetime);
+                const endTime = DateTime.fromISO(ses.end_datetime);
+                const duration = Duration.fromISOTime(ses.duration);
+                return {
+                    id: ses.id,
+                    title: ses.name,
+                    start: startTime.toISO(),
+                    end: endTime.toISO(),
+                    extendedProps: {
+                        type: 'session',
+                        duration: duration,
+                        notes: ses.notes
+                    }
+                }
+            });
         }
 
-        console.log("sessino ids: ", sessionIds);
-
-        if (sessionIds.length > 0) {
-            const { data, error } = await supabase
-                .from('sessions')
-                .select('*')
-                .in('id', sessionIds);
-
-                formattedSessions = (data || []).map(ses => {
-                    const startTime = DateTime.fromISO(ses.time);
-                    const duration = Duration.fromISOTime(ses.duration);
-                    return {
-                        id: ses.id,
-                        title: ses.name,
-                        start: startTime.toISO(),
-                        end: startTime.plus(duration).toISO(),
-                        extendedProps: {
-                            type: 'session',
-                            duration: duration.toISO(),
-                            people: ses.people,
-                            notes: ses.notes
-                        }
-                    };
-                });
-        }
-
-        let formattedAvail = [];
-        if (selectedUser.table === 'session_coaches') {
-            const { data, error } = await supabase
-                .from('coach_availability')
-                .select('*')
-                .eq('coach_id', selectedUser.user_id);
-
-            if (!error) {
-                formattedAvail = (data || []).map(ava => {
-                    const startTime = DateTime.fromISO(ava.start_datetime);
-                    const endTime = DateTime.fromISO(ava.end_datetime);
-                    const duration = Duration.fromISOTime(ava.duration);
-                    return {
-                        id: ava.avail_id,
-                        title: ava.notes || "",
-                        start: startTime.toISO(),
-                        end: endTime.toISO(),
-                        extendedProps: {
-                            type: 'availability',
-                            duration: duration,
-                            notes: ava.notes
-                        }
-                    };
-                });
-            }
-        }
-        
-        // set copies of the events to the calendar
-        setCalendarEvents([...formattedSessions, ...formattedAvail]);
+        setCalendarEvents(sessionEvents);
         setIsDataLoading(false);
-    }
-
-    // session creator/editor duration dropdown options
-    const durationOptions = [
-        { label: "30 mins", val: "00:30:00" },
-        { label: "60 mins", val: "00:60:00" },
-        { label: "90 mins", val: "01:30:00" },
-        { label: "120 mins", val: "02:00:00" },
-        { label: "150 mins", val: "02:30:00" },
-        { label: "180 mins", val: "03:00:00" },
-    ];
-
-    // auto save current session inputs in local storage and restore the saved inputs
-    const [sessionSettings, setSessionSettings] = useState(() => {
-        const savedDraft = localStorage.getItem('session_creator_draft');
-        return savedDraft ? JSON.parse(savedDraft) : {
-            sessionName: "Session Name",
-            sessionDuration: durationOptions[0].val,
-            sessionNotes: "",
-            sessionPeople: []
-        };
-    });
-
-    const [availSettings, setAvailSettings] = useState({
-            availNotes: "",
-            availStart: "",
-            availEnd: "",
-            availDuration: "01:00:00"
-    })
-
-    useEffect(() => {
-        localStorage.setItem('session_creator_draft', JSON.stringify(sessionSettings));
-    }, [sessionSettings]);
-
-    const updateSessionField = (field, value) => {
-        setSessionSettings({
-            ...sessionSettings,
-            [field]: value 
-        });
-    }
-
-    const updateAvailField = (field, value) => {
-        setAvailSettings({
-            ...availSettings,
-            [field]: value 
-        });
     }
 
     useEffect(() => {
@@ -310,6 +199,18 @@ export default function CoachCalendar() {
             setCalendarEvents([]);
         }
     }, [selectedUser]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            await Promise.all([
+                fetchSelectedSessionPeople(),
+                fetchSelectedSessionDrills()
+            ]);
+        };
+        if (selectedSession) {
+            fetchData();
+        }
+    }, [fetchSelectedSessionPeople, fetchSelectedSessionDrills]);
 
     useEffect(() => {
         const initializeUsers = async () => {
@@ -328,153 +229,225 @@ export default function CoachCalendar() {
         <>
             {/* Loading overlay */}
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
-
-            <div class="content-box editor-box">
-                <h2 class="content-header">Users</h2>
-                <div class="content-box-top">
-                    <div id="user-filter-container">
-                        <div class="content-box-middle">
-                            <input
-                                class="typing-input-box"
-                                placeholder='Search user'
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            >
-                            </input>
-                        </div>
-                        <div class="content-box-bottom" id="users-filter-btn">
-                                <button 
-                                    onClick={() => setSearchFilter("coaches")}
-                                    className={`user-filter-btn ${searchFilter === 'coaches' ? 'active' : ''}`}
-                                >Coach</button>
-                                <button 
-                                    onClick={() => setSearchFilter("players")}
-                                    className={`user-filter-btn ${searchFilter === 'players' ? 'active' : ''}`}
-                                >Player</button>
-                                <button
-                                    class="user-filter-btn"
-                                    onClick={() => {
-                                        setSearchFilter("all");
-                                        setSearchQuery("");
-                                    }}
-                                >Reset</button>
+            
+            {/* User selector */}
+            { !showCollapsedUsers && (
+                <div class="content-box" id='user-selector'>
+                    <div class="user-selector-top">
+                        <h2 class="content-header">Users</h2>
+                        { isMobile && (
+                            <button
+                                onClick={() => setShowCollapsedUsers(true)}
+                            >Show Less</button>
+                        )}
+                    </div>
+                    <div class="content-box-top">
+                        <div id="user-filter-container">
+                            <div class="content-box-middle">
+                                <input
+                                    class="typing-input-box"
+                                    placeholder='Search user'
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                >
+                                </input>
+                            </div>
+                            <div class="content-box-bottom" id="users-filter-btn">
+                                    <button 
+                                        onClick={() => setSearchFilter("coaches")}
+                                        className={`user-filter-btn ${searchFilter === 'coaches' ? 'active' : ''}`}
+                                    >Coach</button>
+                                    <button 
+                                        onClick={() => setSearchFilter("players")}
+                                        className={`user-filter-btn ${searchFilter === 'players' ? 'active' : ''}`}
+                                    >Player</button>
+                                    <button
+                                        class="user-filter-btn"
+                                        onClick={() => {
+                                            setSearchFilter("all");
+                                            setSearchQuery("");
+                                        }}
+                                    >Reset</button>
+                            </div>
                         </div>
                     </div>
+                    <div class="content-box-middle">
+                        <USERS_LIST 
+                            coaches={filteredCoaches} players={filteredPlayers} 
+                            selectedUser={selectedUser}
+                            setSelectedUser={setSelectedUser} 
+                        />
+                    </div>
+                </div> 
+            )}
+
+            { showCollapsedUsers && isMobile && (
+                <div class="user-selector-top" id="collapsed-users">
+                    <h2 class="content-header">USERS</h2>
+                    <button
+                        onClick={() => setShowCollapsedUsers(false)}
+                    >Show More</button>
                 </div>
-                <div class="content-box-middle">
-                    <USERS_LIST 
-                        coaches={filteredCoaches} players={filteredPlayers} 
-                        selectedUser={selectedUser}
-                        setSelectedUser={setSelectedUser} 
-                    />
-                </div>
-            </div> 
+            )}
 
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
-                <OTHER_CALENDARS
+                <OTHER_CALENDARS 
                     events={calendarEvents}
                     activeStart={weekStart} activeEnd={weekEnd}
-                    onTodayClick={handleShowToday}
                     onDateChange={handleDateChange}
                     onSessionClick = {(eventData) => {
                         setSelectedSession(eventData);
-                        setShowSessionEditor(true);
+                        setShowSessionDetails(true);
                     }}
 
                     selectedSession={selectedSession}
-                    
-                    selectedCoaches={selectedCoaches} setSelectedCoaches={setSelectedCoaches}
-                    selectedPlayers={selectedPlayers} setSelectedPlayers={setSelectedPlayers}
-                    
+
+                    selectedUser={selectedUser}
+
+                    isMobile={isMobile}
+
                     ref={calendarRef}
                 />
             </div>
-
-            {/* Session editor */}
-            { selectedSession && showSessionEditor && (
-                <div id="session-editor-container">
-                    <div class="content-box" id="session-editor">
-                        <div class="content-box-top">
-                            <div class="content-box-top-left">
-                                <h2 id="session-editor-header">Session Editor</h2>
-                            </div>
-                            <div class="content-box-top-middle"></div>
-                            <div class="content-box-top-right">
-                                <button id="close-session-editor" onClick={() => {
-                                    setShowSessionEditor(false);
+            
+            {/* Session details */}
+            { !showCollapsedUsers && selectedSession && showSessionDetails && !isMobile && (
+                <div 
+                    id="session-details-container" 
+                    onClick={(e) => {
+                        if (sessionEditorRef.current && !sessionEditorRef.current.contains(e.target)) {
+                            setShowSessionDetails(false);
+                            setSelectedSession(null);
+                        }
+                    }}
+                >
+                    <div id="session-details" ref={sessionEditorRef}>
+                        <div id="session-details-top-left">
+                            <h2 id="session-details-header">Session Details</h2>
+                        </div>
+                        <div id="session-details-top-right">
+                            <button 
+                                class="drill-icon-btn"
+                                id="close-session-editor" 
+                                onClick={() => {
+                                    setShowSessionDetails(false);
                                     setSelectedSession(null);
-                                }}>Close</button>
-                            </div>
+                                }}
+                            >
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
-                        <div class="content-box-middle">
-                            <div class="content-box-middle-left" id="session-editor-middle-left">
-                                <TYPING_INPUT 
-                                    label="NAME" 
-                                    num_rows="1" 
-                                    input_id="session-name-creator" 
-                                    box_w="100%" box_h="30px" 
-                                    sample_txt="Session name"
-                                    value={tempSession?.name || ""}
-                                    onChange={(val) => 
-                                        setTempSession({ ...tempSession, name: val })
-                                    }
-                                    id="session-editor-name"
-                                />
-                                <DROPDOWN_INPUT 
-                                    label="DURATION" 
-                                    input_id="session-duration-creator" 
-                                    box_w="100%" box_h="30px" 
-                                    options={durationOptions}
-                                    value={tempSession?.duration || ""}
-                                    onChange={(val) => 
-                                        setTempSession({ ...tempSession, duration: val })
-                                    }
-                                    id="session-editor-duration"
-                                />
-                                <TYPING_INPUT 
-                                    label="NOTES" 
-                                    num_rows="6" 
-                                    input_id="session-notes-creator" 
-                                    box_w="100%" box_h="80px" 
-                                    sample_txt="Session notes" 
-                                    value={tempSession?.notes || ""}
-                                    onChange={(val) => 
-                                        setTempSession({ ...tempSession, notes: val })
-                                    }
-                                    id="session-editor-notes"
-                                />
-                                <div class="input-container" id="session-editor-people">
-                                    <span class="input-container-label">PEOPLE</span>
-                                    <div class="input-box-wrapper session-people">
-                                        <PEOPLE_SELECTOR 
-                                            role="COACHES" people={coaches} 
-                                            selectedPeople={editedSessionCoaches} 
-                                            setSelectedPeople={setEditedSessionCoaches}  
-                                        />
-                                        <PEOPLE_SELECTOR 
-                                            role="PLAYERS" people={players} 
-                                            selectedPeople={editedSessionPlayers} 
-                                            setSelectedPeople={setEditedSessionPlayers} 
-                                        />
-                                    </div>
-                                </div>
+
+                        <div id="session-details-middle-left">
+                            <div class="input-container">
+                                <span class="input-container-label">NAME</span>
+                                <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
                             </div>
-                            <div class="content-box-middle-right">
-                                <div class="input-container" id="session-editor-drills">
-                                    <span class="input-container-label">DRILLS</span>
-                                    <div class="input-box-wrapper session-drills"></div>
+                            {selectedSession.extendedProps.notes.length > 0 && (
+                                <div class="input-container">
+                                    <span class="input-container-label">NOTES</span>
+                                    <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
+                                </div>
+                            )}
+                        </div>
+                        <div id="session-details-middle-middle">
+                            <div class="input-container" id="session-details-people-container">
+                                <span class="input-container-label">PEOPLE</span>
+                                <div id="session-details-people">
+                                    <div>Coaches</div>
+                                    <ul>
+                                        {selectedSessionPeople
+                                            .filter(coach => coach.role === 'coach')
+                                            .map(coach => (
+                                                <li key={coach.id}>{coach.first_name} {coach.last_name}</li>
+                                            ))
+                                        }
+                                    </ul>
+                                    <div>Players</div>
+                                    <ul>
+                                        {selectedSessionPeople
+                                            .filter(player => player.role === 'player')
+                                            .map(player => (
+                                                <li key={player.id}>{player.first_name} {player.last_name}</li>
+                                            ))
+                                        }
+                                    </ul>
                                 </div>
                             </div>
                         </div>
-                        <div class="content-box-bottom">
-                            <div class="content-box-bottom-left">
-                                <button id="save-session-changes btn" onClick={saveSessionChanges}>Save Changes</button>
+
+                        <div id="session-details-middle-right">
+                            <div class="input-container" id="session-details-drills-container">
+                                <span class="input-container-label">DRILLS</span>
+                                <div id="session-details-drills">
+                                    {selectedSessionDrills.length > 0 && (
+                                        <SESSION_DETAILS_DRILLS
+                                            selectedDrills={selectedSessionDrills}
+                                        />
+                                    )} {selectedSessionDrills.length === 0 && (
+                                        <span>No drills selected for this session.</span>
+                                    )}
+                                </div>
                             </div>
-                            <div class="content-box-bottom-middle"></div>
-                            <div class="content-box-bottom-right">
-                                <button class="delete-btn" id="delete-session" onClick={sessionDeleteConfirmation}>Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            { isMobile && showSessionDetails && selectedSession && (
+                <div id="mobile-session-details-container">
+                    <div id="mobile-session-details">
+                        <div id="mobile-session-details-top">
+                            <h2 class="content-header">Session Details</h2>
+                            <button id="mobile-close-session-details" onClick={() => {
+                                setShowSessionDetails(false);
+                                setSelectedSession(null);
+                            }}>Close</button>
+                        </div>
+
+                        <div class="input-container">
+                            <span class="input-container-label">NAME</span>
+                            <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
+                        </div>
+                        <div class="input-container">
+                            <span class="input-container-label">NOTES</span>
+                            <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
+                        </div>
+
+                        <div class="input-container" id="mobile-session-details-people-container">
+                            <span class="input-container-label">PEOPLE</span>
+                            <div id="mobile-session-details-people">
+                                <div>Coaches</div>
+                                <ul>
+                                    {selectedSessionPeople
+                                        .filter(coach => coach.role === 'coach')
+                                        .map(coach => (
+                                            <li key={coach.id}>{coach.first_name} {coach.last_name}</li>
+                                        ))
+                                    }
+                                </ul>
+                                <div>Players</div>
+                                <ul>
+                                    {selectedSessionPeople
+                                        .filter(player => player.role === 'player')
+                                        .map(player => (
+                                            <li key={player.id}>{player.first_name} {player.last_name}</li>
+                                        ))
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="input-container" id="session-details-drills-container">
+                            <span class="input-container-label">DRILLS</span>
+                            <div id="session-details-drills">
+                                <SESSION_DETAILS_DRILLS
+                                    selectedDrills={selectedSessionDrills}
+                                />
                             </div>
                         </div>
                     </div>

@@ -1,6 +1,9 @@
 import '../App.css'
 import '../pages/CoachCalendar.css'
 import '../pages/OtherUsers.css'
+import '../pages/DrillLibrary.css'
+
+import '../pages/CalendarStyle.css'
 
 import { DateTime, Info, Interval, Duration } from 'luxon'
 import { useState, useEffect, useRef, forwardRef } from 'react';
@@ -14,30 +17,53 @@ import interactionPlugin from '@fullcalendar/interaction'
 import 'tippy.js/dist/tippy.css'
 import tippy from 'tippy.js';
 
-import { createClient } from '@supabase/supabase-js';
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+function Stars({ level, size = '' }) {
+    const levelMap = { Beginner: 1, Intermediate: 2, Advanced: 3, Elite: 5 };
+    const filled = levelMap[level] ?? 2;
+    return (
+        <div className={`drill-stars ${size}`}>
+            {[1, 2, 3, 4, 5].map(i => (
+                <svg
+                    key={i}
+                    className={`drill-star ${i <= filled ? 'filled' : 'empty'}`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+            ))}
+        </div>
+    );
+}
+
+// ── TYPE BADGE ────────────────────────────────────────────────────────────────
+function TypeBadge({ type }) {
+    if (!type) return null;
+    return (
+        <span className={`drill-type-badge badge-${type.toLowerCase()}`}>
+            {type}
+        </span>
+    );
+}
 
 export function USERS_LIST({ coaches = [], players = [], selectedUser, setSelectedUser }) {
     return (
-        <div class="input-container">
-            <div class="input-box-wrapper session-people">
+        <div class="input-container" id="users-list-container">
+            <div class="input-box-wrapper" id="users-list">
                 {(coaches.length > 0) &&
-                    <div class="people-selector">
-                        <span class="people-selector-title">COACHES</span>
+                    <div>
+                        <div className="users-role-title">Coaches</div>
                         {
                             <ul class="user-list">
                                 {coaches.map((coach) => {
-                                    const isActive = selectedUser?.user_id === coach.id && selectedUser?.table === 'session_coaches';
+                                    const isActive = selectedUser === coach;
 
                                     return (
                                         <li 
                                         key={coach.id}
                                         className={`${isActive ? 'active' : ''}`}
                                         onClick={() => {
-                                            setSelectedUser({
-                                                table: 'session_coaches',
-                                                user_id: coach.id
-                                            });
+                                            setSelectedUser(coach);
                                         }}
                                     >
                                         <span>{coach.first_name} {coach.last_name}</span>
@@ -50,22 +76,20 @@ export function USERS_LIST({ coaches = [], players = [], selectedUser, setSelect
                 }
 
                 {(players.length > 0) && 
-                    <div class="people-selector">
-                        <span class="people-selector-title">PLAYERS</span>
+                    <div>
+                        <div className="users-role-title">Players</div>
                         {
                             <ul class="user-list">
                                 {players.map((player) => {
-                                    const isActive = selectedUser?.user_id === player.id && selectedUser?.table === 'session_players';
+                                    const isActive = selectedUser === player;
 
                                     return (
                                     <li 
                                         key={player.id}
                                         className={`${isActive ? 'active' : ''}`}
                                         onClick={() => {
-                                            setSelectedUser({
-                                                table: 'session_players',
-                                                user_id: player.id
-                                            });
+                                            setSelectedUser(player);
+                                            console.log(player.id);
                                         }}
                                     >
                                         <span>{player.first_name} {player.last_name}</span>
@@ -82,151 +106,132 @@ export function USERS_LIST({ coaches = [], players = [], selectedUser, setSelect
 }
 
 
+export function SESSION_DETAILS_DRILLS({ selectedDrills }) {
+    return (
+        <>
+            {selectedDrills.map((drill, index) => (
+                <div key={drill.instanceId || `${drill.id}-${index}`}>
+                    <DRILL_CARD 
+                        drill={drill} 
+                    />
+                </div>
+            ))}
+        </>
+    );
+}
+
+function DRILL_CARD({ drill }) {
+    return (
+        <div 
+            className="drill-card" 
+            key={drill.id}
+        >
+            <div className="drill-card-top">
+                <TypeBadge type={drill.type} />
+            </div>
+            <div className="drill-card-name">{drill.name}</div>
+            <div className="drill-card-name">{drill.description}</div>
+            <div className="drill-card-footer">
+            <Stars level={drill.level} />
+            </div>
+        </div>
+    );
+}
+
 export const OTHER_CALENDARS = forwardRef(({ 
     onSessionClick, 
     events, 
-    onTodayClick, 
     onDateChange, 
     activeStart, activeEnd, 
     selectedSession, 
-    toggleTooltips, tooltipsEnabled, 
-    selectedCoaches, setSelectedCoaches,
-    selectedPlayers, setSelectedPlayers,
-    currentUser
+    selectedUser,
+    isMobile
     }, ref) => {
 
+    const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
+    const headerToolBar = isMobile 
+        ? {
+            start: 'prev,next today', 
+            end: 'dayGridMonth,timeGridDay'
+        } : {
+            start: 'prev,next today', 
+            end: 'dayGridMonth,timeGridWeek'
+        }   
+    
     const todayStart = DateTime.now().startOf('week').minus({ days: 1 });
     const currentWeekStart = activeStart || todayStart;
 
-    const onCurrentWeek = currentWeekStart.hasSame(todayStart, 'day');
     const currentWeekEnd = activeEnd ? activeEnd.minus({ days: 1 }) : currentWeekStart.endOf('week');
 
-    const weekStartStr = currentWeekStart.toFormat('MMM d');
-    const weekEndStr = (currentWeekStart.month === currentWeekEnd.month) 
-        ? currentWeekEnd.toFormat('d, yyyy') 
-        : currentWeekEnd.toFormat('MMM d, yyyy');
+
+    const isSingleDay = currentWeekStart.hasSame(currentWeekEnd, 'day');
+
+    const calendarTitle = isSingleDay 
+        ? currentWeekStart.toFormat('MMMM d, yyyy') // Single Day: "May 9, 2026"
+        : `${currentWeekStart.toFormat('MMM d')} - ${
+            currentWeekStart.month === currentWeekEnd.month 
+                ? currentWeekEnd.toFormat('d, yyyy') 
+                : currentWeekEnd.toFormat('MMM d, yyyy')
+            }`;
 
     const [isAnimating, setIsAnimating] = useState(false);
 
-    async function pushSession({ event, sessionSettings }) {
-        const { data: session, error: sessionError } = await supabase
-            .from('sessions')
-            .insert([{ 
-                name: sessionSettings.name, 
-                duration: sessionSettings.duration, 
-                notes: sessionSettings.notes, 
-                time: sessionSettings.time 
-            }])
-            .select()
-            .single();
+    const currentViewText = selectedUser
+        ? "Current calendar: " + selectedUser.first_name + " " + selectedUser.last_name
+        : 'No user selected.'
 
-        if (session) {
-            const sessionID = session.id;
-
-            const sessionCoaches = selectedCoaches.map(coachID => ({
-                session_id: sessionID,
-                coach_id: coachID
-            }));
-
-            const sessionPlayers = selectedPlayers.map(playerID => ({
-                session_id: sessionID,
-                player_id: playerID
-            }));
-
-            await Promise.all([
-                sessionCoaches.length > 0 && supabase.from('session_coaches').insert(sessionCoaches),
-                sessionPlayers.length > 0 && supabase.from('session_players').insert(sessionPlayers)
-            ]);
-
-            event.setProp('id', sessionID);
-        } else {
-            console.log(sessionError);
-        }
-    }
-
-    async function updateAvailability(event) {
-        if (!event.id || !event.start || !event.end) return;
-
-        // get start and end
-        const start = DateTime.fromJSDate(event.start);
-        const end = DateTime.fromJSDate(event.end);
-
-        // difference of end and start time to get the duration
-        const newDuration = end.diff(start).toFormat('hh:mm:ss');
-
-        const { error } = await supabase
-            .from('coach_availability')
-            .update({
-                start_datetime: start.toISO(),
-                end_datetime: end.toISO(),
-                duration: newDuration
-            })
-            .eq('avail_id', event.id);
-
-        if (error) console.error(error.message);
-    }
-
-    async function pushAvailability({ event, coachId }) {
-        if (!event || !event.start) return;
-
-        // start and end times, default availability slot is 1h
-        const start = DateTime.fromJSDate(event.start);
-        const end = event.end 
-            ? DateTime.fromJSDate(event.end) 
-            : start.plus({ hours: 1 });
-
-        // calculate duration with end - start
-        const durationStr = end.diff(start).toFormat('hh:mm:ss');
-
-        const { data, error } = await supabase
-            .from('coach_availability')
-            .insert([{
-                coach_id: coachId,
-                start_datetime: start.toISO(),
-                end_datetime: end.toISO(),
-                duration: durationStr,
-                notes: event.title || ""
-            }])
-            .select()
-            .single();
-
-        if (data) {
-            event.setProp('id', data.avail_id);
-        }
-    }
-    
     return (
         <div id="calendar-container">
             <div id="calendar-date-container">
-                <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()} >{weekStartStr} - {weekEndStr}</h1>
+                <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()}>
+                    {calendarTitle} 
+                </h1>
+                <span>{currentViewText}</span>
             </div>
-            <div class="calendar-fade" className={isAnimating ? "calendar-fade" : ""}>
+            <div className={`calendar-fade isAnimating ? "calendar-fade" : ""`}>
                 <FullCalendar
                     plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
                     ref={ref}
                     events={events}
+                    allDaySlot={false}
                     eventOverlap={false}
                     selectOverlap={false}
-                    editable={false}
-                    initialView="timeGridWeek"
+                    initialView={initialView}
+                    showNonCurrentDates={false}
+                    height="auto"
+                    slotMinTime={"05:00:00"}
+                    slotMaxTime={"22:00:00"}
+                    expandRows={true}
                     eventClick={(info) => {
                         if (info.event.extendedProps.type === 'availability') return;
                         onSessionClick(info.event);
                     }}
-                    headerToolbar={{
-                        start: 'prev,next today', 
-                        end: 'dayGridMonth,timeGridWeek'
-                    }}
+                    headerToolbar={headerToolBar}
                     eventClassNames={(arg) => {
+                        const classes = [];
+
+                        const duration = arg.event.end - arg.event.start;
+                        if (duration === 1800000) {
+                            classes.push('short-event');
+                        }
+
                         if (arg.event.extendedProps.type === 'availability') {
-                            return ['availability-event'];
+                            classes.push('availability-event');
                         } 
 
-                        if (selectedSession && arg.event.id === selectedSession.id) {
-                            return ['selected-session'];
+                        if (arg.event.extendedProps.type === 'other_availability') {
+                            classes.push('other-avail-event');
+                        }
+
+                        if (
+                            selectedSession 
+                            && arg.event.id === selectedSession.id 
+                            && arg.event.extendedProps.type === 'session'
+                        ) {
+                            classes.push('selected-session');
                         } 
                         
-                        return [];
+                        return classes;
                     }}
                     datesSet={(dateInfo) => {
                         setIsAnimating(false);
@@ -237,8 +242,9 @@ export const OTHER_CALENDARS = forwardRef(({
                         }, 10);
                     }}
                     eventDidMount={(info) => {
-                      
-                        if (tooltipsEnabled && info.event.extendedProps.type !== 'availability') {
+                        if (isMobile) return;
+
+                        if (info.event.extendedProps.type !== 'availability') {
                             const duration = info.event.extendedProps.duration || "-";
                             const notes = info.event.extendedProps.notes || "No notes";
                             tippy(info.el, {
@@ -256,38 +262,11 @@ export const OTHER_CALENDARS = forwardRef(({
                                 theme: 'light'
                             })
                         }
+                        }
                     }
-
-                    }
-                    displayEventTime={true}
-                    displayEventEnd={true}
-                    eventReceive = {(info) => {    
-                        if (info.event.extendedProps.type === 'availability') {
-                            pushAvailability({ event: info.event, coachId: currentUser.id});
-                        } else {
-                            const startTime = info.event.start.toISOString();
-                            const tempID = "temp-" + Date.now();
-                            info.event.setProp("id", tempID);
-                            const sessionData = {
-                                id: tempID,
-                                name: info.event.title,
-                                duration: Interval.fromDateTimes(info.event.start, info.event.end).toDuration().toFormat('hh:mm'),
-                                notes: info.event.extendedProps.notes || "",
-                                time: startTime
-                            }
-                            pushSession({ event: info.event, sessionSettings: sessionData });
-                        }
-                    }}
-                    eventDrop={(info) => {
-                        if (info.event.extendedProps.type === 'availability') {
-                            updateAvailability(info.event);
-                        }
-                    }}
-                    eventResize={(info) => {
-                        if (info.event.extendedProps.type === 'availability') {
-                            updateAvailability(info.event);
-                        }
-                    }}
+                    displayEventTime={!isMobile}
+                    displayEventEnd={false}
+                    editable={false}
                 />
             </div>
         </div>

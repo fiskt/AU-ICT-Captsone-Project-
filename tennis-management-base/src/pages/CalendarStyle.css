@@ -1,0 +1,115 @@
+@import url(../App.css);
+
+/* CONTAINER */
+
+.fc-view-harness {
+    overflow: auto;
+    min-height: 750px;
+}
+
+.fc {
+    font-family: 'DM Mono Sans', sans-serif;
+}
+
+/* DAY TIME HEADERS */
+
+.fc .fc-col-header-cell-cushion {
+    color: black;
+    font-family: 'Bebas', sans-serif;
+    font-size: 20px;
+}
+
+.fc .fc-timegrid-slot-label-cushion {
+    color: black;
+    font-family: 'Bebas', sans-serif;
+    font-size: 16px;
+}
+
+/* CURRENT DAY HIGHLIGHT */
+
+.fc .fc-day-today {
+    background-color: color-mix(in srgb, var(--accent-color), transparent 20%) !important;
+}
+
+/* HEADER TOOLBAR */
+
+.fc .fc-button {
+    background-color: white;
+    border: 2px solid var(--content-input-border-color);
+    color: var(--content-subhead-color);
+
+    font-family: 'DM Mono Light', sans-serif;
+    text-transform: capitalize;
+}
+
+.fc .fc-button:focus,
+.fc .fc-button:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.fc .fc-today-button {
+    background-color: var(--accent-color) !important;
+    border-color: var(--accent-dark) !important;
+    color: white !important;
+}
+
+.fc .fc-button:hover {
+    background-color: var(--content-input-border-color);
+    border-color: var(--content-input-border-color);
+    color: white;
+}
+
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+    background-color: var(--accent-color);
+    border-color: var(--accent-dark);
+    color: white;
+}
+
+
+/* DAY GRID DAY NUMBER */
+
+.fc .fc-daygrid-day-number {
+    color: black;
+    font-family: 'Bebas', sans-serif;
+    font-size: 15px;
+}
+
+.fc .fc-daygrid-event .fc-event-title {
+    font-size: 11px;
+}
+
+.fc .fc-daygrid-event .fc-event-time {
+    display: none !important;
+}
+
+/* EVENT*/
+
+.fc-event {
+    padding: 0 3px 0 3px;
+    border: 2px solid white;
+}
+
+.fc-event:hover {
+    border-color: black;
+    transition: border-color 0.2s ease-in-out;
+}
+
+.fc-event-title {
+    font-family: 'DM Mono Sans', sans-serif;
+    color: var(--content-body-color);
+    font-size: 80%;
+}
+
+.fc-event-time {
+    border-bottom: 1px solid black;
+    font-family: 'DM Mono Sans', sans-serif;
+    color: black;
+    font-size: 64% !important;
+}
+
+.short-event .fc-event-time {
+    display: none !important;
+}
+

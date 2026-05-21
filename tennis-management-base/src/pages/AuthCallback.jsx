@@ -25,7 +25,7 @@ export default function AuthCallback() {
         navigate('/PlayerDashboard');
       } else {
         // Fallback if role is missing
-        navigate('/login');
+        navigate('/Login');
       }
     };
 
@@ -46,7 +46,7 @@ export default function AuthCallback() {
             <>
               <p style={styles.errorText}>{error}</p>
               <button
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/Register')}
                 style={styles.btn}
               >
                 Back to Register

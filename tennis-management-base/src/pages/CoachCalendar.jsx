@@ -1,11 +1,9 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS, DELETE_CONFIRMATION } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
-
 
 import { DateTime, Duration } from 'luxon';
 import { createClient } from '@supabase/supabase-js';
-import { useActionData } from 'react-router-dom';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
@@ -45,14 +43,8 @@ export default function CoachCalendar() {
     }, []);
 
     // current user
-    let [currentUser, setCurrentUser] = useState();
-
-    currentUser = {
-        id: 1,
-        first_name: "coachfirst",
-        last_name: "coachLast"
-    };
-
+    let currentUserID = '1035092c-3201-4ed7-ac82-8c76b8c998c7';
+    
     const [isDraggingEvent, setIsDraggingEvent] = useState(false);
 
     const calendarRef = useRef(null);
@@ -70,91 +62,72 @@ export default function CoachCalendar() {
     const [selectedCoaches, setSelectedCoaches] = useState([]);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
 
-    const [selectedSessionCoaches, setSelectedSessionCoaches] = useState([]);
-    const [selectedSessionPlayers, setSelectedSessionPlayers] = useState([]);
     const [editedSessionCoaches, setEditedSessionCoaches] = useState([]);
     const [editedSessionPlayers, setEditedSessionPlayers] = useState([]);
 
-    // confirmation popup for deleting sessions
-    const sessionDeleteConfirmation = () => {
-        const confirmed = window.confirm("Are you sure you want to delete this session? This action cannot be undone.");
-
-        if (confirmed) {
-            deleteSession();
-            setShowSessionEditor(false);
-            setSelectedSession(null);
-        }
-    }
-
-    async function deleteSession() {
-        setIsDataLoading(true);
-        const { error } = await supabase
-            .from('sessions')
-            .delete()
-            .eq('id', selectedSession.id);
-
-        if (error) {
-            console.log("Error when deleting session. Please try again.");
-            setIsDataLoading(false);
-        } else {
-            selectedSession.remove();
-            fetchCalendarData();
-        }
-    }
-
     async function fetchPlayers() {
         const { data, error } = await supabase
-            .from('players')
+            .from('signin_details')
             .select('*')
+            .eq('role', 'player');
 
         if (error) {
             console.log("Error when fetching players: ", error.message);
             setPlayers([]);
         } else {
             setPlayers(data);
-            console.log(players);
+            console.log("players", players);
         }
     }
 
     async function fetchCoaches() {
         const { data, error } = await supabase
-            .from('coaches')
+            .from('signin_details')
             .select('*')
+            .eq('role', 'coach');
 
         if (error) {
             console.log("Error when fetching coaches: ", error.message);
             setCoaches([]);
         } else {
             setCoaches(data);
-            console.log(coaches);
+            console.log("coaches", coaches);
         }
     }
 
     async function fetchSessionCoaches(sessionId) {
         const { data, error } = await supabase
-            .from('session_coaches')
-            .select('coach_id')
-            .eq('session_id', sessionId);
+            .from('session_people')
+            .select(`
+                user_id,
+                signin_details!inner ( role )    
+            `)
+            .eq('session_id', sessionId)
+            .eq('signin_details.role', 'coach');
 
         if (error) {
             console.log("Error when fetching selected session coaches: ", error.message);
             return [];
         } else {
-            return data.map(item => item.coach_id);
+            return data.map(item => item.user_id);
         }
     }
 
     async function fetchSessionPlayers(sessionId) {
         const { data, error } = await supabase
-            .from('session_players')
-            .select('player_id')
-            .eq('session_id', sessionId);
+            .from('session_people')
+            .select(`
+                user_id,
+                signin_details!inner ( role )
+            `)
+            .eq('session_id', sessionId)
+            .eq('signin_details.role', 'player');
 
         if (error) {
             console.log("Error when fetching selected session players: ", error.message);
             return [];
         } else {
-            return data.map(item => item.player_id);
+            return data.map(item => item.user_id);
         }
     }
 
@@ -165,6 +138,9 @@ export default function CoachCalendar() {
         toggleEventTooltips ? setToggleEventTooltips(false) : setToggleEventTooltips(true);
         console.log(toggleEventTooltips);
     }
+
+    // toggle for showing other users availability
+    const [showOtherUserAvail, setShowOtherUserAvail] = useState(false);
 
     // Times for mobile session creator 
     const mobileSessionCreatorTimes = [
@@ -228,12 +204,12 @@ export default function CoachCalendar() {
         if (data) {
             const sessionCoaches = selectedCoaches.map(coachID => ({
                 session_id: data.id,
-                coach_id: coachID
+                user_id: coachID
             }));
 
             const sessionPlayers = selectedPlayers.map(playerID => ({
                 session_id: data.id,
-                player_id: playerID
+                user_id: playerID
             }));
 
             const sessionDrills = selectedDrills.map((drill, index) => ({
@@ -243,8 +219,8 @@ export default function CoachCalendar() {
             }));
 
             await Promise.all([
-                sessionCoaches.length > 0 && supabase.from('session_coaches').insert(sessionCoaches),
-                sessionPlayers.length > 0 && supabase.from('session_players').insert(sessionPlayers),
+                sessionCoaches.length > 0 && supabase.from('session_people').insert(sessionCoaches),
+                sessionPlayers.length > 0 && supabase.from('session_people').insert(sessionPlayers),
                 sessionDrills.length > 0 && supabase.from('session_drills').insert(sessionDrills)
             ]);
 
@@ -278,10 +254,9 @@ export default function CoachCalendar() {
     const [filteredDrills, setFilteredDrills] = useState([]);
 
     const [drillSearchQuery, setDrillSearchQuery] = useState("");
-    const [drillSearchFilter, setDrillSerachFilter] = useState([]);
+    const [drillSearchFilter, setDrillSearchFilter] = useState("ALL");
 
     const [selectedDrills, setSelectedDrills] = useState([]);
-    const [selectedSessionDrills, setSelectedSessionDrills] = useState([]);
     const [editedSessionDrills, setEditedSessionDrills] = useState([]);
 
     async function fetchDrills() {
@@ -347,19 +322,57 @@ export default function CoachCalendar() {
         });
     };
 
+    const [drillTags, setDrillTags] = useState([]);
+
+    async function fetchDrillTags() {
+        const { data, error } = await supabase
+            .from('drill_tags')
+            .select('*');
+
+        if (error) {
+            console.log("Error fetching drill tags: ", error.message);
+            setDrillTags([]);
+        } else {
+            setDrillTags(data);
+        }
+    }
+
+    const [drillLibraryTags, setDrillLibraryTags] = useState([]);
+
+    async function fetchDrillLibraryTags() {
+        const { data, error } = await supabase
+            .from('drill_library_tags')
+            .select('*');
+
+        if (error) {
+            console.log("Error fetching drill library tags: ", error.message);
+            setDrillLibraryTags([]);
+        } else {
+            setDrillLibraryTags(data);
+        }
+    }
+
+
     useEffect(() => {
         const q = drillSearchQuery.toLowerCase().trim();
 
-        if (q === "") {
-            setFilteredDrills(drills);
-        } else {
-            const matchesQuery = drills.filter(drill => {
-                const drillName = drill.name.toLowerCase();
-                return drillName.includes(q);
-            });
-            setFilteredDrills(matchesQuery);
+        let drillTagsLink = null;
+        if (drillSearchFilter !== "ALL") {
+            drillTagsLink = new Set(
+                drillLibraryTags
+                    .filter(tag => tag.tag_id === drillSearchFilter)
+                    .map(tag => tag.drill_id)
+            );
         }
-    })
+
+        const filtered = drills.filter(drill => {
+            const matchesQuery = q === "" || drill.name.toLowerCase().includes(q);
+            const matchesFilter = drillTagsLink === null || drillTagsLink.has(drill.id);
+            return matchesQuery && matchesFilter;
+        });
+
+        setFilteredDrills(filtered);
+    }, [drills, drillSearchQuery, drillSearchFilter, drillLibraryTags]);
 
     // loading screen appears when data isnt fully loaded
     const [isDataLoading, setIsDataLoading] = useState(true);
@@ -370,63 +383,61 @@ export default function CoachCalendar() {
     const [tempSession, setTempSession] = useState(null);
 
     useEffect(() => {
-    const loadSessionData = async () => {
-        if (selectedSession) {
-            setIsDataLoading(true);
+        const loadSessionData = async () => {
+            if (selectedSession) {
+                setIsDataLoading(true);
 
-            const [sessionCoaches, sessionPlayers, sessionDrillIDs] = await Promise.all([
-                fetchSessionCoaches(selectedSession.id),
-                fetchSessionPlayers(selectedSession.id),
-                fetchSessionDrills(selectedSession.id)
-            ]);
+                const [sessionCoaches, sessionPlayers, sessionDrillIDs] = await Promise.all([
+                    fetchSessionCoaches(selectedSession.id),
+                    fetchSessionPlayers(selectedSession.id),
+                    fetchSessionDrills(selectedSession.id)
+                ]);
 
-            const sessionDrills = sessionDrillIDs.map((drill, index) => {
-                const masterDrill = drills.find(d => d.id === drill.drill_id);
-                console.log("drill id: ", drill.drill_id);
-                console.log("master drill: ", masterDrill);
-                return {
-                    ...masterDrill,
-                    instanceId: `saved-${selectedSession.id}-${index}`, 
-                    order: drill.sort_order
-                };
-            });
+                const sessionDrills = sessionDrillIDs.map((drill, index) => {
+                    const masterDrill = drills.find(d => d.id === drill.drill_id);
+                    console.log("drill id: ", drill.drill_id);
+                    console.log("master drill: ", masterDrill);
+                    return {
+                        ...masterDrill,
+                        instanceId: `saved-${selectedSession.id}-${index}`, 
+                        order: drill.sort_order
+                    };
+                });
 
-            setEditedSessionCoaches(sessionCoaches);
-            setEditedSessionPlayers(sessionPlayers);
-            setEditedSessionDrills(sessionDrills);
+                setEditedSessionCoaches(sessionCoaches);
+                setEditedSessionPlayers(sessionPlayers);
+                setEditedSessionDrills(sessionDrills);
 
-            setTempSession({
-                id: selectedSession.id,
-                name: selectedSession.title,
-                notes: selectedSession.extendedProps.notes,
-                selectedCoaches: sessionCoaches, 
-                selectedPlayers: sessionPlayers,
-                selectedDrills: sessionDrills
-            });
-        } else {
-            setTempSession(null);
-            setEditedSessionCoaches([]);
-            setEditedSessionPlayers([]);
-            setEditedSessionDrills([]);
+                setTempSession({
+                    id: selectedSession.id,
+                    name: selectedSession.title,
+                    notes: selectedSession.extendedProps.notes,
+                    selectedCoaches: sessionCoaches, 
+                    selectedPlayers: sessionPlayers,
+                    selectedDrills: sessionDrills
+                });
+            } else {
+                setTempSession(null);
+                setEditedSessionCoaches([]);
+                setEditedSessionPlayers([]);
+                setEditedSessionDrills([]);
+            }
+            setIsDataLoading(false);
+        };
+
+        loadSessionData();
+    }, [selectedSession]);
+
+    useEffect(() => {
+        if (tempSession) {
+            setTempSession(prev => ({
+                ...prev,
+                selectedCoaches: editedSessionCoaches,
+                selectedPlayers: editedSessionPlayers,
+                selectedDrills: editedSessionDrills
+            }));
         }
-        setIsDataLoading(false);
-    };
-
-    loadSessionData();
-}, [selectedSession]);
-
-useEffect(() => {
-    if (tempSession) {
-        setTempSession(prev => ({
-            ...prev,
-            selectedCoaches: editedSessionCoaches,
-            selectedPlayers: editedSessionPlayers,
-            selectedDrills: editedSessionDrills
-        }));
-    }
-}, [editedSessionCoaches, editedSessionPlayers, editedSessionDrills]);
-
-
+    }, [editedSessionCoaches, editedSessionPlayers, editedSessionDrills]);
 
     const handleDateChange = (start, end) => { 
         setWeekStart(DateTime.fromJSDate(start));
@@ -434,26 +445,37 @@ useEffect(() => {
     };
 
     useEffect(() => {
-        fetchCalendarData();
         fetchDrills();
+        fetchDrillTags();
+        fetchDrillLibraryTags();
         fetchPlayers();
         fetchCoaches();
+        fetchCalendarData();
     }, []);
+
+    // change calendar view when switching from mobile/desktop
+    useEffect(() => {
+        const calendarApi = calendarRef.current?.getApi();
+        if (!calendarApi) return;
+
+        calendarApi.changeView(isMobile ? "timeGridDay" : "dayGridMonth");
+        calendarApi.updateSize();
+    }, [isMobile]);
 
     async function fetchCalendarData() {
         setIsDataLoading(true);
         
         // fetch data from the database
-        const sessionData = await supabase
+        const { data, error } = await supabase
             .from('sessions')
-            .select('*');
-
-        const availData = await supabase
-            .from('coach_availability')
-            .select('*');
+            .select(`
+                *,
+                session_people!inner(user_id)
+            `)
+            .eq('session_people.user_id', currentUserID);
 
         // set the session data for the calendar events
-        const session = (sessionData.data || []).map(ses => {
+        const session = (data || []).map(ses => {
             const startTime = DateTime.fromISO(ses.start_datetime);
             const endTime = DateTime.fromISO(ses.end_datetime);
             const duration = Duration.fromISOTime(ses.duration);
@@ -470,26 +492,7 @@ useEffect(() => {
             };
         })
 
-        // set data for availability events
-        const availability = (availData.data || []).map(ava => {
-            const startTime = DateTime.fromISO(ava.start_datetime);
-            const endTime = DateTime.fromISO(ava.end_datetime);
-            const duration = Duration.fromISOTime(ava.duration);
-            return {
-                id: ava.avail_id,
-                title: ava.notes || "",
-                start: startTime.toISO(),
-                end: endTime.toISO(),
-                extendedProps: {
-                    type: 'availability',
-                    duration: duration,
-                    notes: ava.notes
-                }
-            };
-        })
-
-        // set copies of the events to the calendar
-        setCalendarEvents([...session, ...availability]);
+        setCalendarEvents(session);
         setIsDataLoading(false);
     }
 
@@ -504,19 +507,18 @@ useEffect(() => {
             .eq('id', tempSession.id);
 
         await Promise.all([
-            supabase.from('session_coaches').delete().eq('session_id', tempSession.id),
-            supabase.from('session_players').delete().eq('session_id', tempSession.id),
+            supabase.from('session_people').delete().eq('session_id', tempSession.id),
             supabase.from('session_drills').delete().eq('session_id', tempSession.id)
         ]);
 
         const newCoaches = (tempSession.selectedCoaches || []).map(coachId => ({
             session_id: tempSession.id,
-            coach_id: coachId
+            user_id: coachId
         }));
 
         const newPlayers = (tempSession.selectedPlayers || []).map(playerId => ({
             session_id: tempSession.id,
-            player_id: playerId
+            user_id: playerId
         }));
 
         const newDrills = (tempSession.selectedDrills || []).map((drill, index) => ({
@@ -526,8 +528,8 @@ useEffect(() => {
         }));
 
         await Promise.all([
-            newCoaches.length > 0 && supabase.from('session_coaches').insert(newCoaches),
-            newPlayers.length > 0 && supabase.from('session_players').insert(newPlayers),
+            newCoaches.length > 0 && supabase.from('session_people').insert(newCoaches),
+            newPlayers.length > 0 && supabase.from('session_people').insert(newPlayers),
             newDrills.length > 0 && supabase.from('session_drills').insert(newDrills)
         ]);
 
@@ -558,11 +560,45 @@ useEffect(() => {
         });
     }
 
+    // delete session
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+
+    async function deleteSession() {
+        setIsDeleting(true);
+        const { error } = await supabase
+            .from('sessions')
+            .delete()
+            .eq('id', selectedSession.id);
+
+        if (error) {
+            console.log("Error when deleting session. Please try again.");
+            setIsDeleting(false);
+            setShowDeleteConfirmation(false);
+        } else {
+            selectedSession.remove();
+            setIsDeleting(false);
+            setShowDeleteConfirmation(false);
+            setShowSessionEditor(false);
+            setSelectedSession(null);
+            fetchCalendarData();
+        }
+    }
+
     return (
         <>
             {/* Loading overlay */}
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
 
+            {/* Delete confirmation */}
+            {showDeleteConfirmation && selectedSession && showSessionEditor && (
+                <DELETE_CONFIRMATION
+                    session={selectedSession}
+                    onConfirm={deleteSession}
+                    onClose={() => setShowDeleteConfirmation(false)}
+                    deleting={isDeleting}
+                />
+            )}
 
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
@@ -588,16 +624,16 @@ useEffect(() => {
                     selectedPlayers={selectedPlayers} setSelectedPlayers={setSelectedPlayers}
 
                     selectedDrills={selectedDrills}
-                    
-                    handleDelete={sessionDeleteConfirmation}
 
-                    currentUser={currentUser}
+                    currentUser={currentUserID}
 
                     setIsDraggingEvent={setIsDraggingEvent}
 
                     isMobile={isMobile}
 
                     setShowMobileSessionCreator={setShowMobileSessionCreator}
+
+                    showOtherUserAvail={showOtherUserAvail} setShowOtherUserAvail={setShowOtherUserAvail}
 
                     ref={calendarRef}
                 />
@@ -619,6 +655,7 @@ useEffect(() => {
                         onChange={(val) => {
                             updateSessionField('sessionName', val);
                         }}
+                        maxLength={20}
                     />
                       
                 </div>  
@@ -632,6 +669,7 @@ useEffect(() => {
                         sample_txt="Session notes" 
                         value={sessionSettings.sessionNotes}
                         onChange={(val) => updateSessionField('sessionNotes', val)}
+                        maxLength={200}
                     />  
                 </div>
 
@@ -662,9 +700,12 @@ useEffect(() => {
                         </div>
                     </div>
                 </div>
-
                 <div id="session-creator-bottom">
-                    <DRAGGABLE_SESSION sessionSettings={sessionSettings} />
+                    <DRAGGABLE_SESSION 
+                        sessionSettings={sessionSettings} 
+                        sessionCoaches={selectedCoaches}
+                        sessionPlayers={selectedPlayers}
+                    />
                 </div>
             </div>
 
@@ -682,6 +723,7 @@ useEffect(() => {
                                 onChange={(val) => {
                                     updateSessionField('sessionName', val);
                                 }}
+                                maxLength={20}
                         />
 
                         <TYPING_INPUT 
@@ -692,6 +734,7 @@ useEffect(() => {
                                 sample_txt="Session notes" 
                                 value={sessionSettings.sessionNotes}
                                 onChange={(val) => updateSessionField('sessionNotes', val)}
+                                maxLength={200}
                         />  
 
                         <div class="input-container">
@@ -784,8 +827,15 @@ useEffect(() => {
 
             {/* Drill library */}
             { showAddDrill && (
-                <div id="add-drill-container">
-                    <div class="content-box" id="session-drill-library">
+                <div 
+                    id="add-drill-container"
+                    onClick={(e) => {
+                        if (drillLibraryRef.current && !drillLibraryRef.current.contains(e.target)) {
+                            setShowAddDrill(false);
+                        }
+                    }}
+                >
+                    <div class="content-box" id="session-drill-library" ref={drillLibraryRef}>
                         <div class="content-box-top">
                             <div class="content-box-top-left">
                                 <h2 class="content-header">Drill Library</h2>
@@ -793,33 +843,58 @@ useEffect(() => {
                             <div class="content-box-top-middle"></div>
                             <div class="content-box-top-right">
                                 <button
+                                    class="drill-icon-btn"
                                     onClick={() => setShowAddDrill(false)}
-                                >Close</button>
+                                >
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                         <div class="content-box-middle">
                             <div id="session-drill-library-filter">
                                 <input
-                                class="typing-input-box"
-                                placeholder='Search drill'
-                                type="text"
-                                value={drillSearchQuery}
-                                onChange={(e) => setDrillSearchQuery(e.target.value)}
+                                    class="typing-input-box"
+                                    placeholder='Search drill...'
+                                    type="text"
+                                    value={drillSearchQuery}
+                                    onChange={(e) => setDrillSearchQuery(e.target.value)}
+                                />
+                                <select
+                                    value={drillSearchFilter}
+                                    onChange={(e) => setDrillSearchFilter(e.target.value)}
                                 >
-                                </input>
-                            </div>
-                            {filteredDrills.length > 0 && (
-                                <div id="session-drill-grid">
-                                    {filteredDrills.map(drill => (
-                                        <SIMPLE_DRILL_CARD 
-                                            drill={drill}
-                                            addDrillToSession={showSessionEditor ? addDrillToSelectedSession : addDrillToSession}
-                                            removeDrillFromSession={null}
-                                            isSelectedDrill={false}
-                                        />
+                                    <option
+                                        key={"ALL"}
+                                        value={"ALL"}
+                                    >
+                                        ALL
+                                    </option>
+                                    {drillTags.map(tag => (
+                                        <option
+                                            key={tag.id}
+                                            value={tag.id}
+                                        >
+                                            {tag.name.toUpperCase()}
+                                        </option>
                                     ))}
-                                </div>
-                            )}
+                                </select>
+                            </div>
+                            <div id="session-drill-library-grid-container">
+                                {filteredDrills.length > 0 && (
+                                    <div id="session-drill-grid">
+                                        {filteredDrills.map(drill => (
+                                            <SIMPLE_DRILL_CARD 
+                                                drill={drill}
+                                                addDrillToSession={showSessionEditor ? addDrillToSelectedSession : addDrillToSession}
+                                                removeDrillFromSession={null}
+                                                isSelectedDrill={false}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -856,16 +931,24 @@ useEffect(() => {
                             setSelectedSession(null);
                         }
                     }}
-                >
+                >   
                     <div id="session-editor" ref={sessionEditorRef}>
                             <div id="session-editor-top-left">
                                 <h2 id="session-editor-header">Session Editor</h2>
                             </div>
                             <div id="session-editor-top-right">
-                                <button id="close-session-editor" onClick={() => {
-                                    setShowSessionEditor(false);
-                                    setSelectedSession(null);
-                                }}>Close</button>
+                                <button 
+                                    class="drill-icon-btn"
+                                    id="close-session-editor" 
+                                    onClick={() => {
+                                        setShowSessionEditor(false);
+                                        setSelectedSession(null);
+                                    }}
+                                >
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
 
                             <div id="session-editor-middle-left">
@@ -930,13 +1013,30 @@ useEffect(() => {
                                     </div>
                                 </div>
                             </div>
-
+                            
                             <div id="session-editor-bottom-left">
-                                <button id="save-session-changes btn" onClick={saveSessionChanges}>Save Changes</button>
+                                <button 
+                                    class="drill-btn drill-btn-danger" 
+                                    id="delete-session" 
+                                    onClick={() => setShowDeleteConfirmation(true)}
+                                >
+                                    <svg width="15" height="15" fill="none" stroke="#dc2626" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Delete
+                                </button>
                             </div>
                             <div id="session-editor-bottom-middle"></div>
                             <div id="session-editor-bottom-right">
-                                <button class="delete-btn" id="delete-session" onClick={sessionDeleteConfirmation}>Delete</button>
+                                <button 
+                                    class="drill-btn drill-btn-primary"
+                                    onClick={saveSessionChanges}
+                                >
+                                    <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Save Changes
+                                </button>
                             </div>
                     </div>
                 </div>
@@ -978,7 +1078,7 @@ useEffect(() => {
                                 <div class="mobile-session-creator-times-container">
                                     <p>Start</p>
                                     <select
-                                        value={selectedSession.start}
+                                        value={DateTime.fromJSDate(selectedSession.start).toFormat('HH:mm:ss')}
                                         onChange={(e) => {
                                             const val = e.target.value;
                                             setMobileSessionStart(val);
@@ -999,7 +1099,7 @@ useEffect(() => {
                                 <div class="mobile-session-creator-times-container">
                                     <p>End</p>
                                     <select
-                                        value={selectedSession.end}
+                                        value={DateTime.fromJSDate(selectedSession.end).toFormat('HH:mm:ss')}
                                         onChange={(e) => {
                                             const val = e.target.value;
                                             setMobileSessionEnd(val);

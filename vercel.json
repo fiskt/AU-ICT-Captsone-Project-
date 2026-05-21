@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd tennis-management-base && npm install && npm run build",
+  "outputDirectory": "tennis-management-base/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
