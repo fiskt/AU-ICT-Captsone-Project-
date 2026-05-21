@@ -62,7 +62,7 @@ const Icons = {
 };
 
 // ── SIDEBAR BUTTON ────────────────────────────────────────────────────────────
-function SIDEBAR_BUTTON({ label, path, icon }) {
+function SIDEBAR_BUTTON({ label, path, icon, closeMobileSidebar }) {
     const navigate = useNavigate();
     const location = useLocation();
     const isActive = location.pathname === path;
@@ -70,7 +70,10 @@ function SIDEBAR_BUTTON({ label, path, icon }) {
     return (
         <div
             className={`sidebar-nav-btn ${isActive ? 'btn-active' : ''}`}
-            onClick={() => navigate(path)}
+            onClick={() => {
+                navigate(path);
+                closeMobileSidebar(false);
+            }}
         >
             {icon && <span className="sidebar-nav-btn-icon">{icon}</span>}
             <span className="sidebar-nav-btn-txt">{label}</span>
@@ -207,6 +210,18 @@ function PREVIEW_BTN() {
 // ── COACH SIDEBAR ─────────────────────────────────────────────────────────────
 export function COACH_SIDEBAR() {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const sidebarRef = useRef(null);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+    
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     return (
         <>
@@ -214,45 +229,96 @@ export function COACH_SIDEBAR() {
                 {Icons.hamburger}
             </button>
 
-            {mobileOpen && <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />}
+            {mobileOpen && isMobile && (
+                <div 
+                    className="sidebar-overlay" 
+                    onClick={(e) => {
+                        if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+                            setMobileOpen(false);
+                        }
+                    }}
+                >
+                    <div className="mobile-sidebar" ref={sidebarRef}>
+                        <div className="mobile-sidebar-top">
+                            <div id="sidebar-logo">
+                            <img src="src/assets/logo.png" alt="HPT" className="sidebar-logo-img"
+                                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                            />
+                            <div className="sidebar-logo-fallback" style={{ display: 'none' }}>
+                                <div className="sidebar-logo-icon">HPT</div>
+                                <div className="sidebar-logo-text-wrap">
+                                    <div className="sidebar-logo-name">HPT</div>
+                                    <div className="sidebar-logo-sub">MANAGEMENT BASE</div>
+                                </div>
+                            </div>
+                            <button className="sidebar-close-btn" onClick={() => setMobileOpen(false)} aria-label="Close menu">
+                                {Icons.close}
+                            </button>
+                        </div>
+                        </div>
 
-            <div id="sidebar" className={mobileOpen ? 'sidebar-mobile-open' : ''}>
-                <div id="sidebar-logo">
-                    <img src="src/assets/logo.png" alt="HPT" className="sidebar-logo-img"
-                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
-                    />
-                    <div className="sidebar-logo-fallback" style={{ display: 'none' }}>
-                        <div className="sidebar-logo-icon">HPT</div>
-                        <div className="sidebar-logo-text-wrap">
-                            <div className="sidebar-logo-name">HPT</div>
-                            <div className="sidebar-logo-sub">MANAGEMENT BASE</div>
+                        <div className="mobile-sidebar-nav">
+                            <SIDEBAR_BUTTON label="Dashboard"           path="/CoachDashboard" icon={Icons.dashboard} closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Calendar"            path="/CoachCalendar"  icon={Icons.calendar}  closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Players"             path="/PlayerProfile"  icon={Icons.players}   closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Drill Library"       path="/DrillLibrary"   icon={Icons.drills}    closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Performance Testing" path="/Testing"        icon={Icons.testing}   closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Other Users"         path="/OtherUsers"     icon={Icons.users}     closeMobileSidebar={setMobileOpen}/>
+                            <PREVIEW_BTN />
+                        </div>
+
+                        <div className="mobile-sidebar-bottom">
+                            <div className="sidebar-user-card">
+                                <div className="sidebar-avatar">KG</div>
+                                <div className="sidebar-user-info">
+                                    <div className="sidebar-user-name">Kent Green</div>
+                                    <div className="sidebar-user-role">Administrator</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <button className="sidebar-close-btn" onClick={() => setMobileOpen(false)} aria-label="Close menu">
-                        {Icons.close}
-                    </button>
                 </div>
+            )}
 
-                <div id="sidebar-nav">
-                    <SIDEBAR_BUTTON label="Dashboard"           path="/CoachDashboard" icon={Icons.dashboard} />
-                    <SIDEBAR_BUTTON label="Calendar"            path="/CoachCalendar"  icon={Icons.calendar}  />
-                    <SIDEBAR_BUTTON label="Players"             path="/PlayerProfile"  icon={Icons.players}   />
-                    <SIDEBAR_BUTTON label="Drill Library"       path="/DrillLibrary"   icon={Icons.drills}    />
-                    <SIDEBAR_BUTTON label="Performance Testing" path="/Testing"        icon={Icons.testing}   />
-                    <SIDEBAR_BUTTON label="Other Users"         path="/OtherUsers"     icon={Icons.users}     />
-                    <PREVIEW_BTN />
-                </div>
+            {!isMobile && (
+                <div id="sidebar" className={mobileOpen ? 'sidebar-mobile-open' : ''}>
+                    <div id="sidebar-logo">
+                        <img src="src/assets/logo.png" alt="HPT" className="sidebar-logo-img"
+                            onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                        />
+                        <div className="sidebar-logo-fallback" style={{ display: 'none' }}>
+                            <div className="sidebar-logo-icon">HPT</div>
+                            <div className="sidebar-logo-text-wrap">
+                                <div className="sidebar-logo-name">HPT</div>
+                                <div className="sidebar-logo-sub">MANAGEMENT BASE</div>
+                            </div>
+                        </div>
+                        <button className="sidebar-close-btn" onClick={() => setMobileOpen(false)} aria-label="Close menu">
+                            {Icons.close}
+                        </button>
+                    </div>
 
-                <div id="sidebar-bottom">
-                    <div className="sidebar-user-card">
-                        <div className="sidebar-avatar">KG</div>
-                        <div className="sidebar-user-info">
-                            <div className="sidebar-user-name">Kent Green</div>
-                            <div className="sidebar-user-role">Administrator</div>
+                    <div id="sidebar-nav">
+                        <SIDEBAR_BUTTON label="Dashboard"           path="/CoachDashboard" icon={Icons.dashboard} />
+                        <SIDEBAR_BUTTON label="Calendar"            path="/CoachCalendar"  icon={Icons.calendar}  />
+                        <SIDEBAR_BUTTON label="Players"             path="/PlayerProfile"  icon={Icons.players}   />
+                        <SIDEBAR_BUTTON label="Drill Library"       path="/DrillLibrary"   icon={Icons.drills}    />
+                        <SIDEBAR_BUTTON label="Performance Testing" path="/Testing"        icon={Icons.testing}   />
+                        <SIDEBAR_BUTTON label="Other Users"         path="/OtherUsers"     icon={Icons.users}     />
+                        <PREVIEW_BTN />
+                    </div>
+
+                    <div id="sidebar-bottom">
+                        <div className="sidebar-user-card">
+                            <div className="sidebar-avatar">KG</div>
+                            <div className="sidebar-user-info">
+                                <div className="sidebar-user-name">Kent Green</div>
+                                <div className="sidebar-user-role">Administrator</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
         </>
     );
 }
@@ -260,6 +326,18 @@ export function COACH_SIDEBAR() {
 // ── PLAYER SIDEBAR ────────────────────────────────────────────────────────────
 export function PLAYER_SIDEBAR() {
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const sidebarRef = useRef(null);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+    
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     return (
         <>
@@ -267,41 +345,88 @@ export function PLAYER_SIDEBAR() {
                 {Icons.hamburger}
             </button>
 
-            {mobileOpen && <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />}
+            {mobileOpen && isMobile && (
+                <div 
+                    className="sidebar-overlay" 
+                    onClick={(e) => {
+                        if (sidebarRef.current && !sidebarRef.current.contains(e.target)) {
+                            setMobileOpen(false);
+                        }
+                    }}
+                >
+                    <div className="mobile-sidebar" ref={sidebarRef}>
+                        <div className="mobile-sidebar-top">
+                            <div id="sidebar-logo">
+                            <img src="src/assets/logo.png" alt="HPT" className="sidebar-logo-img"
+                                onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                            />
+                            <div className="sidebar-logo-fallback" style={{ display: 'none' }}>
+                                <div className="sidebar-logo-icon">HPT</div>
+                                <div className="sidebar-logo-text-wrap">
+                                    <div className="sidebar-logo-name">HPT</div>
+                                    <div className="sidebar-logo-sub">MANAGEMENT BASE</div>
+                                </div>
+                            </div>
+                            <button className="sidebar-close-btn" onClick={() => setMobileOpen(false)} aria-label="Close menu">
+                                {Icons.close}
+                            </button>
+                        </div>
+                        </div>
 
-            <div id="sidebar" className={mobileOpen ? 'sidebar-mobile-open' : ''}>
-                <div id="sidebar-logo">
-                    <img src="src/assets/logo.png" alt="HPT" className="sidebar-logo-img"
-                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
-                    />
-                    <div className="sidebar-logo-fallback" style={{ display: 'none' }}>
-                        <div className="sidebar-logo-icon">HPT</div>
-                        <div className="sidebar-logo-text-wrap">
-                            <div className="sidebar-logo-name">HPT</div>
-                            <div className="sidebar-logo-sub">MANAGEMENT BASE</div>
+                        <div className="mobile-sidebar-nav">
+                            <SIDEBAR_BUTTON label="Dashboard"       path="/PlayerDashboard" icon={Icons.dashboard} closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Session Feedback" path="/SessionFeedback" icon={Icons.testing}  closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Calendar"        path="/PlayerCalendar"  icon={Icons.calendar}  closeMobileSidebar={setMobileOpen}/>
+                        </div>
+
+                        <div className="mobile-sidebar-bottom">
+                            <div className="sidebar-user-card">
+                                <div className="sidebar-avatar">P</div>
+                                <div className="sidebar-user-info">
+                                    <div className="sidebar-user-name">Player</div>
+                                    <div className="sidebar-user-role">Athlete</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <button className="sidebar-close-btn" onClick={() => setMobileOpen(false)}>
-                        {Icons.close}
-                    </button>
                 </div>
+            )}
 
-                <div id="sidebar-nav">
-                    <SIDEBAR_BUTTON label="Dashboard"       path="/PlayerDashboard" icon={Icons.dashboard} />
-                    <SIDEBAR_BUTTON label="Session Feedback" path="/SessionFeedback" icon={Icons.testing}  />
-                    <SIDEBAR_BUTTON label="Calendar"        path="/PlayerCalendar"  icon={Icons.calendar}  />
-                </div>
+            {!isMobile && (
+                <div id="sidebar" className={mobileOpen ? 'sidebar-mobile-open' : ''}>
+                    <div id="sidebar-logo">
+                        <img src="src/assets/logo.png" alt="HPT" className="sidebar-logo-img"
+                            onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                        />
+                        <div className="sidebar-logo-fallback" style={{ display: 'none' }}>
+                            <div className="sidebar-logo-icon">HPT</div>
+                            <div className="sidebar-logo-text-wrap">
+                                <div className="sidebar-logo-name">HPT</div>
+                                <div className="sidebar-logo-sub">MANAGEMENT BASE</div>
+                            </div>
+                        </div>
+                        <button className="sidebar-close-btn" onClick={() => setMobileOpen(false)}>
+                            {Icons.close}
+                        </button>
+                    </div>
 
-                <div id="sidebar-bottom">
-                    <div className="sidebar-user-card">
-                        <div className="sidebar-avatar">P</div>
-                        <div className="sidebar-user-info">
-                            <div className="sidebar-user-name">Player</div>
-                            <div className="sidebar-user-role">Athlete</div>
+                    <div id="sidebar-nav">
+                        <SIDEBAR_BUTTON label="Dashboard"       path="/PlayerDashboard" icon={Icons.dashboard} />
+                        <SIDEBAR_BUTTON label="Session Feedback" path="/SessionFeedback" icon={Icons.testing}  />
+                        <SIDEBAR_BUTTON label="Calendar"        path="/PlayerCalendar"  icon={Icons.calendar}  />
+                    </div>
+
+                    <div id="sidebar-bottom">
+                        <div className="sidebar-user-card">
+                            <div className="sidebar-avatar">P</div>
+                            <div className="sidebar-user-info">
+                                <div className="sidebar-user-name">Player</div>
+                                <div className="sidebar-user-role">Athlete</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
         </>
     );
 }
