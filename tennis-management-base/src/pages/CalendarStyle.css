@@ -8,7 +8,7 @@
 }
 
 .fc {
-    font-family: 'DM Mono Sans', sans-serif;
+    font-family: 'DM Sans Light', sans-serif;
 }
 
 /* DAY TIME HEADERS */
@@ -97,14 +97,14 @@
 }
 
 .fc-event-title {
-    font-family: 'DM Mono Sans', sans-serif;
+    font-family: 'DM Sans Light', sans-serif;
     color: var(--content-body-color);
     font-size: 80%;
 }
 
 .fc-event-time {
     border-bottom: 1px solid black;
-    font-family: 'DM Mono Sans', sans-serif;
+    font-family: 'DM Sans Light', sans-serif;
     color: black;
     font-size: 64% !important;
 }

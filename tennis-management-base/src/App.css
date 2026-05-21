@@ -465,8 +465,15 @@ btn, button:hover {
   padding: 8px;
   border-radius: 8px;
   width: 100%;
-  color: var(--content-input-placeholder-color);
+  color: black;
   font-size: small;
+
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.typing-textarea-box:focus, .typing-input-box:focus, .select-input-box:focus {
+  border-color: var(--accent-color);
 }
 
 .typing-textarea-box {

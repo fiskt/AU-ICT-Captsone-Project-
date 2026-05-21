@@ -650,14 +650,13 @@ export default function CoachCalendar() {
                         num_rows="1" 
                         input_id="session-name-creator" 
                         box_w="100%" box_h="30px" 
-                        sample_txt="Session name"
+                        sample_txt="Name..."
                         value={sessionSettings.sessionName}
                         onChange={(val) => {
                             updateSessionField('sessionName', val);
                         }}
                         maxLength={20}
                     />
-                      
                 </div>  
 
                 <div id="session-creator-middle-right-top">
@@ -666,7 +665,7 @@ export default function CoachCalendar() {
                         num_rows="6" 
                         input_id="session-notes-creator" 
                         box_w="100%" box_h="80px" 
-                        sample_txt="Session notes" 
+                        sample_txt="Notes..." 
                         value={sessionSettings.sessionNotes}
                         onChange={(val) => updateSessionField('sessionNotes', val)}
                         maxLength={200}
@@ -677,8 +676,8 @@ export default function CoachCalendar() {
                     <div class="input-container" id="session-creator-people-container">
                         <span class="input-container-label">PEOPLE *</span>
                         <div id="session-creator-people">
-                            <PEOPLE_SELECTOR role="COACHES" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
-                            <PEOPLE_SELECTOR role="PLAYERS" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
+                            <PEOPLE_SELECTOR role="Coaches" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
+                            <PEOPLE_SELECTOR role="Players" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
                         </div>
                     </div>
                 </div>
@@ -718,7 +717,7 @@ export default function CoachCalendar() {
                                 num_rows="1" 
                                 input_id="session-name-creator" 
                                 box_w="100%" box_h="30px" 
-                                sample_txt="Session name"
+                                sample_txt="Name..."
                                 value={sessionSettings.sessionName}
                                 onChange={(val) => {
                                     updateSessionField('sessionName', val);
@@ -731,7 +730,7 @@ export default function CoachCalendar() {
                                 num_rows="6" 
                                 input_id="session-notes-creator" 
                                 box_w="100%" box_h="80px" 
-                                sample_txt="Session notes" 
+                                sample_txt="Notes..." 
                                 value={sessionSettings.sessionNotes}
                                 onChange={(val) => updateSessionField('sessionNotes', val)}
                                 maxLength={200}
@@ -788,8 +787,8 @@ export default function CoachCalendar() {
                         <div class="input-container" >
                             <span class="input-container-label">PEOPLE *</span>
                             <div id="session-creator-people">
-                                <PEOPLE_SELECTOR role="COACHES" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
-                                <PEOPLE_SELECTOR role="PLAYERS" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
+                                <PEOPLE_SELECTOR role="Coaches" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
+                                <PEOPLE_SELECTOR role="Players" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
                             </div>
                         </div>
 
@@ -957,7 +956,7 @@ export default function CoachCalendar() {
                                     num_rows="1" 
                                     input_id="session-name-creator" 
                                     box_w="100%" box_h="30px" 
-                                    sample_txt="Session name"
+                                    sample_txt="Name..."
                                     value={tempSession?.name || ""}
                                     onChange={(val) => 
                                         setTempSession({ ...tempSession, name: val })
@@ -969,7 +968,7 @@ export default function CoachCalendar() {
                                     num_rows="6" 
                                     input_id="session-notes-creator" 
                                     box_w="100%" box_h="80px" 
-                                    sample_txt="Session notes" 
+                                    sample_txt="Notes..." 
                                     value={tempSession?.notes || ""}
                                     onChange={(val) => 
                                         setTempSession({ ...tempSession, notes: val })
@@ -983,12 +982,12 @@ export default function CoachCalendar() {
                                     <span class="input-container-label">PEOPLE *</span>
                                     <div id="session-editor-people">
                                         <PEOPLE_SELECTOR 
-                                            role="COACHES" people={coaches} 
+                                            role="Coaches" people={coaches} 
                                             selectedPeople={editedSessionCoaches} 
                                             setSelectedPeople={setEditedSessionCoaches}  
                                         />
                                         <PEOPLE_SELECTOR 
-                                            role="PLAYERS" people={players} 
+                                            role="Players" people={players} 
                                             selectedPeople={editedSessionPlayers} 
                                             setSelectedPeople={setEditedSessionPlayers} 
                                         />
@@ -1051,7 +1050,7 @@ export default function CoachCalendar() {
                             num_rows="1" 
                             input_id="session-name-creator" 
                             box_w="100%" box_h="30px" 
-                            sample_txt="Session name"
+                            sample_txt="Name..."
                             value={tempSession?.name || ""}
                             onChange={(val) => 
                                 setTempSession({ ...tempSession, name: val })
@@ -1064,7 +1063,7 @@ export default function CoachCalendar() {
                             num_rows="6" 
                             input_id="session-notes-creator" 
                             box_w="100%" box_h="80px" 
-                            sample_txt="Session notes" 
+                            sample_txt="Notes..." 
                             value={tempSession?.notes || ""}
                             onChange={(val) => 
                                 setTempSession({ ...tempSession, notes: val })
@@ -1124,12 +1123,12 @@ export default function CoachCalendar() {
                             <span class="input-container-label">PEOPLE *</span>
                             <div id="session-editor-people">
                                 <PEOPLE_SELECTOR 
-                                    role="COACHES" people={coaches} 
+                                    role="Coaches" people={coaches} 
                                     selectedPeople={editedSessionCoaches} 
                                     setSelectedPeople={setEditedSessionCoaches}  
                                 />
                                 <PEOPLE_SELECTOR 
-                                    role="PLAYERS" people={players} 
+                                    role="Players" people={players} 
                                     selectedPeople={editedSessionPlayers} 
                                     setSelectedPeople={setEditedSessionPlayers} 
                                 />

@@ -184,19 +184,51 @@ select::picker(select) {
     display: flex;
     flex-direction: column;
     text-align: left;
+    margin-bottom: 10px;
 }
 
 .people-selector .people-selector-title {
     color: var(--content-subhead-color);
-    font-size: medium;
-    border-bottom: 2px solid var(--content-input-border-color);
+    width: 100%;
+    border-bottom: 1px solid var(--content-input-border-color);
+    font-family: 'DM Mono Light', sans-serif;
+    font-size: small;
+    text-align: left;
     margin-bottom: 10px;
 }
 
 .people-selector-tickbox {
-    color: var(--content-input-placeholder-color);
+    color: black;
+    font-family: 'DM Sans Light', sans-serif;
+    margin-bottom: 5px;
+}
+.people-selector-tickbox input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 4px;
+    background-color: white; /* unchecked background */
+    cursor: pointer;
+    vertical-align: middle;
+    margin: 0;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
+.people-selector-tickbox input[type="checkbox"]:not(:checked):hover {
+    background-color: var(--content-input-border-color);
+}
+
+.people-selector-tickbox input[type="checkbox"]:checked {
+    background-color: var(--accent-color);
+    border-color: var(--accent-dark);
+}
+
+.people-selector-tickbox input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--accent-dark);
+    outline-offset: 2px;
+}
 .people-selector-tickbox span {
     margin-left: 4px;
 }

@@ -17,7 +17,7 @@
   border: 2px solid transparent;
 
   color: var(--content-body-color);
-  font-family: 'DM Mono Sans', sans-serif;
+  font-family: 'DM Sans Light', sans-serif;
   text-align: left;
   font-size: small;
 
@@ -193,7 +193,7 @@ button.active {
 
 #session-details-people li,
 #mobile-session-details-people li {
-    font-family: 'DM Mono Sans', sans-serif;
+    font-family: 'DM Sans Light', sans-serif;
     font-size: small;
     color: black;
     margin-bottom: 10px;
