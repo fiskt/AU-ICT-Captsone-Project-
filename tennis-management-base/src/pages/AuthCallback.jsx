@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import background from '../assets/background.webp';
-import logo from '../assets/logo.png';
+import logo from '/logo.png';
 
 export default function AuthCallback() {
   const navigate = useNavigate();

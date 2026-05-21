@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import logo from '../assets/logo.png';
+import logo from '/logo.png';
 import background from '../assets/background.webp';
 
 function useWindowWidth() {
