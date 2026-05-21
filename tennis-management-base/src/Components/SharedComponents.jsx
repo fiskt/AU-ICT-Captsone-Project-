@@ -241,7 +241,7 @@ export function COACH_SIDEBAR() {
                     <div className="mobile-sidebar" ref={sidebarRef}>
                         <div className="mobile-sidebar-top">
                             <div id="sidebar-logo">
-                            <img src="src/assets/logo.png" alt="HPT" className="sidebar-logo-img"
+                            <img src="logo.png" alt="HPT" className="sidebar-logo-img"
                                 onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                             />
                             <div className="sidebar-logo-fallback" style={{ display: 'none' }}>
@@ -283,7 +283,7 @@ export function COACH_SIDEBAR() {
             {!isMobile && (
                 <div id="sidebar" className={mobileOpen ? 'sidebar-mobile-open' : ''}>
                     <div id="sidebar-logo">
-                        <img src="src/assets/logo.png" alt="HPT" className="sidebar-logo-img"
+                        <img src="logo.png" alt="HPT" className="sidebar-logo-img"
                             onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                         />
                         <div className="sidebar-logo-fallback" style={{ display: 'none' }}>
@@ -357,7 +357,7 @@ export function PLAYER_SIDEBAR() {
                     <div className="mobile-sidebar" ref={sidebarRef}>
                         <div className="mobile-sidebar-top">
                             <div id="sidebar-logo">
-                            <img src="src/assets/logo.png" alt="HPT" className="sidebar-logo-img"
+                            <img src="logo.png" alt="HPT" className="sidebar-logo-img"
                                 onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                             />
                             <div className="sidebar-logo-fallback" style={{ display: 'none' }}>
@@ -395,7 +395,7 @@ export function PLAYER_SIDEBAR() {
             {!isMobile && (
                 <div id="sidebar" className={mobileOpen ? 'sidebar-mobile-open' : ''}>
                     <div id="sidebar-logo">
-                        <img src="src/assets/logo.png" alt="HPT" className="sidebar-logo-img"
+                        <img src="logo.png" alt="HPT" className="sidebar-logo-img"
                             onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                         />
                         <div className="sidebar-logo-fallback" style={{ display: 'none' }}>
