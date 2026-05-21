@@ -1,0 +1,96 @@
+/* Player Profile Page CSS */
+
+.playerProfilePage {
+    width: 2000px;
+    display: block;
+
+}
+
+.playerNameSection {
+    padding: 25px;
+    display: grid;
+    grid-template-columns: 1fr 2fr 2fr;
+    align-items: center;
+
+    .profile-image {
+        img {
+            height: 200px;
+            width: auto;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+    }
+
+
+
+    .listOfButtons {
+        li {
+            display: block;
+            padding: 10px;
+
+            btn {
+                font-family: var(--sans);
+                background-color: #f4f3ec;
+                border: none;
+                padding: 7px;
+
+                &:hover {
+                    background-color: #deddd6;
+                    cursor: pointer;
+
+                }
+            }
+        }
+
+    }
+}
+
+.feedbackAndStats {
+    padding-top: 50px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: center;
+
+    .content-box {
+        height: 250px;
+
+        li {
+            display: block;
+        }
+    }
+}
+
+.injuriesAndGraphs {
+    padding-top: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: center;
+
+    .content-box {
+        height: 250px;
+
+    }
+
+}
+
+.graphs {
+    padding-top: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: center;
+
+
+    .content-box {
+        height: 700px;
+
+        .graph {
+            padding: 25px;
+            justify-items: center;
+
+        }
+
+    }
+}
