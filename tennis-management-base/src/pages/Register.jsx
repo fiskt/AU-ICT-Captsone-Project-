@@ -68,16 +68,22 @@ export default function Register() {
     const { data, error: authError } = await supabase.auth.signUp({
       email, password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: 'http://localhost:5173/auth/callback',
         data: { role, first_name: firstName, last_name: lastName },
       },
     });
     if (authError) { setError(authError.message); setLoading(false); return; }
-    if (!data.user) {
-      setError('This email may already be registered. Please try logging in.');
+
+    // Empty identities array means email already exists in Supabase
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      setError('This email is already registered. Please log in instead.');
       setLoading(false);
       return;
     }
+
+    // data.user can be null when confirmation pending — still show success screen
+    if (!data.user) { setLoading(false); setRegistered(true); return; }
+
     await supabase.from('signin_details').insert({ id: data.user.id, first_name: firstName, last_name: lastName, email, role });
     setLoading(false);
     setRegistered(true);
@@ -156,6 +162,7 @@ export default function Register() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontFamily: 'DM Mono Light, sans-serif', fontSize: '13px', color: '#6B6760' }}>Email</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                placeholder={role === 'coach' ? 'you@tennis.com.au' : 'you@example.com'}
                 style={sharedInput} />
             </div>
 
