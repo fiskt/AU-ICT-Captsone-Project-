@@ -1,4 +1,3 @@
-/* comment */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -66,36 +65,17 @@ export default function Register() {
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
 
     setLoading(true);
-    try {
-      const { data, error: authError } = await supabase.auth.signUp({
-        email, password,
-        options: {
-          emailRedirectTo: 'http://localhost:5173/auth/callback',
-          data: { role, first_name: firstName, last_name: lastName },
-        },
-      });
-
-      if (authError) {
-        setError(authError.message);
-        return;
-      }
-
-      // Supabase returns null user if the email is already registered
-      if (!data.user) {
-        setError('This email is already registered. Try logging in instead.');
-        return;
-      }
-
-      // No client-side insert needed — the handle_new_user trigger
-      // automatically inserts into signin_details on auth.users insert.
-
-      setRegistered(true);
-    } catch (err) {
-      console.error('Registration failed:', err);
-      setError(err.message || 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    const { data, error: authError } = await supabase.auth.signUp({
+      email, password,
+      options: {
+        emailRedirectTo: 'http://localhost:5173/auth/callback',
+        data: { role, first_name: firstName, last_name: lastName },
+      },
+    });
+    if (authError) { setError(authError.message); setLoading(false); return; }
+    await supabase.from('signin_details').insert({ id: data.user.id, first_name: firstName, last_name: lastName, email, role });
+    setLoading(false);
+    setRegistered(true);
   };
 
   // ── Check your email screen ──
@@ -171,6 +151,7 @@ export default function Register() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontFamily: 'DM Mono Light, sans-serif', fontSize: '13px', color: '#6B6760' }}>Email</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                placeholder={role === 'coach' ? 'you@tennis.com.au' : 'you@example.com'}
                 style={sharedInput} />
             </div>
 
@@ -216,7 +197,7 @@ export default function Register() {
               {loading ? 'REGISTERING...' : 'REGISTER'}
             </button>
           </form>
-                
+
           <p style={{ marginTop: '18px', textAlign: 'center', fontSize: '14px', fontFamily: 'DM Sans Light, sans-serif', color: '#000' }}>
             Already have an account?{' '}
             <Link to="/Login" style={{ color: '#000', fontWeight: '600', textDecoration: 'underline' }}>Log in</Link>
