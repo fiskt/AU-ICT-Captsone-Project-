@@ -1,3 +1,4 @@
+/* comment */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -215,7 +216,7 @@ export default function Register() {
               {loading ? 'REGISTERING...' : 'REGISTER'}
             </button>
           </form>
-
+                
           <p style={{ marginTop: '18px', textAlign: 'center', fontSize: '14px', fontFamily: 'DM Sans Light, sans-serif', color: '#000' }}>
             Already have an account?{' '}
             <Link to="/Login" style={{ color: '#000', fontWeight: '600', textDecoration: 'underline' }}>Log in</Link>
