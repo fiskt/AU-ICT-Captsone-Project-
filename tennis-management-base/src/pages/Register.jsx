@@ -68,7 +68,7 @@ export default function Register() {
     const { data, error: authError } = await supabase.auth.signUp({
       email, password,
       options: {
-        emailRedirectTo: 'http://localhost:5173/auth/callback',
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: { role, first_name: firstName, last_name: lastName },
       },
     });
