@@ -62,7 +62,7 @@ export default async function handler(req, res) {
 
     const results = await Promise.allSettled(recipients.map(r =>
         transporter.sendMail({
-            from: '"HPT Sessions" aadeac001@smtp-brevo.com',
+            from: '"HPT Sessions" <aadeac001@smtp-brevo.com>',
             to: r.email,
             subject: `New session: ${session.name}`,
             html: `
