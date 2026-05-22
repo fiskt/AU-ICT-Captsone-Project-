@@ -162,7 +162,6 @@ export default function Register() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontFamily: 'DM Mono Light, sans-serif', fontSize: '13px', color: '#6B6760' }}>Email</label>
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                placeholder={role === 'coach' ? 'you@tennis.com.au' : 'you@example.com'}
                 style={sharedInput} />
             </div>
 
