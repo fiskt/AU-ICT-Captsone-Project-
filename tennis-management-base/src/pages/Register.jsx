@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import logo from '/logo.png';
+import logo from '../assets/logo.png';
 import background from '../assets/background.webp';
 
 const checks = [
