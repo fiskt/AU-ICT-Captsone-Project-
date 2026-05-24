@@ -3,6 +3,119 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 
+// ── CURRENT USER HOOK ─────────────────────────────────────────────────────────
+function useCurrentUser() {
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const load = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const firstName = user.user_metadata?.first_name || '';
+            const lastName  = user.user_metadata?.last_name  || '';
+            const role      = user.user_metadata?.role       || '';
+            const initials  = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
+            setUser({ firstName, lastName, role, initials, fullName: `${firstName} ${lastName}`.trim() });
+        };
+        load();
+    }, []);
+
+    return user;
+}
+
+// ── USER CARD (with logout dropup) ────────────────────────────────────────────
+function USER_CARD() {
+    const navigate = useNavigate();
+    const user = useCurrentUser();
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        navigate('/Login');
+    };
+
+    const roleLabel = user?.role === 'coach' ? 'Coach' : user?.role === 'player' ? 'Athlete' : '';
+
+    return (
+        <div ref={ref} style={{ position: 'relative' }}>
+            {/* Logout dropup */}
+            {open && (
+                <div style={{
+                    position: 'absolute',
+                    bottom: 'calc(100% + 6px)',
+                    left: 0, right: 0,
+                    backgroundColor: '#222120',
+                    border: '1px solid #3a3835',
+                    borderRadius: '7px',
+                    overflow: 'hidden',
+                    boxShadow: '0 -4px 16px rgba(0,0,0,0.5)',
+                    zIndex: 200,
+                }}>
+                    <div
+                        onClick={handleLogout}
+                        style={{
+                            padding: '10px 14px',
+                            color: '#f87171',
+                            fontSize: '13px',
+                            fontFamily: 'DM Sans Light, sans-serif',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3a2020'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Log out
+                    </div>
+                </div>
+            )}
+
+            {/* User card — click to toggle dropup */}
+            <div
+                className="sidebar-user-card"
+                onClick={() => setOpen(!open)}
+                style={{
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    padding: '3px 10px',
+                    margin: '3px 7px',
+                    borderRadius: '7px',
+                    transition: 'background 0.2s',
+                    justifyContent: 'space-between',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div className="sidebar-avatar">{user?.initials || '?'}</div>
+                    <div className="sidebar-user-info">
+                        <div className="sidebar-user-name">{user?.fullName || 'Loading...'}</div>
+                        <div className="sidebar-user-role">{roleLabel}</div>
+                    </div>
+                </div>
+                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', flexShrink: 0 }}>
+                    {open ? '▲' : '▼'}
+                </span>
+            </div>
+        </div>
+    );
+}
+
 // ── ICONS ─────────────────────────────────────────────────────────────────────
 const Icons = {
     dashboard: (
@@ -268,13 +381,7 @@ export function COACH_SIDEBAR() {
                         </div>
 
                         <div className="mobile-sidebar-bottom">
-                            <div className="sidebar-user-card">
-                                <div className="sidebar-avatar">KG</div>
-                                <div className="sidebar-user-info">
-                                    <div className="sidebar-user-name">Kent Green</div>
-                                    <div className="sidebar-user-role">Administrator</div>
-                                </div>
-                            </div>
+                            <USER_CARD />
                         </div>
                     </div>
                 </div>
@@ -309,13 +416,7 @@ export function COACH_SIDEBAR() {
                     </div>
 
                     <div id="sidebar-bottom">
-                        <div className="sidebar-user-card">
-                            <div className="sidebar-avatar">KG</div>
-                            <div className="sidebar-user-info">
-                                <div className="sidebar-user-name">Kent Green</div>
-                                <div className="sidebar-user-role">Administrator</div>
-                            </div>
-                        </div>
+                        <USER_CARD />
                     </div>
                 </div>
             )}
@@ -380,13 +481,7 @@ export function PLAYER_SIDEBAR() {
                         </div>
 
                         <div className="mobile-sidebar-bottom">
-                            <div className="sidebar-user-card">
-                                <div className="sidebar-avatar">P</div>
-                                <div className="sidebar-user-info">
-                                    <div className="sidebar-user-name">Player</div>
-                                    <div className="sidebar-user-role">Athlete</div>
-                                </div>
-                            </div>
+                            <USER_CARD />
                         </div>
                     </div>
                 </div>
@@ -417,13 +512,7 @@ export function PLAYER_SIDEBAR() {
                     </div>
 
                     <div id="sidebar-bottom">
-                        <div className="sidebar-user-card">
-                            <div className="sidebar-avatar">P</div>
-                            <div className="sidebar-user-info">
-                                <div className="sidebar-user-name">Player</div>
-                                <div className="sidebar-user-role">Athlete</div>
-                            </div>
-                        </div>
+                        <USER_CARD />
                     </div>
                 </div>
             )}

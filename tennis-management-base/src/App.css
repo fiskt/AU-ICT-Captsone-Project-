@@ -256,11 +256,11 @@ btn, button:hover {
 /* User card in sidebar bottom */
 #sidebar-bottom {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   height: 10%;
   position: relative;
-  padding: 0 12px;
+  padding: 0;
   isolation: isolate;
 }
 
@@ -274,8 +274,8 @@ btn, button:hover {
 }
 
 .sidebar-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   background-color: var(--accent-color);
   border-radius: 50%;
   display: flex;
