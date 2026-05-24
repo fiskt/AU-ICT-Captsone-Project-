@@ -5,12 +5,6 @@ import { supabase } from "../supabaseClient";
 import '../App.css';
 import "./Dashboard.css";
 
-const coachUpdates = [
-    { type: "Session Added", message: "Coach Daniel added Serve Accuracy Training for 12 May.", time: "Today, 9:15 AM" },
-    { type: "Time Moved", message: "Footwork session moved from 2:00 PM to 3:00 PM.", time: "Yesterday, 4:40 PM" },
-    { type: "Session Rated", message: "Coach rated your last Match Simulation session: 8/10.", time: "2 days ago" },
-];
-
 function getIntensityZone(intensity) {
     if (intensity >= 1 && intensity <= 3) return "easy";
     if (intensity >= 4 && intensity <= 6) return "medium";
@@ -44,6 +38,9 @@ export default function PlayerDashboard() {
     const [strengths, setStrengths] = useState([]);
     const [weaknesses, setWeaknesses] = useState([]);
 
+    // State for updates
+    const [coachUpdates, setCoachUpdates] = useState([]);
+
     async function fetchData() {
         let userId;
 
@@ -69,16 +66,34 @@ export default function PlayerDashboard() {
         setNextSessionData(sessionData.find(s => new Date(s.end_datetime) >= now) || null);
 
         const today = new Date();
+
         const startOfWeek = new Date(today);
         startOfWeek.setDate(today.getDate() - today.getDay() + 1);
         startOfWeek.setHours(0, 0, 0, 0);
+
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);
+
         setWeeklySessions(sessionData.filter(s => {
             const d = new Date(s.start_datetime);
             return d >= startOfWeek && d <= endOfWeek;
         }));
+
+        // Fetch code for Coach Updates.
+        const { data: updatesData, error: updatesError } = await supabase
+            .from("coach_updates")
+            .select("*")
+            .eq("player_id", userId)
+            .gte("created_at", startOfWeek.toISOString())
+            .lte("created_at", endOfWeek.toISOString())
+            .order("created_at", { ascending: false });
+
+        if (updatesError) {
+            console.log("Error fetching coach updates:", updatesError.message);
+        } else {
+            setCoachUpdates(updatesData || []);
+        }
 
         const { data: feedbackData, error: feedbackError } = await supabase
             .from("session_feedback").select("*").eq("player_id", userId);
@@ -140,8 +155,7 @@ export default function PlayerDashboard() {
 
         if (weaknesses.includes("Front Plank")) {return "Core Strength";}
 
-        if (weaknesses.includes("Beep Test") || weaknesses.includes("Yo-Yo Test")) 
-        {return "Endurance";}
+        if (weaknesses.includes("Beep Test") || weaknesses.includes("Yo-Yo Test")) {return "Endurance";}
 
         return "General Development";
     }
@@ -315,7 +329,7 @@ export default function PlayerDashboard() {
                         </div>
                         <div className="tagList">
                             {/* EMPTY MESAGGES */}
-                            {strengths.length > 0 ? (
+                            {weaknesses.length > 0 ? (
                                 weaknesses.map((item, i) => <span className="warningTag" key={i}>{item}</span>)
                             ) : (
                                 <p>No focus area added yet.</p>
@@ -329,13 +343,19 @@ export default function PlayerDashboard() {
                             <h3>Coach Update Board</h3>
                         </div>
                         <div className="updateBoard">
-                            {coachUpdates.map((update, i) => (
-                                <div className="updateItem" key={i}>
-                                    <p className="updateType">{update.type}</p>
-                                    <p className="updateMessage">{update.message}</p>
-                                    <span className="updateTime">{update.time}</span>
-                                </div>
-                            ))}
+                            {coachUpdates.length > 0 ? (
+                                coachUpdates.map((update) => (
+                                    <div className="updateItem" key={update.id}>
+                                        <p className="updateType">{update.type}</p>
+                                        <p className="updateMessage">{update.message}</p>
+                                        <span className="updateTime">
+                                            {new Date(update.created_at).toLocaleDateString("en-AU")}
+                                        </span>
+                                    </div>
+                                ))
+                            ) : (
+                                <p>No coach updates this week.</p>
+                            )}
                         </div>
                     </div>
                 </div>

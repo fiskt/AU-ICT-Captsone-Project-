@@ -224,6 +224,26 @@ export default function CoachCalendar() {
                 sessionDrills.length > 0 && supabase.from('session_drills').insert(sessionDrills)
             ]);
 
+            // Adie: Trying to connect update into database, dashboard purposes.
+            // Add sessions
+            const updateRows = selectedPlayers.map(playerId => ({
+                player_id: playerId,
+                session_id: data.id,
+                type: "Session Added",
+                message: `${sessionSettings.sessionName} was added for your schedule.`
+            }));
+
+            if (updateRows.length > 0) {
+                const { error: updateError } = await supabase
+                    .from("coach_updates")
+                    .insert(updateRows);
+
+                if (updateError) {
+                    console.log("Error saving coach update:", updateError.message);
+                }
+            }
+            // End of Adie' code
+
             fetchCalendarData();
             setShowMobileSessionCreator(false);
 
@@ -543,6 +563,43 @@ export default function CoachCalendar() {
             newDrills.length > 0 && supabase.from('session_drills').insert(newDrills)
         ]);
 
+        // Adie: Dashboard update message
+        const oldName = selectedSession.title;
+        const newName = tempSession.name;
+
+        const oldNotes = selectedSession.extendedProps.notes;
+        const newNotes = tempSession.notes;
+
+        let updateType = "Session Updated";
+        let updateMessage = `${tempSession.name} session details were updated.`;
+
+        if (oldName !== newName) {
+            updateType = "Session Name Updated";
+            updateMessage = `Session name was changed from ${oldName} to ${newName}.`;
+        }
+
+        if (oldNotes !== newNotes) {
+            updateType = "Session Notes Updated";
+            updateMessage = `${tempSession.name} session notes were updated.`;
+        }
+
+        const updateRows = newPlayers.map(player => ({
+            player_id: player.user_id,
+            session_id: tempSession.id,
+            type: updateType,
+            message: updateMessage
+        }));
+
+        if (updateRows.length > 0) {
+            const { error: updateError } = await supabase
+                .from("coach_updates")
+                .insert(updateRows);
+
+            if (updateError) {
+                console.log("Error saving coach update:", updateError.message);
+            }
+        }
+        // End of Adie's code
 
         if (!error) {
             fetchCalendarData();
