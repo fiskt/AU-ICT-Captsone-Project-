@@ -316,7 +316,7 @@ export default function PlayerDashboard() {
                         <div className="tagList">
                             {/* EMPTY MESAGGES */}
                             {strengths.length > 0 ? (
-                                strengths.map((item, i) => <span className="warningTag" key={i}>{item}</span>)
+                                weaknesses.map((item, i) => <span className="warningTag" key={i}>{item}</span>)
                             ) : (
                                 <p>No focus area added yet.</p>
                             )}
