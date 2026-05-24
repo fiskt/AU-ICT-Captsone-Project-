@@ -1,5 +1,5 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS, DELETE_CONFIRMATION } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS, DELETE_CONFIRMATION } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
 import { useCurrentUser } from '../hooks/useCurrentUser.jsx';
@@ -56,8 +56,6 @@ export default function CoachCalendar() {
     const [showMobileSessionCreator, setShowMobileSessionCreator] = useState(false);
     const [showSessionEditor, setShowSessionEditor] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
-
-    const [showAvailabilityCreator, setShowAvailabilityCreator] = useState(false);
 
     const [calendarEvents, setCalendarEvents] = useState([]);
 
@@ -553,13 +551,6 @@ export default function CoachCalendar() {
         }
     }
 
-    const [availSettings, setAvailSettings] = useState({
-            availNotes: "",
-            availStart: "",
-            availEnd: "",
-            availDuration: "01:00:00"
-    });
-
     useEffect(() => {
         localStorage.setItem('session_creator_draft', JSON.stringify(sessionSettings));
     }, [sessionSettings]);
@@ -636,8 +627,6 @@ export default function CoachCalendar() {
                     isMobile={isMobile}
 
                     setShowMobileSessionCreator={setShowMobileSessionCreator}
-
-                    showOtherUserAvail={showOtherUserAvail} setShowOtherUserAvail={setShowOtherUserAvail}
 
                     ref={calendarRef}
                 />
@@ -900,27 +889,6 @@ export default function CoachCalendar() {
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Availability creator */}
-            { showAvailabilityCreator && (
-                <div class="content-box editor-box" id="avail-creator">
-                    <h2 class="content-header" onClick={() => setShowAvailabilityCreator(false)}>Availability Creator</h2>
-                    <div id="session-creator-input-container">
-                        <TYPING_INPUT 
-                            label="NAME" 
-                            num_rows="1" 
-                            input_id="availibility-notes-creator" 
-                            box_w="100%" box_h="30px" 
-                            sample_txt="Notes"
-                            value={availSettings.availNotes}
-                            onChange={(val) => {
-                                updateAvailField('availNotes', val);
-                            }}
-                        />
-                    </div>
-                    <DRAGGABLE_AVAILABILITY availSettings={availSettings} />
                 </div>
             )}
             

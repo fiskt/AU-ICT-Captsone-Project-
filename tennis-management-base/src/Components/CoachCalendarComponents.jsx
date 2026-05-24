@@ -173,38 +173,6 @@ export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlay
     );
 }
 
-export function DRAGGABLE_AVAILABILITY({ availSettings }) {
-    const availRef = useRef(null);
-
-    useEffect(() => {
-        let avail = new Draggable(availRef.current, {
-            eventData: () => {
-                return {
-                    title: availSettings.availNotes,
-                    duration: availSettings.availDuration,
-                    start: availSettings.availStart,
-                    end: availSettings.availEnd,
-                    extendedProps: {
-                        type: 'availability'
-                    }
-                };
-            }
-        })
-        return () => avail.destroy();
-    }, [availSettings]);
-
-    return (
-        <div class="input-container">
-            <span class="input-container-label">UNAVAILABLE</span>
-            <div class="input-box-wrapper" id="draggable-session-container">
-                <div ref={availRef} class="draggable-icon session-icon">
-                    <span>{availSettings.availNotes}</span>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 export function SESSION_CREATOR_DRILLS({ selectedDrills, removeDrillFromSession }) {
     return (
         <>
@@ -355,28 +323,6 @@ export const CALENDAR = forwardRef(({
         }
     }
 
-    async function updateAvailability(event) {
-        if (!event.id || !event.start || !event.end) return;
-
-        // get start and end
-        const start = DateTime.fromJSDate(event.start);
-        const end = DateTime.fromJSDate(event.end);
-
-        // difference of end and start time to get the duration
-        const newDuration = end.diff(start).toFormat('hh:mm:ss');
-
-        const { error } = await supabase
-            .from('coach_availability')
-            .update({
-                start_datetime: start.toISO(),
-                end_datetime: end.toISO(),
-                duration: newDuration
-            })
-            .eq('avail_id', event.id);
-
-        if (error) console.error(error.message);
-    }
-
     async function updateSessionTimes(event) {
         if (!event.id) return;
 
@@ -395,47 +341,6 @@ export const CALENDAR = forwardRef(({
             .eq('id', event.id);
 
         if (error) console.error(error.message);
-    }
-
-    async function pushAvailability({ event, coachId }) {
-        if (!event || !event.start) return;
-
-        // start and end times, default availability slot is 1h
-        const start = DateTime.fromJSDate(event.start);
-        const end = event.end 
-            ? DateTime.fromJSDate(event.end) 
-            : start.plus({ hours: 1 });
-
-        // calculate duration with end - start
-        const durationStr = end.diff(start).toFormat('hh:mm:ss');
-
-        const { data, error } = await supabase
-            .from('coach_availability')
-            .insert([{
-                coach_id: coachId,
-                start_datetime: start.toISO(),
-                end_datetime: end.toISO(),
-                duration: durationStr,
-                notes: event.title || ""
-            }])
-            .select()
-            .single();
-
-        if (data) {
-            event.setProp('id', data.avail_id);
-        }
-    }
-
-    async function deleteAvailablity( event ) {
-        console.log("del called", event);
-        if (!event || event.extendedProps.type === 'session') return;
-
-        const { error } = await supabase
-            .from('coach_availability')
-            .delete()
-            .eq('avail_id', event.id);
-
-        if (!error) event.remove();
     }
 
     return (
@@ -465,7 +370,6 @@ export const CALENDAR = forwardRef(({
                     slotMaxTime={"22:00:00"}
                     expandRows={true}
                     eventClick={(info) => {
-                        if (info.event.extendedProps.type === 'availability') return;
                         onSessionClick(info.event);
                     }}
                     headerToolbar={headerToolBar}
@@ -475,14 +379,6 @@ export const CALENDAR = forwardRef(({
                         const duration = arg.event.end - arg.event.start;
                         if (duration === 1800000) {
                             classes.push('short-event');
-                        }
-
-                        if (arg.event.extendedProps.type === 'availability') {
-                            classes.push('availability-event');
-                        } 
-
-                        if (arg.event.extendedProps.type === 'other_availability') {
-                            classes.push('other-avail-event');
                         }
 
                         if (
@@ -506,7 +402,7 @@ export const CALENDAR = forwardRef(({
                     eventDidMount={(info) => {
                         if (isMobile) return;
 
-                        if (tooltipsEnabled && info.event.extendedProps.type !== 'availability') {
+                        if (tooltipsEnabled && info.event.extendedProps.type === 'session') {
                             const duration = info.event.extendedProps.duration || "-";
                             const notes = info.event.extendedProps.notes || "No notes";
                             tippy(info.el, {
@@ -530,22 +426,16 @@ export const CALENDAR = forwardRef(({
                     displayEventEnd={false}
                     editable={true}
                     eventReceive = {(info) => {    
-                        if (info.event.extendedProps.type === 'availability') {
-                            pushAvailability({ event: info.event, coachId: '1'});
-                        } else {
-                            const sessionData = {
-                                name: info.event.title,
-                                notes: info.event.extendedProps.notes || ""
-                            }
-                            pushSession({ event: info.event, sessionSettings: sessionData });
+                        const sessionData = {
+                            name: info.event.title,
+                            notes: info.event.extendedProps.notes || ""
                         }
+                        pushSession({ event: info.event, sessionSettings: sessionData });
                     }}
                     eventDrop={(info) => {
                         if (isMobile) return;
 
-                        if (info.event.extendedProps.type === 'availability') {
-                            updateAvailability(info.event);
-                        } else if (info.event.extendedProps.type === 'session') {
+                        if (info.event.extendedProps.type === 'session') {
                             updateSessionTimes(info.event);
                         }
                     }}
@@ -553,9 +443,7 @@ export const CALENDAR = forwardRef(({
                         console.log("event resized");
                         if (isMobile) return;
 
-                        if (info.event.extendedProps.type === 'availability') {
-                            updateAvailability(info.event);
-                        } else if (info.event.extendedProps.type === 'session') {
+                        if (info.event.extendedProps.type === 'session') {
                             console.log("update session times ran");
                             updateSessionTimes(info.event);
                         }
@@ -582,10 +470,6 @@ export const CALENDAR = forwardRef(({
                             info.jsEvent.clientX <= rect.right &&
                             info.jsEvent.clientY >= rect.top &&
                             info.jsEvent.clientY <= rect.bottom;
-
-                        if (inDelArea && info.event.extendedProps.type === 'availability') {
-                            deleteAvailablity(info.event);
-                        }
                     }}
                 />
             </div>
