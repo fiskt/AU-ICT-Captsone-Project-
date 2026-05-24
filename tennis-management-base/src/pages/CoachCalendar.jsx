@@ -2,11 +2,19 @@ import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/Sha
 import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS, DELETE_CONFIRMATION } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
+import { useCurrentUser } from '../hooks/useCurrentUser.jsx';
+
 import { DateTime, Duration } from 'luxon';
 import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
+    const { userId: currentUserID, isLoading: authLoading } = useCurrentUser();
+
+    useEffect(() => {
+    console.log('userId:', currentUserID);
+}, [currentUserID]);
+
     const sessionEditorRef = useRef(null);
     const drillLibraryRef = useRef(null);
 
@@ -41,9 +49,6 @@ export default function CoachCalendar() {
     
         return () => window.removeEventListener('resize', handleResize);
     }, []);
-
-    // current user
-    let currentUserID = '1035092c-3201-4ed7-ac82-8c76b8c998c7';
     
     const [isDraggingEvent, setIsDraggingEvent] = useState(false);
 
@@ -139,9 +144,6 @@ export default function CoachCalendar() {
         console.log(toggleEventTooltips);
     }
 
-    // toggle for showing other users availability
-    const [showOtherUserAvail, setShowOtherUserAvail] = useState(false);
-
     // Times for mobile session creator 
     const mobileSessionCreatorTimes = [
         { name: "05:00", val: "05:00:00" },
@@ -226,6 +228,12 @@ export default function CoachCalendar() {
 
             fetchCalendarData();
             setShowMobileSessionCreator(false);
+
+            fetch('/api/notify-session-created', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: data.id })
+            }).catch(err => console.error('Email notification failed:', err));
         } else {
             console.log(error);
         }
@@ -450,8 +458,11 @@ export default function CoachCalendar() {
         fetchDrillLibraryTags();
         fetchPlayers();
         fetchCoaches();
-        fetchCalendarData();
     }, []);
+
+    useEffect(() => {
+        if (currentUserID) fetchCalendarData();
+    }, [currentUserID]);
 
     // change calendar view when switching from mobile/desktop
     useEffect(() => {
@@ -463,6 +474,7 @@ export default function CoachCalendar() {
     }, [isMobile]);
 
     async function fetchCalendarData() {
+        if (!currentUserID) return;
         setIsDataLoading(true);
         
         // fetch data from the database
@@ -551,14 +563,6 @@ export default function CoachCalendar() {
     useEffect(() => {
         localStorage.setItem('session_creator_draft', JSON.stringify(sessionSettings));
     }, [sessionSettings]);
-
-
-    const updateAvailField = (field, value) => {
-        setAvailSettings({
-            ...availSettings,
-            [field]: value 
-        });
-    }
 
     // delete session
     const [isDeleting, setIsDeleting] = useState(false);
@@ -938,7 +942,6 @@ export default function CoachCalendar() {
                             <div id="session-editor-top-right">
                                 <button 
                                     class="drill-icon-btn"
-                                    id="close-session-editor" 
                                     onClick={() => {
                                         setShowSessionEditor(false);
                                         setSelectedSession(null);

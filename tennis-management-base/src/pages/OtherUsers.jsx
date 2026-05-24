@@ -36,6 +36,14 @@ export default function CoachCalendar() {
     }, []);
 
     useEffect(() => {
+        const calendarApi = calendarRef.current?.getApi();
+        if (!calendarApi) return;
+
+        calendarApi.changeView(isMobile ? "timeGridDay" : "dayGridMonth");
+        calendarApi.updateSize();
+    }, [isMobile]);
+
+    useEffect(() => {
         if (!isMobile) {
             setShowCollapsedUsers(false);
         }
@@ -315,7 +323,7 @@ export default function CoachCalendar() {
             {/* Session details */}
             { !showCollapsedUsers && selectedSession && showSessionDetails && !isMobile && (
                 <div 
-                    id="session-details-container" 
+                    class="session-details-container" 
                     onClick={(e) => {
                         if (sessionEditorRef.current && !sessionEditorRef.current.contains(e.target)) {
                             setShowSessionDetails(false);
@@ -323,14 +331,13 @@ export default function CoachCalendar() {
                         }
                     }}
                 >
-                    <div id="session-details" ref={sessionEditorRef}>
-                        <div id="session-details-top-left">
-                            <h2 id="session-details-header">Session Details</h2>
+                    <div class="session-details" ref={sessionEditorRef}>
+                        <div class="session-details-top-left">
+                            <h2 class="session-details-header">Session Details</h2>
                         </div>
-                        <div id="session-details-top-right">
+                        <div class="session-details-top-right">
                             <button 
                                 class="drill-icon-btn"
-                                id="close-session-editor" 
                                 onClick={() => {
                                     setShowSessionDetails(false);
                                     setSelectedSession(null);
@@ -342,7 +349,7 @@ export default function CoachCalendar() {
                             </button>
                         </div>
 
-                        <div id="session-details-middle-left">
+                        <div class="session-details-middle-left">
                             <div class="input-container">
                                 <span class="input-container-label">NAME</span>
                                 <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
@@ -354,10 +361,10 @@ export default function CoachCalendar() {
                                 </div>
                             )}
                         </div>
-                        <div id="session-details-middle-middle">
-                            <div class="input-container" id="session-details-people-container">
+                        <div class="session-details-middle-middle">
+                            <div class="input-container session-details-people-container">
                                 <span class="input-container-label">PEOPLE</span>
-                                <div id="session-details-people">
+                                <div class="session-details-people">
                                     <div>Coaches</div>
                                     <ul>
                                         {selectedSessionPeople
@@ -380,10 +387,10 @@ export default function CoachCalendar() {
                             </div>
                         </div>
 
-                        <div id="session-details-middle-right">
-                            <div class="input-container" id="session-details-drills-container">
+                        <div class="session-details-middle-right">
+                            <div class="input-container session-details-drills-container">
                                 <span class="input-container-label">DRILLS</span>
-                                <div id="session-details-drills">
+                                <div class="session-details-drills">
                                     {selectedSessionDrills.length > 0 && (
                                         <SESSION_DETAILS_DRILLS
                                             selectedDrills={selectedSessionDrills}
@@ -399,11 +406,11 @@ export default function CoachCalendar() {
             )}
 
             { isMobile && showSessionDetails && selectedSession && (
-                <div id="mobile-session-details-container">
-                    <div id="mobile-session-details">
-                        <div id="mobile-session-details-top">
+                <div class="mobile-session-details-container">
+                    <div class="mobile-session-details">
+                        <div class="mobile-session-details-top">
                             <h2 class="content-header">Session Details</h2>
-                            <button id="mobile-close-session-details" onClick={() => {
+                            <button class="mobile-close-session-details" onClick={() => {
                                 setShowSessionDetails(false);
                                 setSelectedSession(null);
                             }}>Close</button>
@@ -418,9 +425,9 @@ export default function CoachCalendar() {
                             <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
                         </div>
 
-                        <div class="input-container" id="mobile-session-details-people-container">
+                        <div class="input-container mobile-session-details-people-container">
                             <span class="input-container-label">PEOPLE</span>
-                            <div id="mobile-session-details-people">
+                            <div class="mobile-session-details-people">
                                 <div>Coaches</div>
                                 <ul>
                                     {selectedSessionPeople
@@ -442,9 +449,9 @@ export default function CoachCalendar() {
                             </div>
                         </div>
 
-                        <div class="input-container" id="session-details-drills-container">
+                        <div class="input-container session-details-drills-container">
                             <span class="input-container-label">DRILLS</span>
-                            <div id="session-details-drills">
+                            <div class="session-details-drills">
                                 <SESSION_DETAILS_DRILLS
                                     selectedDrills={selectedSessionDrills}
                                 />
