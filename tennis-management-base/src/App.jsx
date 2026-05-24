@@ -18,7 +18,7 @@ import SessionFeedback from './pages/SessionFeedback';
 import FeedbackSummary from './pages/PlayerFeedbackSummary';
 import OtherUsers      from './pages/OtherUsers';
 
-const AUTH_ROUTES   = ['/', '/Login', '/Register', '/auth/callback'];
+const AUTH_ROUTES   = ['/', '/Login', '/login', '/Register', '/register', '/auth/callback', '/ForgotPassword', '/forgotpassword', '/ResetPassword', '/resetpassword'];
 const PLAYER_ROUTES = ['/PlayerDashboard', '/PlayerCalendar', '/SessionFeedback'];
 
 function AppLayout() {
@@ -43,7 +43,9 @@ function AppLayout() {
                         {/* Public routes: no sign in required */}
                         <Route path="/"              element={<Login />} />
                         <Route path="/Login"         element={<Login />} />
+                        <Route path="/login"         element={<Login />} />
                         <Route path="/Register"      element={<Register />} />
+                        <Route path="/register"      element={<Register />} />
                         <Route path="/auth/callback" element={<AuthCallback />} />
 
                         {/* Protected routes: must be logged in */}
