@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import logo from '/logo.png';
 import background from '../assets/background.webp';
+import emailIcon from '../assets/email.png';
 
 const checks = [
   { id: 'length',  label: 'At least 8 characters',          test: (p) => p.length >= 8 },
@@ -100,7 +101,7 @@ export default function Register() {
             <h1 style={{ margin: 0, fontFamily: 'Bebas, sans-serif', fontSize: titleSize, color: '#fff', letterSpacing: '2px' }}>CHECK YOUR EMAIL</h1>
           </div>
           <div style={{ backgroundColor: '#fff', padding: cardPad }}>
-            <div style={{ fontSize: '48px', textAlign: 'center', marginBottom: '16px' }}>📧</div>
+            <img src={emailIcon} alt="Email" style={{ width: '64px', height: '64px', objectFit: 'contain', display: 'block', margin: '0 auto 16px' }} />
             <p style={{ fontSize: '14px', fontFamily: 'DM Sans Light, sans-serif', color: '#000', textAlign: 'center', marginBottom: '12px' }}>
               We've sent a confirmation link to <strong>{email}</strong>.
             </p>
