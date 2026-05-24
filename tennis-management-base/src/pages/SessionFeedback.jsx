@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { PLAYER_SIDEBAR, TOPBAR } from "../Components/SharedComponents";
+import { PLAYER_SIDEBAR} from "../Components/SharedComponents";
 import "./SessionFeedback.css";
 
 // Benchmark Logic RPE Session Intensity.
@@ -119,7 +119,6 @@ export default function SessionFeedback() {
     return (
         <div id="layout">
             <PLAYER_SIDEBAR />
-            <TOPBAR />
 
             <div id="main-content-wrapper">
                 <div id="main-content">

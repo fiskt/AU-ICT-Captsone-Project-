@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import '../App.css';
 import './Dashboard.css';
-import { COACH_SIDEBAR, TOPBAR } from '../Components/SharedComponents';
+import { COACH_SIDEBAR} from '../Components/SharedComponents';
 
 import {
     LineChart,
@@ -173,7 +173,6 @@ export default function Dashboard() {
     return (
         <div id="layout">
             <COACH_SIDEBAR />
-            <TOPBAR />
 
             <div id="main-content-wrapper">
                 <div id="main-content">

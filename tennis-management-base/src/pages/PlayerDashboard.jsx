@@ -1,25 +1,14 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+
 import '../App.css';
 import "./Dashboard.css";
 
-const strengths = [
-    "Consistent forehand rally",
-    "Good court coverage",
-    "Strong reaction speed",
-];
-
-const weaknesses = [
-    "Second serve accuracy",
-    "Backhand under pressure",
-    "Recovery after long rallies",
-];
-
 const coachUpdates = [
     { type: "Session Added", message: "Coach Daniel added Serve Accuracy Training for 12 May.", time: "Today, 9:15 AM" },
-    { type: "Time Moved",    message: "Footwork session moved from 2:00 PM to 3:00 PM.",        time: "Yesterday, 4:40 PM" },
-    { type: "Session Rated", message: "Coach rated your last Match Simulation session: 8/10.",  time: "2 days ago" },
+    { type: "Time Moved", message: "Footwork session moved from 2:00 PM to 3:00 PM.", time: "Yesterday, 4:40 PM" },
+    { type: "Session Rated", message: "Coach rated your last Match Simulation session: 8/10.", time: "2 days ago" },
 ];
 
 function getIntensityZone(intensity) {
@@ -38,8 +27,8 @@ export default function PlayerDashboard() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const isCoachPreview  = location.state?.isCoachPreview  ?? false;
-    const previewPlayer   = location.state?.previewPlayer   ?? null;
+    const isCoachPreview = location.state?.isCoachPreview ?? false;
+    const previewPlayer = location.state?.previewPlayer ?? null;
     const previewPlayerId = location.state?.previewPlayerId ?? null;
 
     const [sessions, setSessions] = useState([]);
@@ -50,6 +39,10 @@ export default function PlayerDashboard() {
     const [notes, setNotes] = useState("");
     const [latestFeedback, setLatestFeedback] = useState(null);
     const [weeklySessions, setWeeklySessions] = useState([]);
+
+    // State for Strengths and Weaknesses.
+    const [strengths, setStrengths] = useState([]);
+    const [weaknesses, setWeaknesses] = useState([]);
 
     async function fetchData() {
         let userId;
@@ -99,6 +92,20 @@ export default function PlayerDashboard() {
         const unrated = sessionData.find(s => new Date(s.end_datetime) < now && !ratedSessionIDs.includes(s.id));
         setPendingSession(unrated || null);
         if (unrated) setDurationMinutes(durationToMinutes(unrated.duration));
+
+        // Fetch code for strength and weaknesses.
+        const { data: playerProfile, error: profileError } = await supabase
+            .from("player_details")
+            .select("strengths, weaknesses")
+            .eq("id", userId)
+            .single();
+
+        if (profileError) {
+            console.log("Error fetching player profile:", profileError.message);
+        } else {
+            setStrengths(playerProfile.strengths? playerProfile.strengths.split(", "): []);
+            setWeaknesses(playerProfile.weaknesses? playerProfile.weaknesses.split(", "): []);
+        }
     }
 
     useEffect(() => { fetchData(); }, []);
@@ -118,6 +125,25 @@ export default function PlayerDashboard() {
         }]);
         if (error) { alert("Failed to save: " + error.message); }
         else { alert("Feedback saved!"); setIntensity(""); setDurationMinutes(""); setNotes(""); fetchData(); }
+    }
+
+    const focusArea = getFocusArea(weaknesses);
+
+    // Helper function for Focus area
+    function getFocusArea(weaknesses) {
+
+        if (!weaknesses || weaknesses.length === 0) {return "Balanced Training";}
+
+        if (weaknesses.includes("5m Sprint") || weaknesses.includes("10m Sprint") || weaknesses.includes("505 Agility Left") || weaknesses.includes("505 Agility Right")) {return "Court Movement";}
+
+        if (weaknesses.includes("Vertical Jump")) {return "Explosive Power";}
+
+        if (weaknesses.includes("Front Plank")) {return "Core Strength";}
+
+        if (weaknesses.includes("Beep Test") || weaknesses.includes("Yo-Yo Test")) 
+        {return "Endurance";}
+
+        return "General Development";
     }
 
     return (
@@ -166,25 +192,30 @@ export default function PlayerDashboard() {
 
             {/* TOP STATS */}
             <div className="statsGrid">
+
                 <div className="statCard">
                     <p className="cardLabel">THIS WEEK</p>
-                    <h2 className="cardValue">{weeklySessions.length}</h2>
+                    <h2 className="drill-stat-value accent">{weeklySessions.length}</h2>
                 </div>
+
                 <div className="statCard">
                     <p className="cardLabel">NEXT SESSION</p>
-                    <h2 className="cardValue">
+                    <h2 className="drill-stat-value">
                         {nextSessionData
                             ? new Date(nextSessionData.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })
                             : "—"}
                     </h2>
+                    <p className="drill-stat-sub">{nextSessionData ? nextSessionData.name : "No upcoming session"}</p>
                 </div>
+
                 <div className="statCard">
                     <p className="cardLabel">LAST RATING</p>
-                    <h2 className="cardValue">{latestFeedback ? `${latestFeedback.intensity}/10` : "—"}</h2>
+                    <h2 className="drill-stat-value">{latestFeedback ? `${latestFeedback.intensity}/10` : "—"}</h2>
                 </div>
+
                 <div className="statCard">
                     <p className="cardLabel">FOCUS AREA</p>
-                    <h2 className="cardValue">SERVE</h2>
+                   <h2 className="drill-stat-value">{focusArea}</h2>
                 </div>
             </div>
 
@@ -246,7 +277,7 @@ export default function PlayerDashboard() {
                                     <label>Session Intensity</label>
                                     <select value={intensity} onChange={(e) => setIntensity(e.target.value)}>
                                         <option value="">Select intensity</option>
-                                        {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
+                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n}>{n}</option>)}
                                     </select>
                                     <label>Actual Duration (minutes)</label>
                                     <input type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} />
@@ -268,7 +299,12 @@ export default function PlayerDashboard() {
                             <h3>Current Strengths</h3>
                         </div>
                         <div className="tagList">
-                            {strengths.map((item, i) => <span className="positiveTag" key={i}>{item}</span>)}
+                            {/* EMPTY MESAGGES */}
+                            {strengths.length > 0 ? (
+                                strengths.map((item, i) => <span className="positiveTag" key={i}>{item}</span>)
+                            ) : (
+                                <p>No strengths added yet.</p>
+                            )}
                         </div>
                     </div>
 
@@ -278,7 +314,12 @@ export default function PlayerDashboard() {
                             <h3>Current Weaknesses</h3>
                         </div>
                         <div className="tagList">
-                            {weaknesses.map((item, i) => <span className="warningTag" key={i}>{item}</span>)}
+                            {/* EMPTY MESAGGES */}
+                            {strengths.length > 0 ? (
+                                strengths.map((item, i) => <span className="warningTag" key={i}>{item}</span>)
+                            ) : (
+                                <p>No focus area added yet.</p>
+                            )}
                         </div>
                     </div>
 
