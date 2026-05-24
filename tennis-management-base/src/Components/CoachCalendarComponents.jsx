@@ -268,7 +268,6 @@ export const CALENDAR = forwardRef(({
     setIsDraggingEvent,
     isMobile,
     setShowMobileSessionCreator,
-    showOtherUserAvail, setShowOtherUserAvail
     }, ref) => {
 
     const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
@@ -345,6 +344,12 @@ export const CALENDAR = forwardRef(({
             ]);
 
             event.setProp('id', data.id);
+
+            fetch('/api/notify-session-created', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: data.id })
+            }).catch(err => console.error('Email notification failed:', err));
         } else {
             console.log(error);
         }
