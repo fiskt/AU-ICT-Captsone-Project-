@@ -774,6 +774,35 @@ export default function Testing() {
         document.addEventListener('keydown', handler);
         return () => document.removeEventListener('keydown', handler);
     }, []);
+    const metricLabels = {
+    sprint_5m: "5m Sprint",
+    sprint_10m: "10m Sprint",
+    agility_505_left: "505 Agility Left",
+    agility_505_right: "505 Agility Right",
+    vertical_jump: "Vertical Jump",
+    front_plank: "Front Plank",
+    beep_test: "Beep Test",
+    yoyo_test: "Yo-Yo Test",
+    };
+
+    function getStrengthWeaknessFromTest(test) {
+        const metrics = Object.keys(metricLabels);
+        const strengths = [];
+        const weaknesses = [];
+
+        metrics.forEach(metric => {
+            const value = test[metric];
+            if (value === null || value === undefined || value === "") return;
+
+            const rating = getRating(value, metric, test.gender, test.phv_stage);
+
+            if (rating === "excellent" || rating === "good") {strengths.push(metricLabels[metric]);}
+
+            if (rating === "average" || rating === "poor") {weaknesses.push(metricLabels[metric]);}
+        });
+
+        return { strengths, weaknesses };
+    }
 
     const handleSave = async (form) => {
         const payload = {
@@ -799,9 +828,23 @@ export default function Testing() {
             setTests(prev => prev.filter(t => t.id !== optimistic.id));
             showToast('Failed to save. Please try again.', 'red');
         } else {
-            setTests(prev => prev.map(t => t.id === optimistic.id ? data : t));
-            showToast('Test result saved', 'green');
+        const { strengths, weaknesses } = getStrengthWeaknessFromTest(data);
+
+        const { error: detailsError } = await supabase.from("player_details").upsert({
+                id: data.player_id,
+                strengths: strengths.join(", "),
+                weaknesses: weaknesses.join(", "),
+            });
+
+        if (detailsError) {
+            console.error("Failed to update player details:", detailsError.message);
+            showToast("Test saved, but player details failed.", "red");
+        } else {
+            showToast("Test result saved", "green");
         }
+
+        setTests(prev => prev.map(t => t.id === optimistic.id ? data : t));
+    }
     };
 
     const handleDeleteConfirm = async () => {
