@@ -6,6 +6,25 @@ import '../App.css';
 import './PlayerProfile.css';
 
 export default function PlayerProfile() {
+    // where the functions go
+
+
+    async function fetchCoaches() {
+        const { data, error } = await supabase
+            .from('signin_details')
+            .select('*')
+            .eq('role', 'coach');
+
+        if (error) {
+            console.log("Error when fetching coaches: ", error.message);
+            setCoaches([]);
+        } else {
+            setCoaches(data);
+            console.log("coaches", coaches);
+        }
+    }
+
+
     return (
         <>
             <section class="playerProfilePage">
@@ -17,14 +36,14 @@ export default function PlayerProfile() {
                     <div class="left">
 
                         <div class="users-name">
-                            <h3>Amelia Fule</h3> {/*get user's name and insert here */}
+                            <h3>Mihir Patel</h3> {/*get user's name and insert here */}
                         </div>
                         <div class="user-type">Player</div>
 
                     </div>
                     <div class="right">
                         <ul class="listOfButtons">
-                            <li><btn class="profile-btn">Edit Profile Image</btn></li>
+                            {/* <li><btn class="profile-btn">Edit Profile Image</btn></li> */}
                             <li><btn class="profile-btn">Update Details</btn></li>
                         </ul>
                     </div>
@@ -47,10 +66,10 @@ export default function PlayerProfile() {
                         <h2 class="content-header">STATS</h2>
 
                         <ul class="content-list">
-                            <li>Coach: Coach Name</li> {/*Insert name of coach from datbase there */}
-                            <li>Dominant Hand: Left/Right</li>
-                            <li>Strengths: </li>
-                            <li>Improvement Points: </li>
+                            <li>Coach: Kent Green</li> {/*Insert name of coach from datbase there */}
+                            <li>Dominant Hand: Right</li>
+                            <li>Strengths: Forehand</li>
+                            <li>Improvement Points: Backhand</li>
 
                         </ul>
                     </div>
@@ -66,8 +85,8 @@ export default function PlayerProfile() {
                     </div>
 
                      <div class="content-box">
-                        <h2 class="content-header">SOMETHING</h2>
-                    
+                        <h2 class="content-header">Homework Drills</h2>
+                        {/* input homework here */}
                         
                     </div>
                 </div>
