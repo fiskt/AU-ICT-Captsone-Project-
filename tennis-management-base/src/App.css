@@ -54,7 +54,7 @@ body {
   height: 100%;
 }
 
-/* Team's original button styles — preserved exactly */
+/* original button styles */
 btn, button {
   border-radius: 8px;
   border: 2px solid var(--content-input-border-color);
