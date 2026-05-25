@@ -4,24 +4,19 @@ import './DrillLibrary.css';
 import { supabase } from '../supabaseClient';
 import { LOADING_OVERLAY } from '../Components/SharedComponents';
 
-// ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const DIFFICULTY_LEVELS = ['Beginner', 'Intermediate', 'Advanced', 'Elite'];
 
-// ── TAG INPUT COMPONENT ───────────────────────────────────────────────────────
-// Allows typing new tags, selecting existing ones, removing selected tags
 function TagInput({ selectedTags, onTagsChange, allTags }) {
     const [inputValue, setInputValue] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
     const inputRef = useRef(null);
     const containerRef = useRef(null);
 
-    // Filter suggestions: existing tags that match input and aren't already selected
     const suggestions = allTags.filter(tag =>
         tag.name.toLowerCase().includes(inputValue.toLowerCase()) &&
         !selectedTags.some(t => t.id === tag.id)
     );
 
-    // Whether to show "Create new tag" option
     const showCreateNew = inputValue.trim().length > 0 &&
         !allTags.some(t => t.name.toLowerCase() === inputValue.trim().toLowerCase()) &&
         !selectedTags.some(t => t.name.toLowerCase() === inputValue.trim().toLowerCase());
@@ -38,7 +33,6 @@ function TagInput({ selectedTags, onTagsChange, allTags }) {
     const createAndAddTag = () => {
         const name = inputValue.trim();
         if (!name) return;
-        // Temporary tag with no id — will get real id after Supabase insert
         const tempTag = { id: 'temp-' + Date.now(), name };
         onTagsChange([...selectedTags, tempTag]);
         setInputValue('');
@@ -67,7 +61,6 @@ function TagInput({ selectedTags, onTagsChange, allTags }) {
         }
     };
 
-    // Close suggestions when clicking outside
     useEffect(() => {
         const handler = (e) => {
             if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -136,7 +129,6 @@ function TagInput({ selectedTags, onTagsChange, allTags }) {
     );
 }
 
-// ── STARS ─────────────────────────────────────────────────────────────────────
 function Stars({ level }) {
     const levelMap = { Beginner: 1, Intermediate: 2, Advanced: 3, Elite: 5 };
     const filled = levelMap[level] ?? 2;
@@ -156,7 +148,6 @@ function Stars({ level }) {
     );
 }
 
-// ── TAG CHIPS (display only) ──────────────────────────────────────────────────
 function TagChips({ tags }) {
     if (!tags || tags.length === 0) return null;
     return (
@@ -170,7 +161,6 @@ function TagChips({ tags }) {
     );
 }
 
-// ── DRILL CARD ────────────────────────────────────────────────────────────────
 function DrillCard({ drill, onView, onEdit, onDelete }) {
     const dateAdded = new Date(drill.date_added);
     const daysAgo = Math.floor((Date.now() - dateAdded.getTime()) / (1000 * 60 * 60 * 24));
@@ -211,11 +201,9 @@ function DrillCard({ drill, onView, onEdit, onDelete }) {
     );
 }
 
-// ── DRILL FORM MODAL ──────────────────────────────────────────────────────────
 function DrillFormModal({ mode, drill, allTags, onSave, onClose, onDelete }) {
     const EMPTY_FORM = {
         name: '',
-        duration_mins: '',
         description: '',
         notes: '',
         level: 'Intermediate',
@@ -287,18 +275,6 @@ function DrillFormModal({ mode, drill, allTags, onSave, onClose, onDelete }) {
                         }}>
                             Type a tag and press Enter. New tags will be saved for future use.
                         </span>
-                    </div>
-
-                    <div className="drill-form-group">
-                        <label className="drill-form-label">Duration (mins)</label>
-                        <input
-                            className="drill-form-input"
-                            type="number"
-                            min="1"
-                            placeholder="e.g. 15"
-                            value={form.duration_mins}
-                            onChange={e => update('duration_mins', e.target.value)}
-                        />
                     </div>
 
                     <div className="drill-form-group">
@@ -380,7 +356,6 @@ function DrillFormModal({ mode, drill, allTags, onSave, onClose, onDelete }) {
     );
 }
 
-// ── DELETE CONFIRM MODAL ──────────────────────────────────────────────────────
 function DeleteModal({ drill, onConfirm, onClose, deleting }) {
     return (
         <div id="drill-modal-overlay">
@@ -417,7 +392,6 @@ function DeleteModal({ drill, onConfirm, onClose, deleting }) {
     );
 }
 
-// ── DRILL DETAIL VIEW ─────────────────────────────────────────────────────────
 function DrillDetail({ drill, onBack, onEdit, onDelete }) {
     return (
         <div id="drill-library-page">
@@ -436,12 +410,6 @@ function DrillDetail({ drill, onBack, onEdit, onDelete }) {
                     <div className="drill-meta-item">
                         <span className="drill-meta-label">Difficulty</span>
                         <Stars level={drill.level} />
-                    </div>
-                    <div className="drill-meta-item">
-                        <span className="drill-meta-label">Duration</span>
-                        <span className="drill-meta-value">
-                            {drill.duration_mins ? `${drill.duration_mins} min` : 'Not set'}
-                        </span>
                     </div>
                     <div className="drill-meta-item">
                         <span className="drill-meta-label">Date Added</span>
@@ -493,40 +461,34 @@ function DrillDetail({ drill, onBack, onEdit, onDelete }) {
     );
 }
 
-// ── TOAST HOOK ────────────────────────────────────────────────────────────────
 function useToast() {
     const [toast, setToast] = useState({ visible: false, message: '', type: 'green' });
     const timerRef = useRef(null);
-
     const show = (message, type = 'green') => {
         clearTimeout(timerRef.current);
         setToast({ visible: true, message, type });
         timerRef.current = setTimeout(() => setToast(t => ({ ...t, visible: false })), 3000);
     };
-
     return { toast, show };
 }
 
-// ── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function DrillLibrary() {
     const [drills, setDrills] = useState([]);
     const [allTags, setAllTags] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
     const [search, setSearch] = useState('');
-    const [activeTagFilter, setActiveTagFilter] = useState(null); // null = All
+    const [activeTagFilter, setActiveTagFilter] = useState(null);
     const [view, setView] = useState('list');
     const [selectedDrill, setSelectedDrill] = useState(null);
     const [modal, setModal] = useState(null);
     const [deleting, setDeleting] = useState(false);
     const { toast, show: showToast } = useToast();
 
-    // ── Fetch drills and tags ──
     const fetchData = async () => {
         setIsLoading(true);
         setFetchError(null);
 
-        // Fetch all tags
         const { data: tagsData, error: tagsError } = await supabase
             .from('drill_tags')
             .select('*')
@@ -538,7 +500,6 @@ export default function DrillLibrary() {
             setAllTags(tagsData || []);
         }
 
-        // Fetch drills with their tags via junction table
         const { data: drillsData, error: drillsError } = await supabase
             .from('drill_library')
             .select(`
@@ -553,7 +514,6 @@ export default function DrillLibrary() {
             console.error('Error fetching drills:', drillsError);
             setFetchError('Failed to load drills. Please try again.');
         } else {
-            // Flatten tags from junction table
             const drillsWithTags = (drillsData || []).map(drill => ({
                 ...drill,
                 tags: (drill.drill_library_tags || []).map(jt => jt.drill_tags).filter(Boolean),
@@ -566,14 +526,12 @@ export default function DrillLibrary() {
 
     useEffect(() => { fetchData(); }, []);
 
-    // ── Escape closes modals ──
     useEffect(() => {
         const handler = (e) => { if (e.key === 'Escape') setModal(null); };
         document.addEventListener('keydown', handler);
         return () => document.removeEventListener('keydown', handler);
     }, []);
 
-    // ── Ensure new tags are persisted and return their real ids ──
     const ensureTagsExist = async (tags) => {
         const resolvedTags = [];
         for (const tag of tags) {
@@ -581,7 +539,6 @@ export default function DrillLibrary() {
                 resolvedTags.push(tag);
                 continue;
             }
-            // New tag — insert into drill_tags
             const { data, error } = await supabase
                 .from('drill_tags')
                 .insert([{ name: tag.name }])
@@ -589,7 +546,6 @@ export default function DrillLibrary() {
                 .single();
 
             if (error) {
-                // Tag might already exist (race condition) — try to find it
                 const { data: existing } = await supabase
                     .from('drill_tags')
                     .select('*')
@@ -598,16 +554,13 @@ export default function DrillLibrary() {
                 if (existing) resolvedTags.push(existing);
             } else {
                 resolvedTags.push(data);
-                // Add to allTags state
                 setAllTags(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
             }
         }
         return resolvedTags;
     };
 
-    // ── Save drill tags to junction table ──
     const saveDrillTags = async (drillId, tags) => {
-        // Delete existing tag links for this drill
         await supabase
             .from('drill_library_tags')
             .delete()
@@ -615,7 +568,6 @@ export default function DrillLibrary() {
 
         if (tags.length === 0) return;
 
-        // Insert new tag links
         const inserts = tags.map(tag => ({ drill_id: drillId, tag_id: tag.id }));
         const { error } = await supabase
             .from('drill_library_tags')
@@ -624,7 +576,6 @@ export default function DrillLibrary() {
         if (error) console.error('Error saving drill tags:', error);
     };
 
-    // ── Filtering ──
     const filtered = drills.filter(d => {
         const matchesSearch =
             d.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -637,12 +588,10 @@ export default function DrillLibrary() {
         return matchesSearch && matchesTag;
     });
 
-    // ── Unique tags used across all drills (for filter chips) ──
     const usedTags = allTags.filter(tag =>
         drills.some(d => d.tags?.some(t => t.id === tag.id))
     );
 
-    // ── Handlers ──
     const handleView = (drill) => { setSelectedDrill(drill); setView('detail'); };
     const handleEdit = (drill) => { setSelectedDrill(drill); setModal('edit'); };
     const handleDeleteRequest = (drill) => { setSelectedDrill(drill); setModal('delete'); };
@@ -651,7 +600,6 @@ export default function DrillLibrary() {
         const resolvedTags = await ensureTagsExist(form.tags || []);
 
         if (modal === 'add') {
-            // Optimistic
             const optimistic = {
                 ...form,
                 id: 'temp-' + Date.now(),
@@ -665,7 +613,6 @@ export default function DrillLibrary() {
                 .from('drill_library')
                 .insert([{
                     name: form.name,
-                    duration_mins: form.duration_mins ? parseInt(form.duration_mins) : null,
                     description: form.description,
                     notes: form.notes || null,
                     level: form.level,
@@ -686,7 +633,6 @@ export default function DrillLibrary() {
             }
 
         } else {
-            // Optimistic update
             const updated = { ...form, tags: resolvedTags };
             setDrills(prev => prev.map(d => d.id === form.id ? updated : d));
             if (selectedDrill?.id === form.id) setSelectedDrill(updated);
@@ -696,7 +642,6 @@ export default function DrillLibrary() {
                 .from('drill_library')
                 .update({
                     name: form.name,
-                    duration_mins: form.duration_mins ? parseInt(form.duration_mins) : null,
                     description: form.description,
                     notes: form.notes || null,
                     level: form.level,
@@ -739,10 +684,8 @@ export default function DrillLibrary() {
         setSelectedDrill(null);
     };
 
-    // ── Loading ──
     if (isLoading) return <LOADING_OVERLAY caption="drill library" />;
 
-    // ── Detail view ──
     if (view === 'detail' && selectedDrill) {
         return (
             <>
@@ -778,7 +721,6 @@ export default function DrillLibrary() {
         );
     }
 
-    // ── List view ──
     return (
         <>
             <div id="drill-library-page">
@@ -807,7 +749,6 @@ export default function DrillLibrary() {
                     </div>
                 )}
 
-                {/* Stats */}
                 <div id="drill-stats-row">
                     <div className="drill-stat-card">
                         <span className="drill-stat-label">Total Drills</span>
@@ -839,7 +780,6 @@ export default function DrillLibrary() {
                     </div>
                 </div>
 
-                {/* Main panel */}
                 <div id="drill-main-panel">
                     <div id="drill-toolbar">
                         <div id="drill-search-wrapper">
@@ -855,7 +795,6 @@ export default function DrillLibrary() {
                             />
                         </div>
 
-                        {/* Tag filter chips */}
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                             <button
                                 style={{
