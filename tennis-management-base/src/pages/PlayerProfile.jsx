@@ -9,18 +9,18 @@ export default function PlayerProfile() {
     // where the functions go
 
 
-    async function fetchCoaches() {
+    async function fetchPlayers() {
         const { data, error } = await supabase
             .from('signin_details')
             .select('*')
-            .eq('role', 'coach');
+            .eq('role', 'player');
 
         if (error) {
-            console.log("Error when fetching coaches: ", error.message);
-            setCoaches([]);
+            console.log("Error when fetching players: ", error.message);
+            setPlayers([]);
         } else {
-            setCoaches(data);
-            console.log("coaches", coaches);
+            setPlayers(data);
+            console.log("players", players);
         }
     }
 
@@ -36,7 +36,7 @@ export default function PlayerProfile() {
                     <div class="left">
 
                         <div class="users-name">
-                            <h3>Mihir Patel</h3> {/*get user's name and insert here */}
+                            <h3>Tinara Smith</h3> {/*get user's name and insert here */}
                         </div>
                         <div class="user-type">Player</div>
 
@@ -44,7 +44,10 @@ export default function PlayerProfile() {
                     <div class="right">
                         <ul class="listOfButtons">
                             {/* <li><btn class="profile-btn">Edit Profile Image</btn></li> */}
-                            <li><btn class="profile-btn">Update Details</btn></li>
+                            {/* <li><btn class="profile-btn">Update Details</btn></li> */}
+                            <li><btn class="profile-btn">Update Strengths</btn></li>
+                            <li><btn class="profile-btn">Update Improvement Points</btn></li>
+
                         </ul>
                     </div>
                 </div>
@@ -66,7 +69,7 @@ export default function PlayerProfile() {
                         <h2 class="content-header">STATS</h2>
 
                         <ul class="content-list">
-                            <li>Coach: Kent Green</li> {/*Insert name of coach from datbase there */}
+                            <li>Coach: Mihir Patel</li> {/*Insert name of coach from datbase there */}
                             <li>Dominant Hand: Right</li>
                             <li>Strengths: Forehand</li>
                             <li>Improvement Points: Backhand</li>
