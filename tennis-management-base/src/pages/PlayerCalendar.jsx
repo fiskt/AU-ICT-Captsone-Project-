@@ -1,25 +1,30 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { PLAYER_CALENDAR } from '../Components/PlayerCalendarComponents.jsx';
+import { CALENDAR, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
+import { USERS_LIST, OTHER_CALENDARS, SESSION_DETAILS_DRILLS } from '../Components/OtherUsersComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
-import { DateTime, Duration } from 'luxon';
+import { useCurrentUser } from '../hooks/useCurrentUser.jsx';
+
 import { createClient } from '@supabase/supabase-js';
+import { DateTime, Duration } from 'luxon';
+import { PLAYER_CALENDAR } from '../Components/PlayerCalendarComponents.jsx';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
-export default function PlayerCalendar() {
-    const sessionEditorRef = useRef(null);
+export default function CoachCalendar() {
+    const { userId: currentUserID, isLoading: authLoading } = useCurrentUser();
 
-    // auto save current session inputs in local storage and restore the saved inputs
-    const [sessionSettings, setSessionSettings] = useState(() => {
-        const savedDraft = localStorage.getItem('session_creator_draft');
-        return savedDraft ? JSON.parse(savedDraft) : {
-            sessionName: "Session Name",
-            sessionDuration: "01:00:00",
-            sessionNotes: "",
-            sessionStart: "",
-            sessionEnd: ""
-        };
-    });
+    const sessionEditorRef = useRef(null);
+    const calendarRef = useRef(null);
+    const [showSessionDetails, setShowSessionDetails] = useState(false);
+    const [selectedSession, setSelectedSession] = useState(null);
+
+    const [calendarEvents, setCalendarEvents] = useState([]);
+
+    const [coaches, setCoaches] = useState([]);
+    const [players, setPlayers] = useState([]);
+
+    const [selectedSessionPeople, setSelectedSessionPeople] = useState([]);
+    const [selectedSessionDrills, setSelectedSessionDrills] = useState([]);
 
     // detecting mobile window size
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -34,20 +39,27 @@ export default function PlayerCalendar() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // current user
-    let currentUserID = 'b8d09d7e-e6cc-4461-a92c-bc5edaa49386';
+    useEffect(() => {
+        const calendarApi = calendarRef.current?.getApi();
+        if (!calendarApi) return;
 
-    const calendarRef = useRef(null);
-    const [showSessionDetails, setShowSessionDetails] = useState(false);
-    const [selectedSession, setSelectedSession] = useState(null);
+        calendarApi.changeView(isMobile ? "timeGridDay" : "dayGridMonth");
+        calendarApi.updateSize();
+    }, [isMobile]);
 
-    const [calendarEvents, setCalendarEvents] = useState([]);
+    async function fetchSelectedSessionPeople() {
+        const { data, error } = await supabase
+            .from('signin_details')
+            .select(`
+                *,
+                session_people!inner(session_id)
+            `)
+            .eq('session_people.session_id', selectedSession.id);
 
-    const [coaches, setCoaches] = useState([]);
-    const [players, setPlayers] = useState([]);
-
-    const [selectedSessionCoaches, setSelectedSessionCoaches] = useState([]);
-    const [selectedSessionPlayers, setSelectedSessionPlayers] = useState([]);
+        if (!error) {
+            setSelectedSessionPeople(data);
+        }
+    }
 
     async function fetchPlayers() {
         const { data, error } = await supabase
@@ -79,123 +91,17 @@ export default function PlayerCalendar() {
         }
     }
 
-    async function fetchSessionCoaches(sessionId) {
-        const { data, error } = await supabase
-            .from('session_people')
-            .select(`
-                user_id,
-                signin_details!user_id ( role )    
-            `)
-            .eq('session_id', sessionId)
-            .eq('signin_details.role', 'coach');
-
-        if (error) {
-            console.log("Error when fetching selected session coaches: ", error.message);
-            return [];
-        } else {
-            return data.map(item => item.user_id);
-        }
-    }
-
-    async function fetchSessionPlayers(sessionId) {
-        const { data, error } = await supabase
-            .from('session_people')
-            .select(`
-                user_id,
-                signin_details!user_id ( role )
-            `)
-            .eq('session_id', sessionId)
-            .eq('signin_details.role', 'player');
-
-        if (error) {
-            console.log("Error when fetching selected session players: ", error.message);
-            return [];
-        } else {
-            return data.map(item => item.user_id);
-        }
-    }
-
-    // Times for mobile session-details 
-    const mobileSessionCreatorTimes = [
-        { name: "05:00", val: "05:00:00" },
-        { name: "05:30", val: "05:30:00" },
-        { name: "06:00", val: "06:00:00" },
-        { name: "06:30", val: "06:30:00" },
-        { name: "07:00", val: "07:00:00" },
-        { name: "07:30", val: "07:30:00" },
-        { name: "08:00", val: "08:00:00" },
-        { name: "08:30", val: "08:30:00" },
-        { name: "09:00", val: "09:00:00" },
-        { name: "09:30", val: "09:30:00" },
-        { name: "10:00", val: "10:00:00" },
-        { name: "10:30", val: "10:30:00" },
-        { name: "11:00", val: "11:00:00" },
-        { name: "11:30", val: "11:30:00" },
-        { name: "12:00", val: "12:00:00" },
-        { name: "12:30", val: "12:30:00" },
-        { name: "13:00", val: "13:00:00" },
-        { name: "13:30", val: "13:30:00" },
-        { name: "14:00", val: "14:00:00" },
-        { name: "14:30", val: "14:30:00" },
-        { name: "15:00", val: "15:00:00" },
-        { name: "15:30", val: "15:30:00" },
-        { name: "16:00", val: "16:00:00" },
-        { name: "16:30", val: "16:30:00" },
-        { name: "17:00", val: "17:00:00" },
-        { name: "17:30", val: "17:30:00" },
-        { name: "18:00", val: "18:00:00" },
-        { name: "18:30", val: "18:30:00" },
-        { name: "19:00", val: "19:00:00" },
-        { name: "19:30", val: "19:30:00" },
-        { name: "20:00", val: "20:00:00" },
-        { name: "20:30", val: "20:30:00" },
-        { name: "21:00", val: "21:00:00" },
-    ];
-
-    const [mobileSessionStart, setMobileSessionStart] = useState("05:00:00");
-    const [mobileSessionEnd, setMobileSessionEnd] = useState("06:00:00");
-
-    const mobileSessionStartIndex = mobileSessionCreatorTimes.findIndex(time => time.val === mobileSessionStart);
-
-    const validEndTimes = mobileSessionCreatorTimes.slice(mobileSessionStartIndex + 1);
-
-    useEffect(() => {
-        if (validEndTimes.length > 0 && !validEndTimes.find(t => t.val === mobileSessionEnd)) {
-            setMobileSessionEnd(validEndTimes[0].val);
-            updateSessionField('sessionEnd', validEndTimes[0].val);
-        }
-    }, [mobileSessionStart]);
-
-    // Drill library
-    const [drills, setDrills] = useState([]);
-    const [selectedDrills, setSelectedDrills] = useState([]);
-    const [selectedSessionDrills, setSelectedSessionDrills] = useState([]);
-
-    async function fetchDrills() {
+    async function fetchSelectedSessionDrills() {
         const { data, error } = await supabase
             .from('drill_library')
-            .select('*');
+            .select(`
+                *, 
+                session_drills!inner(session_id)
+            `)
+            .eq('session_drills.session_id', selectedSession.id);
 
-        if (error) {
-            console.log("Error when fetching drills: ", error.message);
-            setDrills([]);
-        } else {
-            setDrills(data);
-        }
-    }
-
-    async function fetchSessionDrills() {
-        const { data, error } = await supabase
-            .from('session_drills')
-            .select('drill_id, order')
-            .eq('session_id', selectedSession.id)
-            .order('order', { ascending: true });
-        
         if (!error) {
-            console.log("Error when fetching drills: ", error.message);
-            setSelectedDrills([]);
-        } else {
-            setSelectedDrills(data);
+            setSelectedSessionDrills(data);
         }
     }
 
@@ -212,8 +118,9 @@ export default function PlayerCalendar() {
 
     async function fetchCalendarData() {
         setIsDataLoading(true);
+
+        let sessionEvents = [];
         
-        // fetch data from the database
         const { data, error } = await supabase
             .from('sessions')
             .select(`
@@ -222,40 +129,67 @@ export default function PlayerCalendar() {
             `)
             .eq('session_people.user_id', currentUserID);
 
-        // set the session data for the calendar events
-        const session = (data || []).map(ses => {
-            const startTime = DateTime.fromISO(ses.start_datetime);
-            const endTime = DateTime.fromISO(ses.end_datetime);
-            const duration = Duration.fromISOTime(ses.duration);
-            return {
-                id: ses.id,
-                title: ses.name,
-                start: startTime.toISO(),
-                end: endTime.toISO(),
-                extendedProps: {
-                    type: 'session',
-                    duration: duration,
-                    notes: ses.notes
+        if (!error) {
+            sessionEvents = (data || []).map(ses => {
+                const startTime = DateTime.fromISO(ses.start_datetime);
+                const endTime = DateTime.fromISO(ses.end_datetime);
+                const duration = Duration.fromISOTime(ses.duration);
+                return {
+                    id: ses.id,
+                    title: ses.name,
+                    start: startTime.toISO(),
+                    end: endTime.toISO(),
+                    extendedProps: {
+                        type: 'session',
+                        duration: duration,
+                        notes: ses.notes
+                    }
                 }
-            };
-        })
+            });
+        }
 
-        setCalendarEvents(session);
+        setCalendarEvents(sessionEvents);
         setIsDataLoading(false);
     }
 
     useEffect(() => {
-        fetchDrills();
-        fetchPlayers();
-        fetchCoaches();
-        fetchCalendarData();
+        if (currentUserID) {
+            fetchCalendarData();
+        } else {
+            setCalendarEvents([]);
+        }
+    }, [currentUserID]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            await Promise.all([
+                fetchSelectedSessionPeople(),
+                fetchSelectedSessionDrills()
+            ]);
+        };
+        if (selectedSession) {
+            fetchData();
+        }
+    }, [fetchSelectedSessionPeople, fetchSelectedSessionDrills]);
+
+    useEffect(() => {
+        const initializeUsers = async () => {
+            setIsDataLoading(true);
+            await Promise.all([
+                fetchCoaches(),
+                fetchPlayers()
+            ]);
+            setIsDataLoading(false);
+        };
+
+        initializeUsers();
     }, []);
 
     return (
         <>
             {/* Loading overlay */}
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
-
+            
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
                 <PLAYER_CALENDAR 
@@ -268,9 +202,8 @@ export default function PlayerCalendar() {
                     }}
 
                     selectedSession={selectedSession}
-                    
-                    selectedCoaches={selectedSessionCoaches}
-                    selectedPlayers={selectedSessionPlayers} 
+
+                    selectedUser={currentUserID}
 
                     isMobile={isMobile}
 
@@ -278,10 +211,10 @@ export default function PlayerCalendar() {
                 />
             </div>
             
-            {/* Session editor */}
+            {/* Session details */}
             { selectedSession && showSessionDetails && !isMobile && (
                 <div 
-                    id="session-details-container" 
+                    class="session-details-container" 
                     onClick={(e) => {
                         if (sessionEditorRef.current && !sessionEditorRef.current.contains(e.target)) {
                             setShowSessionDetails(false);
@@ -289,33 +222,40 @@ export default function PlayerCalendar() {
                         }
                     }}
                 >
-                    <div id="session-details" ref={sessionEditorRef}>
-                        <div id="session-details-top-left">
-                            <h2 id="session-details-header">Session Details</h2>
+                    <div class="session-details" ref={sessionEditorRef}>
+                        <div class="session-details-top-left">
+                            <h2 class="session-details-header">Session Details</h2>
                         </div>
-                        <div id="session-details-top-right">
-                            <button id="close-session-details" onClick={() => {
-                                setShowSessionDetails(false);
-                                setSelectedSession(null);
-                            }}>Close</button>
+                        <div class="session-details-top-right">
+                            <button 
+                                class="drill-icon-btn"
+                                onClick={() => {
+                                    setShowSessionDetails(false);
+                                    setSelectedSession(null);
+                                }}
+                            >
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
                         </div>
 
-                        <div id="session-details-middle-left">
+                        <div class="session-details-middle-left">
                             <div class="input-container">
                                 <span class="input-container-label">NAME</span>
                                 <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
                             </div>
-
-                            <div class="input-container">
-                                <span class="input-container-label">NOTES</span>
-                                <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
-                            </div>
+                            {selectedSession.extendedProps.notes.length > 0 && (
+                                <div class="input-container">
+                                    <span class="input-container-label">NOTES</span>
+                                    <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
+                                </div>
+                            )}
                         </div>
-
-                        <div id="session-details-middle-middle">
-                            <div class="input-container" id="session-details-people-container">
+                        <div class="session-details-middle-middle">
+                            <div class="input-container session-details-people-container">
                                 <span class="input-container-label">PEOPLE</span>
-                                <div id="session-details-people">
+                                <div class="session-details-people">
                                     <div>Coaches</div>
                                     <ul>
                                         {selectedSessionPeople
@@ -338,13 +278,17 @@ export default function PlayerCalendar() {
                             </div>
                         </div>
 
-                        <div id="session-details-middle-right">
-                            <div class="input-container" id="session-details-drills-container">
+                        <div class="session-details-middle-right">
+                            <div class="input-container session-details-drills-container">
                                 <span class="input-container-label">DRILLS</span>
-                                <div id="session-details-drills">
-                                    <SESSION_DETAILS_DRILLS
-                                        selectedDrills={selectedSessionDrills}
-                                    />
+                                <div class="session-details-drills">
+                                    {selectedSessionDrills.length > 0 && (
+                                        <SESSION_DETAILS_DRILLS
+                                            selectedDrills={selectedSessionDrills}
+                                        />
+                                    )} {selectedSessionDrills.length === 0 && (
+                                        <span>No drills selected for this session.</span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -353,11 +297,11 @@ export default function PlayerCalendar() {
             )}
 
             { isMobile && showSessionDetails && selectedSession && (
-                <div id="mobile-session-details-container">
-                    <div id="mobile-session-details">
-                        <div id="mobile-session-details-top">
+                <div class="mobile-session-details-container">
+                    <div class="mobile-session-details">
+                        <div class="mobile-session-details-top">
                             <h2 class="content-header">Session Details</h2>
-                            <button id="mobile-close-session-details" onClick={() => {
+                            <button class="mobile-close-session-details" onClick={() => {
                                 setShowSessionDetails(false);
                                 setSelectedSession(null);
                             }}>Close</button>
@@ -367,18 +311,17 @@ export default function PlayerCalendar() {
                             <span class="input-container-label">NAME</span>
                             <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
                         </div>
-
                         <div class="input-container">
                             <span class="input-container-label">NOTES</span>
                             <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
                         </div>
 
-                        <div class="input-container" id="mobile-session-details-people-container">
+                        <div class="input-container mobile-session-details-people-container">
                             <span class="input-container-label">PEOPLE</span>
-                            <div id="mobile-session-details-people">
+                            <div class="mobile-session-details-people">
                                 <div>Coaches</div>
                                 <ul>
-                                    {selectedSessionCoaches
+                                    {selectedSessionPeople
                                         .filter(coach => coach.role === 'coach')
                                         .map(coach => (
                                             <li key={coach.id}>{coach.first_name} {coach.last_name}</li>
@@ -387,7 +330,7 @@ export default function PlayerCalendar() {
                                 </ul>
                                 <div>Players</div>
                                 <ul>
-                                    {selectedSessionPlayers
+                                    {selectedSessionPeople
                                         .filter(player => player.role === 'player')
                                         .map(player => (
                                             <li key={player.id}>{player.first_name} {player.last_name}</li>
@@ -397,9 +340,9 @@ export default function PlayerCalendar() {
                             </div>
                         </div>
 
-                        <div class="input-container" id="session-details-drills-container">
+                        <div class="input-container session-details-drills-container">
                             <span class="input-container-label">DRILLS</span>
-                            <div id="session-details-drills">
+                            <div class="session-details-drills">
                                 <SESSION_DETAILS_DRILLS
                                     selectedDrills={selectedSessionDrills}
                                 />

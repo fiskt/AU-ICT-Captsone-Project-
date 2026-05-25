@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import logo from '/logo.png';
 import background from '../assets/background.webp';
+import emailIcon from '../assets/email.png';
 
 const checks = [
   { id: 'length',  label: 'At least 8 characters',          test: (p) => p.length >= 8 },
@@ -68,11 +69,22 @@ export default function Register() {
     const { data, error: authError } = await supabase.auth.signUp({
       email, password,
       options: {
-        emailRedirectTo: 'http://localhost:5173/auth/callback',
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: { role, first_name: firstName, last_name: lastName },
       },
     });
     if (authError) { setError(authError.message); setLoading(false); return; }
+
+    // Empty identities array means email already exists in Supabase
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      setError('This email is already registered. Please log in instead.');
+      setLoading(false);
+      return;
+    }
+
+    // data.user can be null when confirmation pending — still show success screen
+    if (!data.user) { setLoading(false); setRegistered(true); return; }
+
     await supabase.from('signin_details').insert({ id: data.user.id, first_name: firstName, last_name: lastName, email, role });
     setLoading(false);
     setRegistered(true);
@@ -89,7 +101,7 @@ export default function Register() {
             <h1 style={{ margin: 0, fontFamily: 'Bebas, sans-serif', fontSize: titleSize, color: '#fff', letterSpacing: '2px' }}>CHECK YOUR EMAIL</h1>
           </div>
           <div style={{ backgroundColor: '#fff', padding: cardPad }}>
-            <div style={{ fontSize: '48px', textAlign: 'center', marginBottom: '16px' }}>📧</div>
+            <img src={emailIcon} alt="Email" style={{ width: '64px', height: '64px', objectFit: 'contain', display: 'block', margin: '0 auto 16px' }} />
             <p style={{ fontSize: '14px', fontFamily: 'DM Sans Light, sans-serif', color: '#000', textAlign: 'center', marginBottom: '12px' }}>
               We've sent a confirmation link to <strong>{email}</strong>.
             </p>

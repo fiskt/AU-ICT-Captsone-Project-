@@ -274,60 +274,6 @@ select::picker(select) {
     transition: background-color 0.2s ease-in-out;
 }
 
-.availability-event {
-    background-color: color-mix(in srgb, var(--sidebar-bg-color), transparent 80%);
-    border-radius: 0;
-    border-color: color-mix(in srgb, var(--sidebar-bg-color), transparent 80%);
-    
-    background-image: repeating-linear-gradient(
-        -45deg,
-        transparent,
-        transparent 10px,
-        #00000025 10px,
-        #00000025 20px
-    ) !important;
-}
-
-.availability-event .fc-event-time {
-    display: none !important;
-}
-
-.availability-event .fc-event-title {
-    text-align: center;
-    width: 100%;
-    color: #000000;
-    opacity: 100% !important;
-}
-
-.other-avail-event {
-    background-color: color-mix(in srgb, var(--sidebar-bg-color), transparent 80%);
-    border-radius: 0;
-    border-color: color-mix(in srgb, var(--sidebar-bg-color), transparent 80%);
-    
-    background-image: repeating-linear-gradient(
-        -45deg,
-        transparent,
-        transparent 10px,
-        green 10px,
-        green 20px
-    ) !important;
-}
-
-.other-avail-event .fc-event-time,
-.other-avail-event .fc-event-title {
-    display: none !important;
-}
-
-
-.delete-avail-btn {
-    font-size: 50%;
-    text-align: center;
-}
-
-.session-people span {
-    color: black;
-}
-
 .calendar-trash-zone {
     width: 200px;
     height: 70px;

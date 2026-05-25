@@ -151,10 +151,10 @@ export const OTHER_CALENDARS = forwardRef(({
     const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
     const headerToolBar = isMobile 
         ? {
-            start: 'prev,next today', 
+            start: 'prev,next', 
             end: 'dayGridMonth,timeGridDay'
         } : {
-            start: 'prev,next today', 
+            start: 'prev,next', 
             end: 'dayGridMonth,timeGridWeek'
         }   
     
@@ -203,7 +203,6 @@ export const OTHER_CALENDARS = forwardRef(({
                     slotMaxTime={"22:00:00"}
                     expandRows={true}
                     eventClick={(info) => {
-                        if (info.event.extendedProps.type === 'availability') return;
                         onSessionClick(info.event);
                     }}
                     headerToolbar={headerToolBar}
@@ -213,14 +212,6 @@ export const OTHER_CALENDARS = forwardRef(({
                         const duration = arg.event.end - arg.event.start;
                         if (duration === 1800000) {
                             classes.push('short-event');
-                        }
-
-                        if (arg.event.extendedProps.type === 'availability') {
-                            classes.push('availability-event');
-                        } 
-
-                        if (arg.event.extendedProps.type === 'other_availability') {
-                            classes.push('other-avail-event');
                         }
 
                         if (
@@ -244,7 +235,7 @@ export const OTHER_CALENDARS = forwardRef(({
                     eventDidMount={(info) => {
                         if (isMobile) return;
 
-                        if (info.event.extendedProps.type !== 'availability') {
+                        if (info.event.extendedProps.type === 'session') {
                             const duration = info.event.extendedProps.duration || "-";
                             const notes = info.event.extendedProps.notes || "No notes";
                             tippy(info.el, {

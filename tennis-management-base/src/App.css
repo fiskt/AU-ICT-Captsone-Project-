@@ -54,7 +54,7 @@ body {
   height: 100%;
 }
 
-/* Team's original button styles — preserved exactly */
+/* original button styles */
 btn, button {
   border-radius: 8px;
   border: 2px solid var(--content-input-border-color);
@@ -256,11 +256,10 @@ btn, button:hover {
 /* User card in sidebar bottom */
 #sidebar-bottom {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 10%;
+  flex-direction: column;
   position: relative;
-  padding: 0 12px;
+  padding: 10px 10px 10px 10px;
+  border-top: 0.3px solid var(--sidebar-body-color);
   isolation: isolate;
 }
 
@@ -274,8 +273,8 @@ btn, button:hover {
 }
 
 .sidebar-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   background-color: var(--accent-color);
   border-radius: 50%;
   display: flex;
@@ -1910,4 +1909,69 @@ btn, button:hover {
   height: 100vh;
   overflow: hidden;
   background-color: var(--main-bg-color);
+}
+
+
+.pt-spider-card {
+  background-color: var(--content-bg-color);
+  border: 2px solid var(--topbar-accent-color);
+  border-radius: 8px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+ 
+.pt-spider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+ 
+.pt-spider-summary {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+ 
+.pt-spider-chart-wrap {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  /* Constrain height so the chart isn't enormous */
+  aspect-ratio: 1 / 1;
+  position: relative;
+}
+ 
+.pt-spider-note {
+  font-family: 'DM Mono Light', sans-serif;
+  font-size: 10px;
+  color: var(--content-input-placeholder-color);
+  text-align: center;
+  letter-spacing: 0.3px;
+  margin: 0;
+}
+ 
+.pt-spider-empty {
+  background-color: var(--content-bg-color);
+  border: 2px solid var(--topbar-accent-color);
+  border-radius: 8px;
+  padding: 28px 24px;
+  text-align: center;
+  font-family: 'DM Sans Light', sans-serif;
+  font-size: 13px;
+  color: var(--content-subhead-color);
+}
+ 
+@media (max-width: 768px) {
+  .pt-spider-chart-wrap {
+    max-width: 100%;
+  }
+ 
+  .pt-spider-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

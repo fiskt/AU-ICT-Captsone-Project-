@@ -1,9 +1,17 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../supabaseClient";
+import {
+    Chart as ChartJS,
+    RadialLinearScale,
+    PointElement,
+    LineElement,
+    Filler,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+import { Radar } from 'react-chartjs-2';
 
-// ═══════════════════════════════════════════════════════════
-// BENCHMARK DATA — from Tennis Australia Fitness Testing PDF
-// ═══════════════════════════════════════════════════════════
+ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
 const BENCHMARKS = {
     male: {
@@ -72,53 +80,281 @@ const BENCHMARKS = {
     },
 };
 
-// ── Rating calculator ─────────────────────────────────────
 function getRating(value, metric, gender, phv) {
     if (value === null || value === undefined || value === '') return null;
     const bench = BENCHMARKS[gender]?.[phv]?.[metric];
     if (!bench) return null;
-
     const v = parseFloat(value);
     const { lower_is_better } = bench;
-
     if (lower_is_better) {
         if (bench.excellent[1] !== null && v < bench.excellent[1]) return 'excellent';
-        if (bench.good[1] !== null && v <= bench.good[1])          return 'good';
-        if (bench.average[1] !== null && v <= bench.average[1])    return 'average';
+        if (bench.good[1] !== null && v <= bench.good[1]) return 'good';
+        if (bench.average[1] !== null && v <= bench.average[1]) return 'average';
         return 'poor';
     } else {
         if (bench.excellent[0] !== null && v >= bench.excellent[0]) return 'excellent';
-        if (bench.good[0] !== null && v >= bench.good[0])           return 'good';
-        if (bench.average[0] !== null && v >= bench.average[0])     return 'average';
+        if (bench.good[0] !== null && v >= bench.good[0]) return 'good';
+        if (bench.average[0] !== null && v >= bench.average[0]) return 'average';
         return 'poor';
     }
 }
 
-// ── Rating badge component ────────────────────────────────
 function RatingBadge({ rating }) {
     if (!rating) return <span className="pt-rating pt-rating-na">N/A</span>;
     return <span className={`pt-rating pt-rating-${rating}`}>{rating}</span>;
 }
 
-// ── Metric display row ────────────────────────────────────
 function MetricRow({ label, value, unit, metric, gender, phv }) {
     const rating = value !== null && value !== undefined && value !== ''
-        ? getRating(value, metric, gender, phv)
-        : null;
+        ? getRating(value, metric, gender, phv) : null;
     return (
         <div className="pt-metric-row">
             <span className="pt-metric-label">{label}</span>
             <span className="pt-metric-value">
                 {value !== null && value !== undefined && value !== ''
-                    ? `${value}${unit ? ' ' + unit : ''}`
-                    : '—'}
+                    ? `${value}${unit ? ' ' + unit : ''}` : '—'}
             </span>
             <RatingBadge rating={rating} />
         </div>
     );
 }
 
-// ── Empty state ───────────────────────────────────────────
+function metricToScore(value, metric, gender, phv) {
+    if (value === null || value === undefined || value === '') return null;
+    const rating = getRating(value, metric, gender, phv);
+    if (!rating) return null;
+    const bench = BENCHMARKS[gender]?.[phv]?.[metric];
+    if (!bench) return null;
+    const v = parseFloat(value);
+    const { lower_is_better } = bench;
+    if (lower_is_better) {
+        const excMax = bench.excellent[1];
+        const goodMax = bench.good[1];
+        const avgMax = bench.average[1];
+        if (excMax !== null && v < excMax) {
+            const ratio = Math.max(0, 1 - (v / excMax) * 0.5);
+            return Math.min(100, Math.round(85 + ratio * 15));
+        }
+        if (goodMax !== null && v <= goodMax) {
+            const range = goodMax - (excMax ?? goodMax * 0.9);
+            const ratio = range > 0 ? 1 - ((v - (excMax ?? goodMax * 0.9)) / range) : 0.5;
+            return Math.round(70 + ratio * 15);
+        }
+        if (avgMax !== null && v <= avgMax) {
+            const range = avgMax - (goodMax ?? avgMax * 0.9);
+            const ratio = range > 0 ? 1 - ((v - (goodMax ?? avgMax * 0.9)) / range) : 0.5;
+            return Math.round(40 + ratio * 30);
+        }
+        return 35;
+    } else {
+        const excMin = bench.excellent[0];
+        const goodMin = bench.good[0];
+        const avgMin = bench.average[0];
+        if (excMin !== null && v >= excMin) {
+            const ratio = Math.min(1, (v - excMin) / (excMin * 0.15 + 1));
+            return Math.min(100, Math.round(85 + ratio * 15));
+        }
+        if (goodMin !== null && v >= goodMin) {
+            const range = (excMin ?? goodMin * 1.1) - goodMin;
+            const ratio = range > 0 ? (v - goodMin) / range : 0.5;
+            return Math.round(70 + ratio * 15);
+        }
+        if (avgMin !== null && v >= avgMin) {
+            const range = (goodMin ?? avgMin * 1.1) - avgMin;
+            const ratio = range > 0 ? (v - avgMin) / range : 0.5;
+            return Math.round(40 + ratio * 30);
+        }
+        return 35;
+    }
+}
+
+function useIsMobile() {
+    const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+    useEffect(() => {
+        const handler = () => setIsMobile(window.innerWidth < 768);
+        window.addEventListener('resize', handler);
+        return () => window.removeEventListener('resize', handler);
+    }, []);
+    return isMobile;
+}
+
+function SpiderGraph({ test }) {
+    const isMobile = useIsMobile();
+    const g = test.gender;
+    const p = test.phv_stage;
+
+    const allMetrics = [
+        { key: 'sprint_5m',         label: isMobile ? '5m' : '5m Speed'      },
+        { key: 'sprint_10m',        label: isMobile ? '10m' : '10m Speed'     },
+        { key: 'agility_505_left',  label: isMobile ? 'Agil L' : 'Agility (L)'   },
+        { key: 'agility_505_right', label: isMobile ? 'Agil R' : 'Agility (R)'   },
+        { key: 'vertical_jump',     label: 'Jump'          },
+        { key: 'front_plank',       label: 'Plank'         },
+        { key: 'beep_test',         label: isMobile ? 'Beep' : 'Beep Test'     },
+        ...(test.phv_stage === 'post' ? [{ key: 'yoyo_test', label: 'Yo-Yo' }] : []),
+    ];
+
+    const metrics = allMetrics.filter(m =>
+        test[m.key] !== null && test[m.key] !== undefined && test[m.key] !== ''
+    );
+
+    if (metrics.length < 3) {
+        return (
+            <div className="pt-spider-empty">
+                <span>Enter at least 3 metrics to display the performance chart.</span>
+            </div>
+        );
+    }
+
+    const scores = metrics.map(m => metricToScore(test[m.key], m.key, g, p) ?? 0);
+    const labels = metrics.map(m => m.label);
+
+    const ratingCounts = { excellent: 0, good: 0, average: 0, poor: 0 };
+    scores.forEach(s => {
+        if (s >= 85) ratingCounts.excellent++;
+        else if (s >= 70) ratingCounts.good++;
+        else if (s >= 40) ratingCounts.average++;
+        else ratingCounts.poor++;
+    });
+
+    const data = {
+        labels,
+        datasets: [
+            {
+                label: 'Performance Score',
+                data: scores,
+                backgroundColor: 'rgba(236, 120, 66, 0.15)',
+                borderColor: '#ec7842',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#ec7842',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: isMobile ? 4 : 5,
+                pointHoverRadius: isMobile ? 6 : 7,
+                pointHoverBackgroundColor: '#ec7842',
+                pointHoverBorderColor: '#ffffff',
+                pointHoverBorderWidth: 2,
+            },
+            {
+                label: 'Good Threshold',
+                data: metrics.map(() => 70),
+                backgroundColor: 'transparent',
+                borderColor: 'rgba(100, 116, 139, 0.3)',
+                borderWidth: 1.5,
+                borderDash: [4, 4],
+                pointRadius: 0,
+                pointHoverRadius: 0,
+            },
+        ],
+    };
+
+    const options = {
+        responsive: true,
+        maintainAspectRatio: true,
+        interaction: { mode: 'nearest' },
+        plugins: {
+            legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                    font: { family: "'DM Sans Light', sans-serif", size: isMobile ? 10 : 11 },
+                    color: '#6b6760',
+                    usePointStyle: true,
+                    pointStyleWidth: 8,
+                    padding: isMobile ? 10 : 16,
+                    filter: (item) => item.text !== 'Good Threshold',
+                },
+            },
+            tooltip: {
+                backgroundColor: '#1a1917',
+                titleFont: { family: "'DM Mono Light', sans-serif", size: 11 },
+                bodyFont: { family: "'DM Sans Light', sans-serif", size: 12 },
+                padding: 12,
+                cornerRadius: 8,
+                callbacks: {
+                    title: (items) => items[0]?.label || '',
+                    label: (item) => {
+                        if (item.datasetIndex === 1) return null;
+                        const score = item.raw;
+                        const rating =
+                            score >= 85 ? 'Excellent' :
+                            score >= 70 ? 'Good' :
+                            score >= 40 ? 'Average' : 'Poor';
+                        const metricKey = metrics[item.dataIndex]?.key;
+                        const rawValue = test[metricKey];
+                        const bench = BENCHMARKS[g]?.[p]?.[metricKey];
+                        const unit = bench?.lower_is_better ? 'sec' :
+                            metricKey === 'vertical_jump' ? 'cm' :
+                            metricKey === 'front_plank' ? 'min' : '';
+                        return [
+                            ` Score: ${score}/100 (${rating})`,
+                            ` Value: ${rawValue}${unit ? ' ' + unit : ''}`,
+                        ];
+                    },
+                    labelColor: () => ({
+                        borderColor: '#ec7842',
+                        backgroundColor: '#ec7842',
+                        borderRadius: 3,
+                    }),
+                },
+            },
+        },
+        scales: {
+            r: {
+                min: 0,
+                max: 100,
+                ticks: {
+                    stepSize: 25,
+                    font: { family: "'DM Mono Light', sans-serif", size: isMobile ? 7 : 9 },
+                    color: '#a09d96',
+                    backdropColor: 'transparent',
+                    callback: (value) => {
+                        if (value === 0) return '';
+                        if (value === 40) return 'Avg';
+                        if (value === 70) return 'Good';
+                        if (value === 100) return 'Exc';
+                        return '';
+                    },
+                },
+                grid: {
+                    color: (ctx) => ctx.tick?.value === 70
+                        ? 'rgba(100, 116, 139, 0.35)'
+                        : 'rgba(221, 219, 214, 0.6)',
+                    lineWidth: (ctx) => ctx.tick?.value === 70 ? 1.5 : 1,
+                },
+                angleLines: { color: 'rgba(221, 219, 214, 0.8)', lineWidth: 1 },
+                pointLabels: {
+                    font: { family: "'DM Mono Light', sans-serif", size: isMobile ? 9 : 10 },
+                    color: '#2e2c29',
+                    padding: isMobile ? 4 : 8,
+                },
+            },
+        },
+    };
+
+    return (
+        <div className="pt-spider-card">
+            <div className="pt-spider-header">
+                <div className="pt-section-title" style={{ marginBottom: 0, border: 'none', paddingBottom: 0 }}>
+                    Performance Overview
+                </div>
+                <div className="pt-spider-summary">
+                    {ratingCounts.excellent > 0 && <span className="pt-rating pt-rating-excellent">{ratingCounts.excellent} Excellent</span>}
+                    {ratingCounts.good > 0 && <span className="pt-rating pt-rating-good">{ratingCounts.good} Good</span>}
+                    {ratingCounts.average > 0 && <span className="pt-rating pt-rating-average">{ratingCounts.average} Average</span>}
+                    {ratingCounts.poor > 0 && <span className="pt-rating pt-rating-poor">{ratingCounts.poor} Poor</span>}
+                </div>
+            </div>
+            <div className="pt-spider-chart-wrap">
+                <Radar data={data} options={options} />
+            </div>
+            <p className="pt-spider-note">
+                Scores normalised to 0–100. Dashed line = Good threshold (70). Hover each point for details.
+            </p>
+        </div>
+    );
+}
+
 function EmptyState({ onAdd }) {
     return (
         <div className="pt-empty-state">
@@ -140,21 +376,16 @@ function EmptyState({ onAdd }) {
     );
 }
 
-// ── Test Card ─────────────────────────────────────────────
 function TestCard({ test, players, onView, onDelete }) {
     const player = players.find(p => p.id === test.player_id);
     const playerName = player
         ? `${player.first_name || ''} ${player.last_name || ''}`.trim()
         : 'Unknown Player';
-
     const date = new Date(test.test_date).toLocaleDateString('en-AU', {
         day: 'numeric', month: 'short', year: 'numeric'
     });
-
     const phvLabel = { pre: 'Pre-PHV', during: 'During PHV', post: 'Post-PHV' }[test.phv_stage] || test.phv_stage;
     const genderLabel = test.gender === 'male' ? 'Male' : 'Female';
-
-    // Count how many metrics have excellent/good ratings
     const metrics = ['sprint_5m','sprint_10m','agility_505_left','agility_505_right','vertical_jump','front_plank','beep_test','yoyo_test'];
     const ratings = metrics
         .filter(m => test[m] !== null && test[m] !== undefined && test[m] !== '')
@@ -185,9 +416,7 @@ function TestCard({ test, players, onView, onDelete }) {
                     </button>
                 </div>
             </div>
-
             <div className="pt-card-player">{playerName}</div>
-
             <div className="pt-card-summary">
                 <div className="pt-card-score">
                     <span className="pt-card-score-num">{goodCount}</span>
@@ -195,13 +424,10 @@ function TestCard({ test, players, onView, onDelete }) {
                 </div>
                 <span className="pt-card-score-label">Good or Excellent ratings</span>
             </div>
-
-            {/* Sparkline of ratings */}
             <div className="pt-card-ratings-row">
                 {metrics.map(m => {
                     const rating = test[m] !== null && test[m] !== undefined && test[m] !== ''
-                        ? getRating(test[m], m, test.gender, test.phv_stage)
-                        : null;
+                        ? getRating(test[m], m, test.gender, test.phv_stage) : null;
                     return (
                         <div
                             key={m}
@@ -215,28 +441,17 @@ function TestCard({ test, players, onView, onDelete }) {
     );
 }
 
-// ── Test Form Modal ───────────────────────────────────────
 function TestFormModal({ players, onSave, onClose }) {
+    const isMobile = useIsMobile();
     const EMPTY = {
-        player_id: '',
-        test_date: new Date().toISOString().split('T')[0],
-        gender: 'male',
-        phv_stage: 'post',
-        sprint_5m: '',
-        sprint_10m: '',
-        agility_505_left: '',
-        agility_505_right: '',
-        vertical_jump: '',
-        front_plank: '',
-        beep_test: '',
-        yoyo_test: '',
-        notes: '',
+        player_id: '', test_date: new Date().toISOString().split('T')[0],
+        gender: 'male', phv_stage: 'post',
+        sprint_5m: '', sprint_10m: '', agility_505_left: '', agility_505_right: '',
+        vertical_jump: '', front_plank: '', beep_test: '', yoyo_test: '', notes: '',
     };
-
     const [form, setForm] = useState({ ...EMPTY });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
-
     const update = (field, value) => setForm(prev => ({ ...prev, [field]: value }));
 
     const handleSave = async () => {
@@ -282,12 +497,10 @@ function TestFormModal({ players, onSave, onClose }) {
                         </svg>
                     </button>
                 </div>
-
                 <div className="drill-modal-body">
                     {error && <div className="drill-error-banner">{error}</div>}
 
-                    {/* Player + Date */}
-                    <div className="drill-form-row">
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '14px' }}>
                         <div className="drill-form-group">
                             <label className="drill-form-label">Player *</label>
                             <select className="drill-form-select" value={form.player_id} onChange={e => update('player_id', e.target.value)}>
@@ -305,8 +518,7 @@ function TestFormModal({ players, onSave, onClose }) {
                         </div>
                     </div>
 
-                    {/* Gender + PHV */}
-                    <div className="drill-form-row">
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '14px' }}>
                         <div className="drill-form-group">
                             <label className="drill-form-label">Gender *</label>
                             <div className="drill-difficulty-picker">
@@ -329,41 +541,26 @@ function TestFormModal({ players, onSave, onClose }) {
                         </div>
                     </div>
 
-                    {/* Section: Speed */}
-                    <div className="pt-section-label">
-                        <span>1. Court Movement — Speed & Acceleration</span>
-                    </div>
-                    <div className="drill-form-row">
+                    <div className="pt-section-label"><span>1. Court Movement — Speed & Acceleration</span></div>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '14px' }}>
                         <Field label="5m Sprint (sec)" field="sprint_5m" placeholder="e.g. 1.10" hint="Lower is better" />
                         <Field label="10m Sprint (sec)" field="sprint_10m" placeholder="e.g. 2.00" hint="Lower is better" />
                     </div>
 
-                    {/* Section: Agility */}
-                    <div className="pt-section-label">
-                        <span>1. Court Movement — Modified 505 Agility</span>
-                    </div>
-                    <div className="drill-form-row">
+                    <div className="pt-section-label"><span>1. Court Movement — Modified 505 Agility</span></div>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '14px' }}>
                         <Field label="505 Left Foot (sec)" field="agility_505_left" placeholder="e.g. 2.80" hint="Lower is better" />
                         <Field label="505 Right Foot (sec)" field="agility_505_right" placeholder="e.g. 2.80" hint="Lower is better" />
                     </div>
 
-                    {/* Section: Power */}
-                    <div className="pt-section-label">
-                        <span>2. Lower Body Power — CMJ</span>
-                    </div>
+                    <div className="pt-section-label"><span>2. Lower Body Power — CMJ</span></div>
                     <Field label="Vertical Jump (cm)" field="vertical_jump" placeholder="e.g. 55" step="0.5" hint="Higher is better" />
 
-                    {/* Section: Strength */}
-                    <div className="pt-section-label">
-                        <span>3. Strength — Plank Endurance</span>
-                    </div>
+                    <div className="pt-section-label"><span>3. Strength — Plank Endurance</span></div>
                     <Field label="Front Plank (min)" field="front_plank" placeholder="e.g. 4.5" hint="Higher is better" />
 
-                    {/* Section: Aerobic */}
-                    <div className="pt-section-label">
-                        <span>4. Aerobic Endurance</span>
-                    </div>
-                    <div className="drill-form-row">
+                    <div className="pt-section-label"><span>4. Aerobic Endurance</span></div>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '14px' }}>
                         <Field label="Beep Test (level.shuttle)" field="beep_test" placeholder="e.g. 11.4" hint="e.g. 11.4 = Level 11, Shuttle 4" />
                         {showYoyo
                             ? <Field label="Yo-Yo IR1 (level.shuttle)" field="yoyo_test" placeholder="e.g. 21" hint="Post-PHV only" />
@@ -378,13 +575,11 @@ function TestFormModal({ players, onSave, onClose }) {
                         }
                     </div>
 
-                    {/* Notes */}
                     <div className="drill-form-group">
                         <label className="drill-form-label">Notes (optional)</label>
                         <textarea className="drill-form-textarea" placeholder="Any additional observations..." value={form.notes} onChange={e => update('notes', e.target.value)} />
                     </div>
                 </div>
-
                 <div className="drill-modal-footer">
                     <button className="drill-btn drill-btn-ghost" onClick={onClose} disabled={saving}>Cancel</button>
                     <button className="drill-btn drill-btn-primary" onClick={handleSave} disabled={saving}>
@@ -399,12 +594,10 @@ function TestFormModal({ players, onSave, onClose }) {
     );
 }
 
-// ── Delete Confirm Modal ──────────────────────────────────
 function DeleteModal({ test, players, onConfirm, onClose, deleting }) {
     const player = players.find(p => p.id === test?.player_id);
     const name = player ? `${player.first_name || ''} ${player.last_name || ''}`.trim() : 'this player';
     const date = test ? new Date(test.test_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-
     return (
         <div id="drill-modal-overlay">
             <div className="drill-modal">
@@ -437,15 +630,14 @@ function DeleteModal({ test, players, onConfirm, onClose, deleting }) {
     );
 }
 
-// ── Detail View ───────────────────────────────────────────
 function TestDetail({ test, players, onBack, onDelete }) {
+    const isMobile = useIsMobile();
     const player = players.find(p => p.id === test.player_id);
     const playerName = player
         ? `${player.first_name || ''} ${player.last_name || ''}`.trim()
         : 'Unknown Player';
     const date = new Date(test.test_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
     const phvLabel = { pre: 'Pre-PHV', during: 'During PHV', post: 'Post-PHV' }[test.phv_stage] || test.phv_stage;
-
     const g = test.gender;
     const p = test.phv_stage;
 
@@ -459,7 +651,13 @@ function TestDetail({ test, players, onBack, onDelete }) {
             </button>
 
             <div className="pt-detail-header">
-                <div className="pt-detail-top">
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: '16px',
+                    flexDirection: isMobile ? 'column' : 'row',
+                }}>
                     <div>
                         <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>{playerName}</h2>
                         <div className="pt-detail-meta-row">
@@ -468,7 +666,11 @@ function TestDetail({ test, players, onBack, onDelete }) {
                             <span className="pt-badge">{phvLabel}</span>
                         </div>
                     </div>
-                    <button className="drill-btn drill-btn-danger" onClick={() => onDelete(test)}>
+                    <button
+                        className="drill-btn drill-btn-danger"
+                        onClick={() => onDelete(test)}
+                        style={isMobile ? { alignSelf: 'flex-start' } : {}}
+                    >
                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -478,36 +680,36 @@ function TestDetail({ test, players, onBack, onDelete }) {
                 </div>
             </div>
 
-            {/* Metrics */}
-            <div className="pt-sections-grid">
-                {/* Speed */}
+            <SpiderGraph test={test} />
+
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+                gap: '16px',
+            }}>
                 <div className="pt-section-card">
                     <div className="pt-section-title">Court Movement — Speed</div>
                     <MetricRow label="5m Sprint" value={test.sprint_5m} unit="sec" metric="sprint_5m" gender={g} phv={p} />
                     <MetricRow label="10m Sprint" value={test.sprint_10m} unit="sec" metric="sprint_10m" gender={g} phv={p} />
                 </div>
 
-                {/* Agility */}
                 <div className="pt-section-card">
                     <div className="pt-section-title">Court Movement — Agility</div>
                     <MetricRow label="505 Left Foot" value={test.agility_505_left} unit="sec" metric="agility_505_left" gender={g} phv={p} />
                     <MetricRow label="505 Right Foot" value={test.agility_505_right} unit="sec" metric="agility_505_right" gender={g} phv={p} />
                 </div>
 
-                {/* Power */}
                 <div className="pt-section-card">
                     <div className="pt-section-title">Lower Body Power</div>
                     <MetricRow label="Vertical Jump (CMJ)" value={test.vertical_jump} unit="cm" metric="vertical_jump" gender={g} phv={p} />
                 </div>
 
-                {/* Strength */}
                 <div className="pt-section-card">
                     <div className="pt-section-title">Strength</div>
                     <MetricRow label="Front Plank" value={test.front_plank} unit="min" metric="front_plank" gender={g} phv={p} />
                 </div>
 
-                {/* Aerobic */}
-                <div className="pt-section-card" style={{ gridColumn: 'span 2' }}>
+                <div className="pt-section-card" style={{ gridColumn: isMobile ? '1' : 'span 2' }}>
                     <div className="pt-section-title">Aerobic Endurance</div>
                     <MetricRow label="Beep Test" value={test.beep_test} unit="" metric="beep_test" gender={g} phv={p} />
                     {test.phv_stage === 'post' && (
@@ -528,7 +730,6 @@ function TestDetail({ test, players, onBack, onDelete }) {
     );
 }
 
-// ── TOAST ─────────────────────────────────────────────────
 function useToast() {
     const [toast, setToast] = useState({ visible: false, message: '', type: 'green' });
     const timer = useRef(null);
@@ -540,57 +741,69 @@ function useToast() {
     return { toast, show };
 }
 
-// ═══════════════════════════════════════════════════════════
-// MAIN PAGE
-// ═══════════════════════════════════════════════════════════
 export default function Testing() {
+    const isMobile = useIsMobile();
     const [tests, setTests] = useState([]);
     const [players, setPlayers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
-
-    const [view, setView] = useState('list'); // 'list' | 'detail'
+    const [view, setView] = useState('list');
     const [selectedTest, setSelectedTest] = useState(null);
-    const [modal, setModal] = useState(null);  // null | 'add' | 'delete'
+    const [modal, setModal] = useState(null);
     const [deleting, setDeleting] = useState(false);
-
     const [playerFilter, setPlayerFilter] = useState('all');
     const [search, setSearch] = useState('');
-
     const { toast, show: showToast } = useToast();
 
-    // ── Fetch ──────────────────────────────────────────────
     const fetchData = async () => {
         setIsLoading(true);
         setFetchError(null);
-
         const [testsRes, playersRes] = await Promise.all([
             supabase.from('performance_tests').select('*').order('test_date', { ascending: false }),
             supabase.from('signin_details').select('id, first_name, last_name, email, role').order('first_name'),
         ]);
-
-        if (testsRes.error) {
-            setFetchError('Failed to load test results. Please try again.');
-        } else {
-            setTests(testsRes.data || []);
-        }
-
-        if (!playersRes.error) {
-            setPlayers(playersRes.data || []);
-        }
-
+        if (testsRes.error) setFetchError('Failed to load test results. Please try again.');
+        else setTests(testsRes.data || []);
+        if (!playersRes.error) setPlayers(playersRes.data || []);
         setIsLoading(false);
     };
 
     useEffect(() => { fetchData(); }, []);
-
     useEffect(() => {
         const handler = e => { if (e.key === 'Escape') setModal(null); };
         document.addEventListener('keydown', handler);
         return () => document.removeEventListener('keydown', handler);
     }, []);
+    const metricLabels = {
+    sprint_5m: "5m Sprint",
+    sprint_10m: "10m Sprint",
+    agility_505_left: "505 Agility Left",
+    agility_505_right: "505 Agility Right",
+    vertical_jump: "Vertical Jump",
+    front_plank: "Front Plank",
+    beep_test: "Beep Test",
+    yoyo_test: "Yo-Yo Test",
+    };
 
-    // ── Save new test ──────────────────────────────────────
+    function getStrengthWeaknessFromTest(test) {
+        const metrics = Object.keys(metricLabels);
+        const strengths = [];
+        const weaknesses = [];
+
+        metrics.forEach(metric => {
+            const value = test[metric];
+            if (value === null || value === undefined || value === "") return;
+
+            const rating = getRating(value, metric, test.gender, test.phv_stage);
+
+            if (rating === "excellent" || rating === "good") {strengths.push(metricLabels[metric]);}
+
+            if (rating === "average" || rating === "poor") {weaknesses.push(metricLabels[metric]);}
+        });
+
+        return { strengths, weaknesses };
+    }
+
     const handleSave = async (form) => {
         const payload = {
             player_id: form.player_id,
@@ -607,33 +820,39 @@ export default function Testing() {
             yoyo_test: form.yoyo_test !== '' ? parseFloat(form.yoyo_test) : null,
             notes: form.notes || null,
         };
-
-        // Optimistic
         const optimistic = { ...payload, id: 'temp-' + Date.now(), created_at: new Date().toISOString() };
         setTests(prev => [optimistic, ...prev]);
         setModal(null);
-
         const { data, error } = await supabase.from('performance_tests').insert([payload]).select().single();
-
         if (error) {
-            console.error(error);
             setTests(prev => prev.filter(t => t.id !== optimistic.id));
             showToast('Failed to save. Please try again.', 'red');
         } else {
-            setTests(prev => prev.map(t => t.id === optimistic.id ? data : t));
-            showToast('Test result saved', 'green');
+        const { strengths, weaknesses } = getStrengthWeaknessFromTest(data);
+
+        const { error: detailsError } = await supabase.from("player_details").upsert({
+                id: data.player_id,
+                strengths: strengths.join(", "),
+                weaknesses: weaknesses.join(", "),
+            });
+
+        if (detailsError) {
+            console.error("Failed to update player details:", detailsError.message);
+            showToast("Test saved, but player details failed.", "red");
+        } else {
+            showToast("Test result saved", "green");
         }
+
+        setTests(prev => prev.map(t => t.id === optimistic.id ? data : t));
+    }
     };
 
-    // ── Delete ─────────────────────────────────────────────
     const handleDeleteConfirm = async () => {
         if (!selectedTest) return;
         setDeleting(true);
         const backup = [...tests];
         setTests(prev => prev.filter(t => t.id !== selectedTest.id));
-
         const { error } = await supabase.from('performance_tests').delete().eq('id', selectedTest.id);
-
         if (error) {
             setTests(backup);
             showToast('Failed to delete. Please try again.', 'red');
@@ -641,30 +860,23 @@ export default function Testing() {
             if (view === 'detail') setView('list');
             showToast('Test result deleted', 'red');
         }
-
         setDeleting(false);
         setModal(null);
         setSelectedTest(null);
     };
 
-    // ── Filtering ──────────────────────────────────────────
     const filtered = tests.filter(t => {
         const player = players.find(p => p.id === t.player_id);
         const name = player ? `${player.first_name || ''} ${player.last_name || ''}`.toLowerCase() : '';
-        const matchesSearch = name.includes(search.toLowerCase());
-        const matchesPlayer = playerFilter === 'all' || t.player_id === playerFilter;
-        return matchesSearch && matchesPlayer;
+        return name.includes(search.toLowerCase()) && (playerFilter === 'all' || t.player_id === playerFilter);
     });
 
-    // ── Stats ──────────────────────────────────────────────
     const uniquePlayers = new Set(tests.map(t => t.player_id)).size;
     const latestTest = tests[0];
     const latestPlayer = latestTest ? players.find(p => p.id === latestTest.player_id) : null;
     const latestName = latestPlayer
-        ? `${latestPlayer.first_name || ''} ${latestPlayer.last_name || ''}`.trim()
-        : '—';
+        ? `${latestPlayer.first_name || ''} ${latestPlayer.last_name || ''}`.trim() : '—';
 
-    // ── Loading ────────────────────────────────────────────
     if (isLoading) {
         return (
             <div className="loading-overlay">
@@ -676,7 +888,6 @@ export default function Testing() {
         );
     }
 
-    // ── Detail view ────────────────────────────────────────
     if (view === 'detail' && selectedTest) {
         return (
             <>
@@ -703,13 +914,16 @@ export default function Testing() {
         );
     }
 
-    // ── List view ──────────────────────────────────────────
     return (
         <>
             <div id="pt-page">
-
-                {/* Header */}
-                <div className="pt-page-header">
+                <div style={{
+                    display: 'flex',
+                    alignItems: isMobile ? 'stretch' : 'flex-start',
+                    justifyContent: 'space-between',
+                    flexDirection: isMobile ? 'column' : 'row',
+                    gap: '12px',
+                }}>
                     <div>
                         <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>
                             Performance Testing
@@ -718,7 +932,11 @@ export default function Testing() {
                             Record and track fitness test results against Tennis Australia benchmarks.
                         </p>
                     </div>
-                    <button className="pt-btn pt-btn-primary" onClick={() => setModal('add')}>
+                    <button
+                        className="pt-btn pt-btn-primary"
+                        onClick={() => setModal('add')}
+                        style={isMobile ? { width: '100%', justifyContent: 'center' } : {}}
+                    >
                         <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
                         </svg>
@@ -733,8 +951,11 @@ export default function Testing() {
                     </div>
                 )}
 
-                {/* Stats */}
-                <div className="pt-stats-row">
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+                    gap: isMobile ? '10px' : '16px',
+                }}>
                     <div className="drill-stat-card">
                         <span className="drill-stat-label">Total Records</span>
                         <span className="drill-stat-value accent">{tests.length}</span>
@@ -758,21 +979,32 @@ export default function Testing() {
                     </div>
                 </div>
 
-                {/* Toolbar */}
                 <div className="pt-main-panel">
-                    <div className="pt-toolbar">
-                        <div id="drill-search-wrapper" style={{ maxWidth: '280px' }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        flexWrap: 'wrap',
+                        flexDirection: isMobile ? 'column' : 'row',
+                    }}>
+                        <div id="drill-search-wrapper" style={{ maxWidth: isMobile ? '100%' : '280px', width: isMobile ? '100%' : undefined }}>
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
-                            <input id="drill-search" type="text" placeholder="Search players..." value={search} onChange={e => setSearch(e.target.value)} />
+                            <input
+                                id="drill-search"
+                                type="text"
+                                placeholder="Search players..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                style={isMobile ? { width: '100%' } : {}}
+                            />
                         </div>
-
-                        {/* Player filter */}
                         <select
                             className="pt-player-filter"
                             value={playerFilter}
                             onChange={e => setPlayerFilter(e.target.value)}
+                            style={isMobile ? { width: '100%' } : {}}
                         >
                             <option value="all">All Players</option>
                             {players.map(p => (
@@ -783,9 +1015,13 @@ export default function Testing() {
                         </select>
                     </div>
 
-                    {/* Results grid or empty */}
                     {filtered.length > 0 ? (
-                        <div className="pt-grid">
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+                            gap: '14px',
+                            overflowY: 'auto',
+                        }}>
                             {filtered.map(test => (
                                 <TestCard
                                     key={test.id}

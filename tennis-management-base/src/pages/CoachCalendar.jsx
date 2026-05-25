@@ -1,12 +1,25 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, DRAGGABLE_AVAILABILITY, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS, DELETE_CONFIRMATION } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS, DELETE_CONFIRMATION } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
+
+import { useCurrentUser } from '../hooks/useCurrentUser.jsx';
+import { useLocation } from "react-router-dom";
 
 import { DateTime, Duration } from 'luxon';
 import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
+    const { userId: currentUserID, isLoading: authLoading } = useCurrentUser();
+
+    const location = useLocation();
+
+    const openSessionId = location.state?.openSessionId;
+
+    useEffect(() => {
+    console.log('userId:', currentUserID);
+}, [currentUserID]);
+
     const sessionEditorRef = useRef(null);
     const drillLibraryRef = useRef(null);
 
@@ -41,9 +54,6 @@ export default function CoachCalendar() {
     
         return () => window.removeEventListener('resize', handleResize);
     }, []);
-
-    // current user
-    let currentUserID = '1035092c-3201-4ed7-ac82-8c76b8c998c7';
     
     const [isDraggingEvent, setIsDraggingEvent] = useState(false);
 
@@ -51,8 +61,6 @@ export default function CoachCalendar() {
     const [showMobileSessionCreator, setShowMobileSessionCreator] = useState(false);
     const [showSessionEditor, setShowSessionEditor] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
-
-    const [showAvailabilityCreator, setShowAvailabilityCreator] = useState(false);
 
     const [calendarEvents, setCalendarEvents] = useState([]);
 
@@ -139,9 +147,6 @@ export default function CoachCalendar() {
         console.log(toggleEventTooltips);
     }
 
-    // toggle for showing other users availability
-    const [showOtherUserAvail, setShowOtherUserAvail] = useState(false);
-
     // Times for mobile session creator 
     const mobileSessionCreatorTimes = [
         { name: "05:00", val: "05:00:00" },
@@ -224,8 +229,34 @@ export default function CoachCalendar() {
                 sessionDrills.length > 0 && supabase.from('session_drills').insert(sessionDrills)
             ]);
 
+            // Adie: Trying to connect update into database, dashboard purposes.
+            // Add sessions
+            const updateRows = selectedPlayers.map(playerId => ({
+                player_id: playerId,
+                session_id: data.id,
+                type: "Session Added",
+                message: `${sessionSettings.sessionName} was added for your schedule.`
+            }));
+
+            if (updateRows.length > 0) {
+                const { error: updateError } = await supabase
+                    .from("coach_updates")
+                    .insert(updateRows);
+
+                if (updateError) {
+                    console.log("Error saving coach update:", updateError.message);
+                }
+            }
+            // End of Adie' code
+
             fetchCalendarData();
             setShowMobileSessionCreator(false);
+
+            fetch('/api/notify-session-created', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: data.id })
+            }).catch(err => console.error('Email notification failed:', err));
         } else {
             console.log(error);
         }
@@ -450,8 +481,11 @@ export default function CoachCalendar() {
         fetchDrillLibraryTags();
         fetchPlayers();
         fetchCoaches();
-        fetchCalendarData();
     }, []);
+
+    useEffect(() => {
+        if (currentUserID) fetchCalendarData();
+    }, [currentUserID]);
 
     // change calendar view when switching from mobile/desktop
     useEffect(() => {
@@ -463,6 +497,7 @@ export default function CoachCalendar() {
     }, [isMobile]);
 
     async function fetchCalendarData() {
+        if (!currentUserID) return;
         setIsDataLoading(true);
         
         // fetch data from the database
@@ -491,10 +526,23 @@ export default function CoachCalendar() {
                 }
             };
         })
-
+        
         setCalendarEvents(session);
         setIsDataLoading(false);
     }
+   useEffect(() => {
+            if (openSessionId && calendarEvents.length > 0) {
+
+                const targetSession = calendarEvents.find(
+                    event => event.id === openSessionId
+                );
+
+                if (targetSession) {
+                    setSelectedSession(targetSession);
+                    setShowSessionEditor(true);
+                }
+            }
+        }, [openSessionId, calendarEvents]);
 
     async function saveSessionChanges() {
         setIsDataLoading(true);
@@ -533,6 +581,43 @@ export default function CoachCalendar() {
             newDrills.length > 0 && supabase.from('session_drills').insert(newDrills)
         ]);
 
+        // Adie: Dashboard update message
+        const oldName = selectedSession.title;
+        const newName = tempSession.name;
+
+        const oldNotes = selectedSession.extendedProps.notes;
+        const newNotes = tempSession.notes;
+
+        let updateType = "Session Updated";
+        let updateMessage = `${tempSession.name} session details were updated.`;
+
+        if (oldName !== newName) {
+            updateType = "Session Name Updated";
+            updateMessage = `Session name was changed from ${oldName} to ${newName}.`;
+        }
+
+        if (oldNotes !== newNotes) {
+            updateType = "Session Notes Updated";
+            updateMessage = `${tempSession.name} session notes were updated.`;
+        }
+
+        const updateRows = newPlayers.map(player => ({
+            player_id: player.user_id,
+            session_id: tempSession.id,
+            type: updateType,
+            message: updateMessage
+        }));
+
+        if (updateRows.length > 0) {
+            const { error: updateError } = await supabase
+                .from("coach_updates")
+                .insert(updateRows);
+
+            if (updateError) {
+                console.log("Error saving coach update:", updateError.message);
+            }
+        }
+        // End of Adie's code
 
         if (!error) {
             fetchCalendarData();
@@ -541,24 +626,9 @@ export default function CoachCalendar() {
         }
     }
 
-    const [availSettings, setAvailSettings] = useState({
-            availNotes: "",
-            availStart: "",
-            availEnd: "",
-            availDuration: "01:00:00"
-    });
-
     useEffect(() => {
         localStorage.setItem('session_creator_draft', JSON.stringify(sessionSettings));
     }, [sessionSettings]);
-
-
-    const updateAvailField = (field, value) => {
-        setAvailSettings({
-            ...availSettings,
-            [field]: value 
-        });
-    }
 
     // delete session
     const [isDeleting, setIsDeleting] = useState(false);
@@ -632,8 +702,6 @@ export default function CoachCalendar() {
                     isMobile={isMobile}
 
                     setShowMobileSessionCreator={setShowMobileSessionCreator}
-
-                    showOtherUserAvail={showOtherUserAvail} setShowOtherUserAvail={setShowOtherUserAvail}
 
                     ref={calendarRef}
                 />
@@ -898,27 +966,6 @@ export default function CoachCalendar() {
                     </div>
                 </div>
             )}
-
-            {/* Availability creator */}
-            { showAvailabilityCreator && (
-                <div class="content-box editor-box" id="avail-creator">
-                    <h2 class="content-header" onClick={() => setShowAvailabilityCreator(false)}>Availability Creator</h2>
-                    <div id="session-creator-input-container">
-                        <TYPING_INPUT 
-                            label="NAME" 
-                            num_rows="1" 
-                            input_id="availibility-notes-creator" 
-                            box_w="100%" box_h="30px" 
-                            sample_txt="Notes"
-                            value={availSettings.availNotes}
-                            onChange={(val) => {
-                                updateAvailField('availNotes', val);
-                            }}
-                        />
-                    </div>
-                    <DRAGGABLE_AVAILABILITY availSettings={availSettings} />
-                </div>
-            )}
             
             {/* Session editor */}
             { selectedSession && showSessionEditor && !isMobile && (
@@ -938,7 +985,6 @@ export default function CoachCalendar() {
                             <div id="session-editor-top-right">
                                 <button 
                                     class="drill-icon-btn"
-                                    id="close-session-editor" 
                                     onClick={() => {
                                         setShowSessionEditor(false);
                                         setSelectedSession(null);

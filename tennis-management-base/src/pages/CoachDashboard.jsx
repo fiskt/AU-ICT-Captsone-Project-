@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
+import { COACH_SIDEBAR} from '../Components/SharedComponents';
+
 import '../App.css';
 import './Dashboard.css';
-import { COACH_SIDEBAR, TOPBAR } from '../Components/SharedComponents';
 
 import {
     LineChart,
@@ -81,37 +83,6 @@ const weeklyIntensityData = [
     { week: "Week 4", player: "Maria Garcia", easy: 0, medium: 2, hard: 2 },
 ];
 
-const upcomingSessions = [
-    {
-        date: "2026-05-05",
-        time: "09:00",
-        duration: "60 min",
-        client: "Alex Johnson",
-        session: "Tennis Drills - Forehand",
-    },
-    {
-        date: "2026-05-06",
-        time: "15:00",
-        duration: "45 min",
-        client: "Maria Garcia",
-        session: "Strength Training",
-    },
-    {
-        date: "2026-05-07",
-        time: "10:30",
-        duration: "60 min",
-        client: "Alex Johnson",
-        session: "Serve & Volley Practice",
-    },
-    {
-        date: "2026-05-08",
-        time: "13:00",
-        duration: "90 min",
-        client: "Maria Garcia",
-        session: "Match Simulation",
-    },
-];
-
 
 export default function Dashboard() {
     // NAVIGATE TO OTHER PAGES
@@ -119,6 +90,49 @@ export default function Dashboard() {
 
     // DEFAULT STATE
     const [selectedPlayer, setSelectedPlayer] = useState("All Players");
+
+    // STATE FOR SESSIONS
+    const [sessions, setSessions] = useState([]);
+    const [upcomingSessions, setUpcomingSessions] = useState([]);
+
+    // PLAYERS STATE
+    const activePlayers = new Set(
+        sessions.flatMap(session =>
+            session.session_people
+                ?.filter(p => p.signin_details.role === "player")
+                .map(p => p.signin_details.id)
+        )
+    ).size;
+
+    // FETCH SESSIONS DATA
+    async function fetchSessions() {
+        const { data, error } = await supabase
+            .from("sessions")
+            .select(`
+                *,
+                session_people!inner(
+                    signin_details!inner(id, first_name, last_name, role)
+                )
+            `)
+            .order("start_datetime", { ascending: true });
+
+        if (error) {console.log("Error fetching sessions:", error.message);
+            return;}
+
+        setSessions(data || []);
+
+        const now = new Date();
+
+        const upcoming = (data || []).filter(session =>
+            new Date(session.end_datetime) >= now
+        );
+
+        setUpcomingSessions(upcoming);
+    }
+
+    useEffect(() => {
+        fetchSessions();
+    }, []);
 
     // FILTERED DATA
     const filteredData =
@@ -173,7 +187,6 @@ export default function Dashboard() {
     return (
         <div id="layout">
             <COACH_SIDEBAR />
-            <TOPBAR />
 
             <div id="main-content-wrapper">
                 <div id="main-content">
@@ -202,13 +215,13 @@ export default function Dashboard() {
 
                             <div className="drill-stat-card">
                                 <span className="drill-stat-label">Total Sessions</span>
-                                <span className="drill-stat-value accent">124</span>
+                                <span className="drill-stat-value accent">{sessions.length}</span>
                                 <span className="drill-stat-sub">Sessions logged</span>
                             </div>
 
                             <div className="drill-stat-card">
-                                <p className="drill-stat-label">ACTIVE CLIENTS</p>
-                                <h2 className="drill-stat-value">12</h2>
+                                <p className="drill-stat-label">ACTIVE PLAYERS</p>
+                                <h2 className="drill-stat-value">{activePlayers}</h2>
                             </div>
 
                             <div className="drill-stat-card">
@@ -329,7 +342,8 @@ export default function Dashboard() {
                                                             player: selectedPlayer
                                                         }
                                                     })
-                                                }>
+                                                }
+                                                style={{ cursor: "pointer" }}>
                                                 <p className="cardLabel">EASY</p>
                                                 <h2>{intensitySummary.easy}</h2>
                                                 <span>1–3 RPE</span>
@@ -343,7 +357,8 @@ export default function Dashboard() {
                                                             player: selectedPlayer
                                                         }
                                                     })
-                                                }>
+                                                }
+                                                style={{ cursor: "pointer" }}>
                                                 <p className="cardLabel">MEDIUM</p>
                                                 <h2>{intensitySummary.medium}</h2>
                                                 <span>4–6 RPE</span>
@@ -357,7 +372,8 @@ export default function Dashboard() {
                                                             player: selectedPlayer
                                                         }
                                                     })
-                                                }>
+                                                }
+                                                style={{ cursor: "pointer" }}>
                                                 <p className="cardLabel">HARD</p>
                                                 <h2>{intensitySummary.hard}</h2>
                                                 <span>7–10 RPE</span>
@@ -381,27 +397,32 @@ export default function Dashboard() {
                                     </div>
 
                                     <div className="sessionList">
-                                        {upcomingSessions.map((s, index) => (
-                                            <div key={index} className="sessionItem">
-
+                                    {upcomingSessions.length > 0 ? (
+                                        upcomingSessions.map((s) => (
+                                            <div key={s.id} className="sessionItem"
+                                                onClick={() =>navigate("/CoachCalendar", { state: { openSessionId: s.id} }) }
+                                                style={{ cursor: "pointer" }}>
                                                 <div className="sessionMain">
                                                     <p className="sessionClient">
-                                                        {s.client}
+                                                        {s.session_people
+                                                            ?.filter(p => p.signin_details.role === "player")
+                                                            .map(p => `${p.signin_details.first_name} ${p.signin_details.last_name}`)
+                                                            .join(", ") || "No player"}
                                                     </p>
 
-                                                    <p className="sessionName">
-                                                        {s.session}
-                                                    </p>
+                                                    <p className="sessionName">{s.name}</p>
                                                 </div>
 
                                                 <div className="sessionInfo">
-                                                    <span>{s.date}</span>
-                                                    <span>{s.time}</span>
+                                                    <span>{new Date(s.start_datetime).toLocaleDateString("en-AU")}</span>
+                                                    <span>{new Date(s.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</span>
                                                     <span>{s.duration}</span>
                                                 </div>
-
                                             </div>
-                                        ))}
+                                        ))
+                                    ) : (
+                                        <p>No upcoming sessions.</p>
+                                    )}
                                     </div>
                                 </div>
 
