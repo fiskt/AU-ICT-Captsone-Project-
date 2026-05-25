@@ -256,11 +256,10 @@ btn, button:hover {
 /* User card in sidebar bottom */
 #sidebar-bottom {
   display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  height: 10%;
+  flex-direction: column;
   position: relative;
-  padding: 0;
+  padding: 10px 10px 10px 10px;
+  border-top: 0.3px solid var(--sidebar-body-color);
   isolation: isolate;
 }
 
