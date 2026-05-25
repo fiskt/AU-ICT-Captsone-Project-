@@ -24,10 +24,10 @@ export const PLAYER_CALENDAR = forwardRef(({
     const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
     const headerToolBar = isMobile 
         ? {
-            start: 'prev,next', 
+            start: 'prev,next today', 
             end: 'dayGridMonth,timeGridDay'
         } : {
-            start: 'prev,next', 
+            start: 'prev,next today', 
             end: 'dayGridMonth,timeGridWeek'
         }   
     

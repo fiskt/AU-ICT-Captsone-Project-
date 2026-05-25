@@ -117,6 +117,7 @@ export default function CoachCalendar() {
     };
 
     async function fetchCalendarData() {
+        if (!currentUserID) return;
         setIsDataLoading(true);
 
         let sessionEvents = [];
@@ -142,6 +143,7 @@ export default function CoachCalendar() {
                     extendedProps: {
                         type: 'session',
                         duration: duration,
+                        rpe: ses.rpe,
                         notes: ses.notes
                     }
                 }
@@ -244,6 +246,10 @@ export default function CoachCalendar() {
                             <div class="input-container">
                                 <span class="input-container-label">NAME</span>
                                 <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
+                            </div>
+                            <div class="input-container">
+                                <span class="input-container-label">RPE</span>
+                                <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.rpe}</div>
                             </div>
                             {selectedSession.extendedProps.notes.length > 0 && (
                                 <div class="input-container">
