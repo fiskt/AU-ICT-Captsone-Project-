@@ -274,54 +274,6 @@ select::picker(select) {
     transition: background-color 0.2s ease-in-out;
 }
 
-.calendar-trash-zone {
-    width: 200px;
-    height: 70px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease-in-out;
-    
-    position: absolute;
-    bottom: 20px;
-    left: 10px;
-    z-index: 99; 
-    
-    opacity: 0;
-    transform: translateY(20px);
-    pointer-events: none; 
-}
-
-.calendar-trash-zone .trash-label {
-    font-family: 'Bebas', sans-serif;
-    font-size: 1.1rem;
-    color: #999;
-    transition: color 0.2s ease-in-out;
-}
-
-.calendar-trash-zone.active-dragging {
-    background-color: color-mix(in srgb, var(--danger-bg-color), transparent 10%) !important;
-    border: 2px dashed var(--danger-border-color) !important;
-    opacity: 1 !important;
-    transform: scale(1.01);
-}
-
-.calendar-trash-zone.active-dragging .trash-label {
-    color: #e74c3c !important;
-    animation: pulse 1s infinite alternate;
-}
-
-@keyframes pulse {
-    from { transform: scale(1); }
-    to { transform: scale(1.03); }
-}
-
-#session-creator-middle-left, #session-creator-middle-right {
-    width: 50%;
-    flex: 1;
-}
-
 #session-creator.content-box {
     display: grid;
     grid-template-rows: 40px 1fr;
@@ -493,7 +445,7 @@ select::picker(select) {
         'session-creator-bottom session-creator-bottom';
 
     grid-template-columns: 50% 50%;
-    grid-template-rows: 5% 15% 65% auto;
+    grid-template-rows: 5% 20% 60% auto;
     display: grid;
 
     background-color: white;

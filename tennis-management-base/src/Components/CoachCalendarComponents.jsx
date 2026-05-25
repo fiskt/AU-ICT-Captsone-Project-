@@ -125,20 +125,22 @@ export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlay
     // ensure session has a name
     const sessionHasName = sessionSettings.sessionName?.trim().length > 0;
 
+    const sessionHasRPE = sessionSettings.sessionRPE > 0;
+
     // ensure session has at least 1 person selected
     const sessionHasPeople = sessionCoaches.length > 0 || sessionPlayers.length > 0;
 
-    const sessionIsValid = sessionHasName && sessionHasPeople;
+    const sessionIsValid = sessionHasName && sessionHasPeople && sessionHasRPE;
 
     let sessionWarningText = "Drag into the calendar to schedule the session.";
-    
-    if (!sessionHasName) {
-        sessionWarningText = "Session name cannot be empty";
-    } else if (!sessionHasPeople) {
-        sessionWarningText = "Sessions require at least 1 participant.";
-    } else if (!sessionIsValid) {
-        sessionWarningText = "Missing session name and participants.";
-    }
+
+    if (!sessionHasName) sessionWarningText = "Invalid: Name";
+    if (!sessionHasPeople) sessionWarningText = "Invalid: People";
+    if (!sessionHasRPE) sessionWarningText = "Invalid: RPE";
+    if (!sessionHasName && !sessionHasPeople) sessionWarningText = "Invalid: Name, People";
+    if (!sessionHasName && !sessionHasRPE) sessionWarningText = "Invalid: Name, RPE";
+    if (!sessionHasRPE && !sessionHasPeople) sessionWarningText = "Invalid: RPE, People";
+    if (!sessionHasName && !sessionHasRPE && !sessionHasPeople) sessionWarningText = "Invalid: Name, RPE, People";
 
     useEffect(() => {
         if (!sessionIsValid) return;
@@ -152,6 +154,7 @@ export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlay
                     extendedProps: {
                         notes: sessionSettings.sessionNotes,
                         people: sessionSettings.sessionPeople,
+                        rpe: sessionSettings.sessionRPE,
                         type: 'session'
                     }
                 };
@@ -165,8 +168,8 @@ export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlay
             <span class={`input-container-label ${sessionIsValid ? '' : 'draggable-session-warning'}`}>{sessionWarningText}</span>
             <div class="input-box-wrapper" id="draggable-session">
                 <div ref={sessionRef} class={`draggable-icon ${sessionIsValid ? 'session-icon' : 'invalid-session-icon'}`}>
-                    <span>00:00 - 00:00</span>
-                    <span>{sessionSettings.sessionName}</span>
+                    <span>NAME: {`${sessionHasName ? sessionSettings.sessionName : "_"}`}</span>
+                    <span>RPE: {`${sessionHasRPE ? sessionSettings.sessionRPE : "_"}`}</span>
                 </div>
             </div>
         </div>
@@ -283,7 +286,8 @@ export const CALENDAR = forwardRef(({
                 duration: durationStr, 
                 notes: sessionSettings.notes, 
                 start_datetime: start.toISO(),
-                end_datetime: end.toISO()
+                end_datetime: end.toISO(),
+                rpe: sessionSettings.rpe
             }])
             .select()
             .single();
@@ -428,7 +432,8 @@ export const CALENDAR = forwardRef(({
                     eventReceive = {(info) => {    
                         const sessionData = {
                             name: info.event.title,
-                            notes: info.event.extendedProps.notes || ""
+                            notes: info.event.extendedProps.notes || "",
+                            rpe: info.event.extendedProps.rpe || 0
                         }
                         pushSession({ event: info.event, sessionSettings: sessionData });
                     }}

@@ -28,6 +28,7 @@ export default function CoachCalendar() {
         const savedDraft = localStorage.getItem('session_creator_draft');
         return savedDraft ? JSON.parse(savedDraft) : {
             sessionName: "Session Name",
+            sessionRPE: "",
             sessionDuration: "01:00:00",
             sessionNotes: "",
             sessionStart: "",
@@ -201,7 +202,8 @@ export default function CoachCalendar() {
                 duration: durationStr, 
                 notes: sessionSettings.sessionNotes, 
                 start_datetime: start.toISO(),
-                end_datetime: end.toISO()
+                end_datetime: end.toISO(),
+                rpe: sessionSettings.sessionRPE
             }])
             .select()
             .single();
@@ -229,8 +231,6 @@ export default function CoachCalendar() {
                 sessionDrills.length > 0 && supabase.from('session_drills').insert(sessionDrills)
             ]);
 
-            // Adie: Trying to connect update into database, dashboard purposes.
-            // Add sessions
             const updateRows = selectedPlayers.map(playerId => ({
                 player_id: playerId,
                 session_id: data.id,
@@ -247,7 +247,6 @@ export default function CoachCalendar() {
                     console.log("Error saving coach update:", updateError.message);
                 }
             }
-            // End of Adie' code
 
             fetchCalendarData();
             setShowMobileSessionCreator(false);
@@ -383,7 +382,6 @@ export default function CoachCalendar() {
         }
     }
 
-
     useEffect(() => {
         const q = drillSearchQuery.toLowerCase().trim();
 
@@ -421,7 +419,7 @@ export default function CoachCalendar() {
                 const [sessionCoaches, sessionPlayers, sessionDrillIDs] = await Promise.all([
                     fetchSessionCoaches(selectedSession.id),
                     fetchSessionPlayers(selectedSession.id),
-                    fetchSessionDrills(selectedSession.id)
+                    fetchSessionDrills(selectedSession.id),
                 ]);
 
                 const sessionDrills = sessionDrillIDs.map((drill, index) => {
@@ -445,7 +443,8 @@ export default function CoachCalendar() {
                     notes: selectedSession.extendedProps.notes,
                     selectedCoaches: sessionCoaches, 
                     selectedPlayers: sessionPlayers,
-                    selectedDrills: sessionDrills
+                    selectedDrills: sessionDrills,
+                    rpe: selectedSession.extendedProps.rpe
                 });
             } else {
                 setTempSession(null);
@@ -522,6 +521,7 @@ export default function CoachCalendar() {
                 extendedProps: {
                     type: 'session',
                     duration: duration,
+                    rpe: ses.rpe,
                     notes: ses.notes
                 }
             };
@@ -530,19 +530,20 @@ export default function CoachCalendar() {
         setCalendarEvents(session);
         setIsDataLoading(false);
     }
-   useEffect(() => {
-            if (openSessionId && calendarEvents.length > 0) {
 
-                const targetSession = calendarEvents.find(
-                    event => event.id === openSessionId
-                );
+    useEffect(() => {
+        if (openSessionId && calendarEvents.length > 0) {
 
-                if (targetSession) {
-                    setSelectedSession(targetSession);
-                    setShowSessionEditor(true);
-                }
+            const targetSession = calendarEvents.find(
+                event => event.id === openSessionId
+            );
+
+            if (targetSession) {
+                setSelectedSession(targetSession);
+                setShowSessionEditor(true);
             }
-        }, [openSessionId, calendarEvents]);
+        }
+    }, [openSessionId, calendarEvents]);
 
     async function saveSessionChanges() {
         setIsDataLoading(true);
@@ -550,7 +551,8 @@ export default function CoachCalendar() {
             .from('sessions')
             .update({ 
                 name: tempSession.name, 
-                notes: tempSession.notes 
+                notes: tempSession.notes ,
+                rpe: tempSession.rpe
             })
             .eq('id', tempSession.id);
 
@@ -672,11 +674,6 @@ export default function CoachCalendar() {
 
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
-                {
-                    <div className={`calendar-trash-zone ${isDraggingEvent ? 'active-dragging' : ''}`} id="calendar-del-area">
-                        <span className="trash-label">Drop here to delete</span>
-                    </div>
-                }
                 <CALENDAR 
                     events={calendarEvents}
                     activeStart={weekStart} activeEnd={weekEnd}
@@ -724,19 +721,35 @@ export default function CoachCalendar() {
                             updateSessionField('sessionName', val);
                         }}
                         maxLength={20}
+                        isNumber={false}
+                    />
+
+                    <TYPING_INPUT 
+                        label="RPE *" 
+                        num_rows="1" 
+                        input_id="session-rpe-creator" 
+                        box_w="100%" box_h="30px" 
+                        sample_txt="200..."
+                        value={sessionSettings.sessionRPE}
+                        onChange={(val) => {
+                            updateSessionField('sessionRPE', val);
+                        }}
+                        maxLength={10}
+                        isNumber={true}
                     />
                 </div>  
 
                 <div id="session-creator-middle-right-top">
-                        <TYPING_INPUT 
+                    <TYPING_INPUT 
                         label="NOTES" 
                         num_rows="6" 
                         input_id="session-notes-creator" 
-                        box_w="100%" box_h="80px" 
+                        box_w="100%" box_h="80%" 
                         sample_txt="Notes..." 
                         value={sessionSettings.sessionNotes}
                         onChange={(val) => updateSessionField('sessionNotes', val)}
                         maxLength={200}
+                        isNumber={false}
                     />  
                 </div>
 
@@ -769,7 +782,7 @@ export default function CoachCalendar() {
                 </div>
                 <div id="session-creator-bottom">
                     <DRAGGABLE_SESSION 
-                        sessionSettings={sessionSettings} 
+                        sessionSettings={sessionSettings}
                         sessionCoaches={selectedCoaches}
                         sessionPlayers={selectedPlayers}
                     />
@@ -781,16 +794,31 @@ export default function CoachCalendar() {
                     <div id="mobile-session-creator">
                         <h2 class="content-header">Session Creator</h2>
                         <TYPING_INPUT 
-                                label="NAME *" 
-                                num_rows="1" 
-                                input_id="session-name-creator" 
-                                box_w="100%" box_h="30px" 
-                                sample_txt="Name..."
-                                value={sessionSettings.sessionName}
-                                onChange={(val) => {
-                                    updateSessionField('sessionName', val);
-                                }}
-                                maxLength={20}
+                            label="NAME *" 
+                            num_rows="1" 
+                            input_id="session-name-creator" 
+                            box_w="100%" box_h="30px" 
+                            sample_txt="Name..."
+                            value={sessionSettings.sessionName}
+                            onChange={(val) => {
+                                updateSessionField('sessionName', val);
+                            }}
+                            maxLength={20}
+                            isNumber={false}
+                        />
+
+                        <TYPING_INPUT 
+                            label="RPE *" 
+                            num_rows="1" 
+                            input_id="session-rpe-creator" 
+                            box_w="100%" box_h="30px" 
+                            sample_txt="200..."
+                            value={sessionSettings.sessionRPE}
+                            onChange={(val) => {
+                                updateSessionField('sessionRPE', val);
+                            }}
+                            maxLength={10}
+                            isNumber={true}
                         />
 
                         <TYPING_INPUT 
@@ -802,6 +830,7 @@ export default function CoachCalendar() {
                                 value={sessionSettings.sessionNotes}
                                 onChange={(val) => updateSessionField('sessionNotes', val)}
                                 maxLength={200}
+                                isNumber={false}
                         />  
 
                         <div class="input-container">
@@ -1008,6 +1037,21 @@ export default function CoachCalendar() {
                                         setTempSession({ ...tempSession, name: val })
                                     }
                                     id="session-editor-name"
+                                    isNumber={false}
+                                />
+
+                                <TYPING_INPUT 
+                                    label="RPE *" 
+                                    num_rows="1" 
+                                    input_id="session-rpe-creator" 
+                                    box_w="100%" box_h="30px" 
+                                    sample_txt="200..."
+                                    value={tempSession?.rpe || 0}
+                                    onChange={(val) => {
+                                        setTempSession({ ...tempSession, rpe: val});
+                                    }}
+                                    maxLength={10}
+                                    isNumber={true}
                                 />
                                 <TYPING_INPUT 
                                     label="NOTES" 
@@ -1020,6 +1064,7 @@ export default function CoachCalendar() {
                                         setTempSession({ ...tempSession, notes: val })
                                     }
                                     id="session-editor-notes"
+                                    isNumber={false}
                                 />
                             </div>
 
@@ -1102,6 +1147,21 @@ export default function CoachCalendar() {
                                 setTempSession({ ...tempSession, name: val })
                             }
                             id="session-editor-name"
+                            isNumber={false}
+                        />
+
+                         <TYPING_INPUT 
+                            label="RPE *" 
+                            num_rows="1" 
+                            input_id="session-rpe-creator" 
+                            box_w="100%" box_h="30px" 
+                            sample_txt="200..."
+                            value={tempSession?.rpe || 0}
+                            onChange={(val) => {
+                                setTempSession({ ...tempSession, rpe: val});
+                            }}
+                            maxLength={10}
+                            isNumber={true}
                         />
 
                         <TYPING_INPUT 
@@ -1115,6 +1175,7 @@ export default function CoachCalendar() {
                                 setTempSession({ ...tempSession, notes: val })
                             }
                             id="session-editor-notes"
+                            isNumber={false}
                         />
 
                         <div class="input-container">

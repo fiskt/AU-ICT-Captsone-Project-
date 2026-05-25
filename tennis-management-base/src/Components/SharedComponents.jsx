@@ -526,7 +526,7 @@ export function TOPBAR() {
 }
 
 // ── TYPING INPUT ──────────────────────────────────────────────────────────────
-export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_txt, value, onChange, maxLength }) {
+export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_txt, value, onChange, maxLength, isNumber }) {
     const multiline = num_rows > 1;
     const size = { width: box_w, height: box_h };
     return (
@@ -540,7 +540,9 @@ export function TYPING_INPUT({ label, num_rows, input_id, box_w, box_h, sample_t
                 ) : (
                     <input className="typing-input-box" id={input_id}
                         placeholder={sample_txt} value={value}
-                        onChange={(e) => onChange(e.target.value)} maxLength={maxLength} />
+                        onChange={(e) => onChange(e.target.value)} maxLength={maxLength}
+                        type={`${isNumber ? 'number' : 'text'}`}
+                    />
                 )}
             </div>
         </div>
