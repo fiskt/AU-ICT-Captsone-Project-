@@ -342,7 +342,8 @@ export default function Dashboard() {
                                                             player: selectedPlayer
                                                         }
                                                     })
-                                                }>
+                                                }
+                                                style={{ cursor: "pointer" }}>
                                                 <p className="cardLabel">EASY</p>
                                                 <h2>{intensitySummary.easy}</h2>
                                                 <span>1–3 RPE</span>
@@ -356,7 +357,8 @@ export default function Dashboard() {
                                                             player: selectedPlayer
                                                         }
                                                     })
-                                                }>
+                                                }
+                                                style={{ cursor: "pointer" }}>
                                                 <p className="cardLabel">MEDIUM</p>
                                                 <h2>{intensitySummary.medium}</h2>
                                                 <span>4–6 RPE</span>
@@ -370,7 +372,8 @@ export default function Dashboard() {
                                                             player: selectedPlayer
                                                         }
                                                     })
-                                                }>
+                                                }
+                                                style={{ cursor: "pointer" }}>
                                                 <p className="cardLabel">HARD</p>
                                                 <h2>{intensitySummary.hard}</h2>
                                                 <span>7–10 RPE</span>
@@ -396,7 +399,9 @@ export default function Dashboard() {
                                     <div className="sessionList">
                                     {upcomingSessions.length > 0 ? (
                                         upcomingSessions.map((s) => (
-                                            <div key={s.id} className="sessionItem">
+                                            <div key={s.id} className="sessionItem"
+                                                onClick={() =>navigate("/CoachCalendar", { state: { openSessionId: s.id} }) }
+                                                style={{ cursor: "pointer" }}>
                                                 <div className="sessionMain">
                                                     <p className="sessionClient">
                                                         {s.session_people

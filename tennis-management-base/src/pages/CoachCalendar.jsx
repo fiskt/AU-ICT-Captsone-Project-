@@ -3,6 +3,7 @@ import { CALENDAR, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSIO
 import { useState, useRef, useEffect } from 'react';
 
 import { useCurrentUser } from '../hooks/useCurrentUser.jsx';
+import { useLocation } from "react-router-dom";
 
 import { DateTime, Duration } from 'luxon';
 import { createClient } from '@supabase/supabase-js';
@@ -10,6 +11,10 @@ const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env
 
 export default function CoachCalendar() {
     const { userId: currentUserID, isLoading: authLoading } = useCurrentUser();
+
+    const location = useLocation();
+
+    const openSessionId = location.state?.openSessionId;
 
     useEffect(() => {
     console.log('userId:', currentUserID);
@@ -521,10 +526,23 @@ export default function CoachCalendar() {
                 }
             };
         })
-
+        
         setCalendarEvents(session);
         setIsDataLoading(false);
     }
+   useEffect(() => {
+            if (openSessionId && calendarEvents.length > 0) {
+
+                const targetSession = calendarEvents.find(
+                    event => event.id === openSessionId
+                );
+
+                if (targetSession) {
+                    setSelectedSession(targetSession);
+                    setShowSessionEditor(true);
+                }
+            }
+        }, [openSessionId, calendarEvents]);
 
     async function saveSessionChanges() {
         setIsDataLoading(true);
