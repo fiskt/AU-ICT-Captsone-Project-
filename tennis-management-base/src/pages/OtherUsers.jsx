@@ -8,7 +8,7 @@ import { DateTime, Duration } from 'luxon';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
-    const sessionEditorRef = useRef(null);
+    const sessionDetailsRef = useRef(null);
     const calendarRef = useRef(null);
     const [showSessionDetails, setShowSessionDetails] = useState(false);
     const [showCollapsedUsers, setShowCollapsedUsers] = useState(false);
@@ -246,6 +246,7 @@ export default function CoachCalendar() {
                         <h2 class="content-header">Users</h2>
                         { isMobile && (
                             <button
+                                className='drill-btn'
                                 onClick={() => setShowCollapsedUsers(true)}
                             >Show Less</button>
                         )}
@@ -265,14 +266,14 @@ export default function CoachCalendar() {
                             <div class="content-box-bottom" id="users-filter-btn">
                                     <button 
                                         onClick={() => setSearchFilter("coaches")}
-                                        className={`user-filter-btn ${searchFilter === 'coaches' ? 'active' : ''}`}
+                                        className={`user-filter-btn drill-btn drill-btn-secondary ${searchFilter === 'coaches' ? 'active' : ''}`}
                                     >Coach</button>
                                     <button 
                                         onClick={() => setSearchFilter("players")}
-                                        className={`user-filter-btn ${searchFilter === 'players' ? 'active' : ''}`}
+                                        className={`user-filter-btn drill-btn drill-btn-secondary ${searchFilter === 'players' ? 'active' : ''}`}
                                     >Player</button>
                                     <button
-                                        class="user-filter-btn"
+                                        className="drill-btn user-filter-btn"
                                         onClick={() => {
                                             setSearchFilter("all");
                                             setSearchQuery("");
@@ -292,12 +293,29 @@ export default function CoachCalendar() {
             )}
 
             { showCollapsedUsers && isMobile && (
-                <div class="user-selector-top" id="collapsed-users">
-                    <h2 class="content-header">USERS</h2>
-                    <button
-                        onClick={() => setShowCollapsedUsers(false)}
-                    >Show More</button>
-                </div>
+                <div class="content-box" id='collapsed-users'>
+                    <div class="user-selector-top">
+                        <h2 class="content-header">Users</h2>
+                            <button
+                                className='drill-btn'
+                                onClick={() => setShowCollapsedUsers(false)}
+                            >Show More</button>
+                    </div>
+                    <ul class="user-list">
+                        <li
+                            key={selectedUser?.id}
+                            className={`${selectedUser ? 'active' : ''}`}
+                        >
+                            <span>{`
+                                ${selectedUser 
+                                    ? `${selectedUser.first_name} ${selectedUser.last_name}`
+                                    : 'Select a user'
+                                }
+                            `}
+                            </span>
+                        </li>
+                    </ul>
+                </div> 
             )}
 
             {/* Calendar */}
@@ -326,13 +344,13 @@ export default function CoachCalendar() {
                 <div 
                     class="session-details-container" 
                     onClick={(e) => {
-                        if (sessionEditorRef.current && !sessionEditorRef.current.contains(e.target)) {
+                        if (sessionDetailsRef.current && !sessionDetailsRef.current.contains(e.target)) {
                             setShowSessionDetails(false);
                             setSelectedSession(null);
                         }
                     }}
                 >
-                    <div class="session-details" ref={sessionEditorRef}>
+                    <div class="session-details" ref={sessionDetailsRef}>
                         <div class="session-details-top-left">
                             <h2 class="session-details-header">Session Details</h2>
                         </div>
@@ -357,7 +375,7 @@ export default function CoachCalendar() {
                             </div>
                             <div class="input-container">
                                 <span class="input-container-label">RPE</span>
-                                <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.rpe}</div>
+                                <div class="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
                             </div>
                             {selectedSession.extendedProps.notes.length > 0 && (
                                 <div class="input-container">
@@ -411,14 +429,17 @@ export default function CoachCalendar() {
             )}
 
             { isMobile && showSessionDetails && selectedSession && (
-                <div class="mobile-session-details-container">
-                    <div class="mobile-session-details">
+                <div class="mobile-session-details-container"
+                    onClick={(e) => {
+                        if (sessionDetailsRef.current && !sessionDetailsRef.current.contains(e.target)) {
+                            setShowSessionDetails(false);
+                            setSelectedSession(null);
+                        }
+                    }}
+                >
+                    <div class="mobile-session-details" ref={sessionDetailsRef}>
                         <div class="mobile-session-details-top">
                             <h2 class="content-header">Session Details</h2>
-                            <button class="mobile-close-session-details" onClick={() => {
-                                setShowSessionDetails(false);
-                                setSelectedSession(null);
-                            }}>Close</button>
                         </div>
 
                         <div class="input-container">
@@ -427,7 +448,7 @@ export default function CoachCalendar() {
                         </div>
                         <div class="input-container">
                             <span class="input-container-label">RPE</span>
-                            <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.rpe}</div>
+                            <div class="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
                         </div>
                         <div class="input-container">
                             <span class="input-container-label">NOTES</span>
@@ -461,9 +482,13 @@ export default function CoachCalendar() {
                         <div class="input-container session-details-drills-container">
                             <span class="input-container-label">DRILLS</span>
                             <div class="session-details-drills">
-                                <SESSION_DETAILS_DRILLS
-                                    selectedDrills={selectedSessionDrills}
-                                />
+                                {selectedSessionDrills.length > 0 && (
+                                    <SESSION_DETAILS_DRILLS
+                                        selectedDrills={selectedSessionDrills}
+                                    />
+                                )} {selectedSessionDrills.length === 0 && (
+                                    <span>No drills selected for this session.</span>
+                                )}
                             </div>
                         </div>
                     </div>

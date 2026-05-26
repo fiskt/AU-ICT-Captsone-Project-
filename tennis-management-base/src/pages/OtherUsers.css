@@ -54,7 +54,7 @@ button.active {
 }
 
 .user-filter-btn {
-    padding: 5px;
+    padding: 6px;
 }
 
 .session-details-container {
@@ -240,11 +240,14 @@ button.active {
     background-color: #00000050;
     position: absolute;
     z-index: 99;
-    margin: -20px;
+    left: 0;
+    top: 0;
     align-items: center;
     justify-content: center;
     display: flex;
     flex-direction: column;
+
+    backdrop-filter: blur(4px);
 
     animation: calendar-entry-fade 0.3s ease-in;
 }
@@ -265,12 +268,19 @@ button.active {
     justify-content: space-between;
 }
 
-.session-details-notes, .session-details-name {
+.session-details-name {
     height: auto;
     text-wrap: auto;
     text-align: left;
     overflow-y: auto;
     max-height: 170px;
+}
+
+.session-details-notes {
+    height: 100%;
+    text-wrap: auto;
+    text-align: left;
+    overflow-y: auto;
 }
 
 #calendar-date-container {
@@ -298,11 +308,35 @@ button.active {
     border: 2px solid var(--content-input-border-color);
     border-radius: 8px;
     padding: 5px;
-
+    
     animation: entry-fade 0.3s ease-in;
+}
+
+#collapsed-users .user-list {
+    padding: 0 5px 0 5px;
 }
 
 @keyframes entry-fade {
     from { opacity: 0.4; }
     to { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+    #user-selector, #collapsed-users {
+        height:min-content;
+        min-height: auto;
+        overflow-y: visible;
+    }
+}
+
+.mobile-session-details .input-container .input-box-wrapper,
+.session-details-middle-left .input-container .input-box-wrapper {
+    font-family: 'DM Sans Light', sans-serif;
+    color: black;
+    font-size: small;
+}
+
+.session-details-drills span {
+    color: black;
+    font-family: 'DM Sans Light', sans-serif;
 }

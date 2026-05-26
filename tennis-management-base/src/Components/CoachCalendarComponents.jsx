@@ -187,12 +187,15 @@ export function SIMPLE_DRILL_CARD({ drill, addDrillToSession, removeDrillFromSes
                 <Stars level={drill.level} />
                 {isSelectedDrill && (
                     <button
+                        className='drill-icon-btn'
                         onClick={(e) => {
                             e.stopPropagation;
                             removeDrillFromSession(drill.instanceId);
                         }}
                     >
-                        Remove
+                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 )}
             </div>
@@ -329,8 +332,14 @@ export const CALENDAR = forwardRef(({
                 </h1>
                 {isMobile && currentCalendarView === 'timeGridDay' && (
                     <button
+                        class="drill-btn drill-btn-primary"
                         onClick={() => setShowMobileSessionCreator(true)}
-                    >Add Session</button>
+                    >
+                        <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Session
+                    </button>
                 )}
             </div>
             <div className={`calendar-fade isAnimating ? "calendar-fade" : ""`}>

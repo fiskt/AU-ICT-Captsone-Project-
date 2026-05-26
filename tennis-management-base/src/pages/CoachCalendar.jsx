@@ -839,9 +839,12 @@ export default function CoachCalendar() {
                                 removeDrillFromSession={removeDrillFromSession}
                             />
                             <button 
-                                id="session-creator-add-drill-btn"
+                                class='drill-btn'
                                 onClick={() => setShowAddDrill(true)}
                             >
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                                </svg>
                                 Add Drill
                             </button>
                         </div>
@@ -971,9 +974,12 @@ export default function CoachCalendar() {
                                     removeDrillFromSession={removeDrillFromSession}
                                 />
                                 <button 
-                                    id="session-creator-add-drill-btn"
+                                    class='drill-btn'
                                     onClick={() => setShowAddDrill(true)}
                                 >
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                                    </svg>
                                     Add Drill
                                 </button>
                             </div>
@@ -1179,9 +1185,12 @@ export default function CoachCalendar() {
                                             removeDrillFromSession={removeDrillFromSelectedSession}
                                         />
                                         <button 
-                                            id="session-editor-add-drill-btn"
+                                            className='drill-btn'
                                             onClick={() => setShowAddDrill(true)}
                                         >
+                                            <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                                            </svg>
                                             Add Drill
                                         </button>
                                     </div>
@@ -1347,9 +1356,12 @@ export default function CoachCalendar() {
                                     removeDrillFromSession={removeDrillFromSelectedSession}
                                 />
                                 <button 
-                                    id="session-editor-add-drill-btn"
+                                    className='drill-btn'
                                     onClick={() => setShowAddDrill(true)}
                                 >
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                                    </svg>
                                     Add Drill
                                 </button>
                             </div>

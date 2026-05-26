@@ -57,7 +57,6 @@ body {
 /* original button styles */
 btn, button {
   border-radius: 8px;
-  border: 2px solid var(--content-input-border-color);
   background-color: var(--content-bg-color);
   color: var(--content-subhead-color);
   font-family: 'DM Mono Light', sans-serif;

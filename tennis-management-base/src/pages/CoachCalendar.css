@@ -433,6 +433,10 @@ select::picker(select) {
     margin-bottom: 10px;
 }
 
+#session-editor-drills button {
+    width: 100%;
+    justify-content: center;
+}
 
 #session-creator {
     height: 100%;
@@ -506,9 +510,10 @@ select::picker(select) {
     height: 100%;
 }
 
-#session-creator-drills #session-creator-add-drill-btn {
+#session-creator-drills .drill-btn {
     width: 100%;
-    height: 40px;
+    justify-content: center;
+    border: 2px solid var(--content-input-border-color);
 }
 
 #session-creator-drills > * > div {
@@ -520,13 +525,9 @@ select::picker(select) {
         display: none;
     }
 
-    #calendar-box {
-        width: 100%;
-        border: none;
-        background-color: transparent;
-        padding: 0;
+    #session-drill-library .content-box-middle #session-drill-grid {
+        grid-template-columns: 1fr;
     }
-
 }
 
 #mobile-editor-creator-bottom {
@@ -604,4 +605,21 @@ select::picker(select) {
 #mobile-session-creator-bottom {
     justify-content: right;
     display: flex;
+}
+
+.drill-card .drill-icon-btn {
+    border: none;
+}
+
+#session-creator-drills .drill-card::before {
+    display: none;
+}
+
+#session-creator-drills .drill-card:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+#session-creator-drills .drill-card:hover::before {
+    transform: none;
 }

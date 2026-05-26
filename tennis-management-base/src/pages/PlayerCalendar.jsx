@@ -13,7 +13,7 @@ const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env
 export default function CoachCalendar() {
     const { userId: currentUserID, isLoading: authLoading } = useCurrentUser();
 
-    const sessionEditorRef = useRef(null);
+    const sessionDetailsRef = useRef(null);
     const calendarRef = useRef(null);
     const [showSessionDetails, setShowSessionDetails] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
@@ -193,7 +193,7 @@ export default function CoachCalendar() {
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
             
             {/* Calendar */}
-            <div class="content-box" id="calendar-box">
+            <div class="content-box player-calendar-box" id="calendar-box">
                 <PLAYER_CALENDAR 
                     events={calendarEvents}
                     activeStart={weekStart} activeEnd={weekEnd}
@@ -218,13 +218,13 @@ export default function CoachCalendar() {
                 <div 
                     class="session-details-container" 
                     onClick={(e) => {
-                        if (sessionEditorRef.current && !sessionEditorRef.current.contains(e.target)) {
+                        if (sessionDetailsRef.current && !sessionDetailsRef.current.contains(e.target)) {
                             setShowSessionDetails(false);
                             setSelectedSession(null);
                         }
                     }}
                 >
-                    <div class="session-details" ref={sessionEditorRef}>
+                    <div class="session-details" ref={sessionDetailsRef}>
                         <div class="session-details-top-left">
                             <h2 class="session-details-header">Session Details</h2>
                         </div>
@@ -249,7 +249,7 @@ export default function CoachCalendar() {
                             </div>
                             <div class="input-container">
                                 <span class="input-container-label">RPE</span>
-                                <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.rpe}</div>
+                                <div class="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
                             </div>
                             {selectedSession.extendedProps.notes.length > 0 && (
                                 <div class="input-container">
@@ -303,19 +303,26 @@ export default function CoachCalendar() {
             )}
 
             { isMobile && showSessionDetails && selectedSession && (
-                <div class="mobile-session-details-container">
-                    <div class="mobile-session-details">
+                <div class="mobile-session-details-container"
+                    onClick={(e) => {
+                        if (sessionDetailsRef.current && !sessionDetailsRef.current.contains(e.target)) {
+                            setShowSessionDetails(false);
+                            setSelectedSession(null);
+                        }
+                    }}
+                >
+                    <div class="mobile-session-details" ref={sessionDetailsRef}>
                         <div class="mobile-session-details-top">
                             <h2 class="content-header">Session Details</h2>
-                            <button class="mobile-close-session-details" onClick={() => {
-                                setShowSessionDetails(false);
-                                setSelectedSession(null);
-                            }}>Close</button>
                         </div>
 
                         <div class="input-container">
                             <span class="input-container-label">NAME</span>
                             <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
+                        </div>
+                        <div class="input-container">
+                            <span class="input-container-label">RPE</span>
+                            <div class="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
                         </div>
                         <div class="input-container">
                             <span class="input-container-label">NOTES</span>
@@ -349,9 +356,13 @@ export default function CoachCalendar() {
                         <div class="input-container session-details-drills-container">
                             <span class="input-container-label">DRILLS</span>
                             <div class="session-details-drills">
-                                <SESSION_DETAILS_DRILLS
-                                    selectedDrills={selectedSessionDrills}
-                                />
+                                {selectedSessionDrills.length > 0 && (
+                                    <SESSION_DETAILS_DRILLS
+                                        selectedDrills={selectedSessionDrills}
+                                    />
+                                )} {selectedSessionDrills.length === 0 && (
+                                    <span>No drills selected for this session.</span>
+                                )}
                             </div>
                         </div>
                     </div>

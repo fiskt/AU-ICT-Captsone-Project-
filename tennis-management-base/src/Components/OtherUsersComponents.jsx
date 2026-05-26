@@ -6,7 +6,7 @@ import '../pages/DrillLibrary.css'
 import '../pages/CalendarStyle.css'
 
 import { DateTime, Info, Interval, Duration } from 'luxon'
-import { useState, useEffect, useRef, forwardRef } from 'react';
+import { useState, forwardRef } from 'react';
 
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid' 
@@ -186,7 +186,7 @@ export const OTHER_CALENDARS = forwardRef(({
                 <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()}>
                     {calendarTitle} 
                 </h1>
-                <span>{currentViewText}</span>
+                {!isMobile && (<span>{currentViewText}</span>)}
             </div>
             <div className={`calendar-fade isAnimating ? "calendar-fade" : ""`}>
                 <FullCalendar
