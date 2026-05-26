@@ -441,6 +441,33 @@ function TestCard({ test, players, onView, onDelete }) {
     );
 }
 
+// Field is defined outside TestFormModal so its identity stays stable across renders.
+// Defining it inside TestFormModal caused React to treat it as a new component type on every
+// keystroke (because the function reference changes), which unmounted/remounted the input
+// and stole focus after each character typed.
+function Field({ label, field, placeholder, step = '0.01', hint, form, update }) {
+    return (
+        <div className="drill-form-group">
+            <label className="drill-form-label">{label}</label>
+            <input
+                className="drill-form-input"
+                type="number"
+                step={step}
+                min="0"
+                placeholder={placeholder}
+                value={form[field]}
+                onChange={e => update(field, e.target.value)}
+            />
+            {hint && <span className="pt-field-hint">{hint}</span>}
+            {form[field] !== '' && form.gender && form.phv_stage && (
+                <div className="pt-field-rating">
+                    <RatingBadge rating={getRating(form[field], field, form.gender, form.phv_stage)} />
+                </div>
+            )}
+        </div>
+    );
+}
+
 function TestFormModal({ players, onSave, onClose }) {
     const isMobile = useIsMobile();
     const EMPTY = {
@@ -465,26 +492,7 @@ function TestFormModal({ players, onSave, onClose }) {
 
     const showYoyo = form.phv_stage === 'post';
 
-    const Field = ({ label, field, placeholder, step = '0.01', hint }) => (
-        <div className="drill-form-group">
-            <label className="drill-form-label">{label}</label>
-            <input
-                className="drill-form-input"
-                type="number"
-                step={step}
-                min="0"
-                placeholder={placeholder}
-                value={form[field]}
-                onChange={e => update(field, e.target.value)}
-            />
-            {hint && <span className="pt-field-hint">{hint}</span>}
-            {form[field] !== '' && form.gender && form.phv_stage && (
-                <div className="pt-field-rating">
-                    <RatingBadge rating={getRating(form[field], field, form.gender, form.phv_stage)} />
-                </div>
-            )}
-        </div>
-    );
+
 
     return (
         <div id="drill-modal-overlay">
@@ -543,27 +551,27 @@ function TestFormModal({ players, onSave, onClose }) {
 
                     <div className="pt-section-label"><span>1. Court Movement — Speed & Acceleration</span></div>
                     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '14px' }}>
-                        <Field label="5m Sprint (sec)" field="sprint_5m" placeholder="e.g. 1.10" hint="Lower is better" />
-                        <Field label="10m Sprint (sec)" field="sprint_10m" placeholder="e.g. 2.00" hint="Lower is better" />
+                        <Field label="5m Sprint (sec)" field="sprint_5m" placeholder="e.g. 1.10" hint="Lower is better"  form={form} update={update} />
+                        <Field label="10m Sprint (sec)" field="sprint_10m" placeholder="e.g. 2.00" hint="Lower is better"  form={form} update={update} />
                     </div>
 
                     <div className="pt-section-label"><span>1. Court Movement — Modified 505 Agility</span></div>
                     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '14px' }}>
-                        <Field label="505 Left Foot (sec)" field="agility_505_left" placeholder="e.g. 2.80" hint="Lower is better" />
-                        <Field label="505 Right Foot (sec)" field="agility_505_right" placeholder="e.g. 2.80" hint="Lower is better" />
+                        <Field label="505 Left Foot (sec)" field="agility_505_left" placeholder="e.g. 2.80" hint="Lower is better"  form={form} update={update} />
+                        <Field label="505 Right Foot (sec)" field="agility_505_right" placeholder="e.g. 2.80" hint="Lower is better"  form={form} update={update} />
                     </div>
 
                     <div className="pt-section-label"><span>2. Lower Body Power — CMJ</span></div>
-                    <Field label="Vertical Jump (cm)" field="vertical_jump" placeholder="e.g. 55" step="0.5" hint="Higher is better" />
+                    <Field label="Vertical Jump (cm)" field="vertical_jump" placeholder="e.g. 55" step="0.5" hint="Higher is better"  form={form} update={update} />
 
                     <div className="pt-section-label"><span>3. Strength — Plank Endurance</span></div>
-                    <Field label="Front Plank (min)" field="front_plank" placeholder="e.g. 4.5" hint="Higher is better" />
+                    <Field label="Front Plank (min)" field="front_plank" placeholder="e.g. 4.5" hint="Higher is better"  form={form} update={update} />
 
                     <div className="pt-section-label"><span>4. Aerobic Endurance</span></div>
                     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '14px' }}>
-                        <Field label="Beep Test (level.shuttle)" field="beep_test" placeholder="e.g. 11.4" hint="e.g. 11.4 = Level 11, Shuttle 4" />
+                        <Field label="Beep Test (level.shuttle)" field="beep_test" placeholder="e.g. 11.4" hint="e.g. 11.4 = Level 11, Shuttle 4"  form={form} update={update} />
                         {showYoyo
-                            ? <Field label="Yo-Yo IR1 (level.shuttle)" field="yoyo_test" placeholder="e.g. 21" hint="Post-PHV only" />
+                            ? <Field label="Yo-Yo IR1 (level.shuttle)" field="yoyo_test" placeholder="e.g. 21" hint="Post-PHV only"  form={form} update={update} />
                             : (
                                 <div className="drill-form-group">
                                     <label className="drill-form-label">Yo-Yo IR1</label>
