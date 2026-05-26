@@ -529,6 +529,13 @@ select::picker(select) {
 
 }
 
+#mobile-editor-creator-bottom {
+    justify-content: space-between;
+    display: flex;
+    margin: 10px 0 10px 0;
+    padding: 5px;
+}
+
 #mobile-calendar-toolbar {
     width: 100%;
     margin-bottom: 20px;
@@ -540,11 +547,14 @@ select::picker(select) {
     background-color: #00000050;
     position: absolute;
     z-index: 99;
-    margin: -20px;
+    left: 0;
+    top: 0;
     align-items: center;
     justify-content: center;
     display: flex;
     flex-direction: column;
+
+    backdrop-filter: blur(4px);
 
     animation: calendar-entry-fade 0.3s ease-in;
 }
@@ -592,5 +602,6 @@ select::picker(select) {
 }
 
 #mobile-session-creator-bottom {
-    justify-content: space-between;
+    justify-content: right;
+    display: flex;
 }

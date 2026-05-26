@@ -1,5 +1,5 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS, DELETE_CONFIRMATION } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
 import { useCurrentUser } from '../hooks/useCurrentUser.jsx';
@@ -17,11 +17,14 @@ export default function CoachCalendar() {
     const openSessionId = location.state?.openSessionId;
 
     useEffect(() => {
-    console.log('userId:', currentUserID);
-}, [currentUserID]);
+        console.log('userId:', currentUserID);
+    }, [currentUserID]);
 
     const sessionEditorRef = useRef(null);
     const drillLibraryRef = useRef(null);
+    const mobileSessionEditorRef = useRef(null);
+    const mobileSessionCreatorRef = useRef(null);
+    const deleteConfirmRef = useRef(null);
 
     // auto save current session inputs in local storage and restore the saved inputs
     const [sessionSettings, setSessionSettings] = useState(() => {
@@ -36,7 +39,8 @@ export default function CoachCalendar() {
         };
     });
 
-      const updateSessionField = (field, value) => {
+    // update function for session settings const
+    const updateSessionField = (field, value) => {
         setSessionSettings({
             ...sessionSettings,
             [field]: value 
@@ -55,8 +59,6 @@ export default function CoachCalendar() {
     
         return () => window.removeEventListener('resize', handleResize);
     }, []);
-    
-    const [isDraggingEvent, setIsDraggingEvent] = useState(false);
 
     const calendarRef = useRef(null);
     const [showMobileSessionCreator, setShowMobileSessionCreator] = useState(false);
@@ -74,21 +76,7 @@ export default function CoachCalendar() {
     const [editedSessionCoaches, setEditedSessionCoaches] = useState([]);
     const [editedSessionPlayers, setEditedSessionPlayers] = useState([]);
 
-    async function fetchPlayers() {
-        const { data, error } = await supabase
-            .from('signin_details')
-            .select('*')
-            .eq('role', 'player');
-
-        if (error) {
-            console.log("Error when fetching players: ", error.message);
-            setPlayers([]);
-        } else {
-            setPlayers(data);
-            console.log("players", players);
-        }
-    }
-
+    // fetch all coaches and players
     async function fetchCoaches() {
         const { data, error } = await supabase
             .from('signin_details')
@@ -104,6 +92,22 @@ export default function CoachCalendar() {
         }
     }
 
+    async function fetchPlayers() {
+        const { data, error } = await supabase
+            .from('signin_details')
+            .select('*')
+            .eq('role', 'player');
+
+        if (error) {
+            console.log("Error when fetching players: ", error.message);
+            setPlayers([]);
+        } else {
+            setPlayers(data);
+            console.log("players", players);
+        }
+    }
+
+    // fetch selected session coaches and players, return the user ids
     async function fetchSessionCoaches(sessionId) {
         const { data, error } = await supabase
             .from('session_people')
@@ -148,7 +152,7 @@ export default function CoachCalendar() {
         console.log(toggleEventTooltips);
     }
 
-    // Times for mobile session creator 
+    // Time options for mobile session creator 
     const mobileSessionCreatorTimes = [
         { name: "05:00", val: "05:00:00" },
         { name: "05:30", val: "05:30:00" },
@@ -251,6 +255,7 @@ export default function CoachCalendar() {
             fetchCalendarData();
             setShowMobileSessionCreator(false);
 
+            // email notification for mobile session created
             fetch('/api/notify-session-created', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -416,6 +421,8 @@ export default function CoachCalendar() {
             if (selectedSession) {
                 setIsDataLoading(true);
 
+
+
                 const [sessionCoaches, sessionPlayers, sessionDrillIDs] = await Promise.all([
                     fetchSessionCoaches(selectedSession.id),
                     fetchSessionPlayers(selectedSession.id),
@@ -441,16 +448,23 @@ export default function CoachCalendar() {
                     id: selectedSession.id,
                     name: selectedSession.title,
                     notes: selectedSession.extendedProps.notes,
+                    startTime: DateTime.fromJSDate(selectedSession.start).toFormat('HH:mm:ss'),
+                    endTime: DateTime.fromJSDate(selectedSession.end).toFormat('HH:mm:ss'),  
                     selectedCoaches: sessionCoaches, 
                     selectedPlayers: sessionPlayers,
                     selectedDrills: sessionDrills,
                     rpe: selectedSession.extendedProps.rpe
                 });
+
+                setMobileSessionStart(DateTime.fromJSDate(selectedSession.start).toFormat('HH:mm:ss'));
+                setMobileSessionEnd(DateTime.fromJSDate(selectedSession.end).toFormat('HH:mm:ss'));
             } else {
                 setTempSession(null);
                 setEditedSessionCoaches([]);
                 setEditedSessionPlayers([]);
                 setEditedSessionDrills([]);
+                setMobileSessionStart("05:00:00");
+                setMobileSessionEnd("06:00:00");
             }
             setIsDataLoading(false);
         };
@@ -487,12 +501,14 @@ export default function CoachCalendar() {
     }, [currentUserID]);
 
     // change calendar view when switching from mobile/desktop
+    const [currentCalendarView, setCurrentCalendarView] = useState(isMobile ? 'timeGridDay' : 'timeGridWeek');
     useEffect(() => {
         const calendarApi = calendarRef.current?.getApi();
         if (!calendarApi) return;
 
-        calendarApi.changeView(isMobile ? "timeGridDay" : "dayGridMonth");
+        calendarApi.changeView(isMobile ? "timeGridDay" : "timeGridWeek");
         calendarApi.updateSize();
+        
     }, [isMobile]);
 
     async function fetchCalendarData() {
@@ -547,12 +563,35 @@ export default function CoachCalendar() {
 
     async function saveSessionChanges() {
         setIsDataLoading(true);
+
+        const sessionDate = DateTime.fromJSDate(selectedSession.start).toISODate();
+        const newStart = tempSession.startTime
+            ? DateTime.fromISO(`${sessionDate}T${tempSession.startTime}`)
+            : DateTime.fromJSDate(selectedSession.start);
+        const newEnd = tempSession.endTime
+            ? DateTime.fromISO(`${sessionDate}T${tempSession.endTime}`)
+            : DateTime.fromJSDate(selectedSession.end);
+
+        const newDuration = newEnd.diff(newStart).toFormat('hh:mm:ss');
+
+        if (
+            tempSession.name.length === 0 || 
+            tempSession.rpe <= 0 || 
+            (tempSession.selectedCoaches.length === 0 && tempSession.selectedPlayers.length === 0)
+        ) {
+            setIsDataLoading(false);
+            return;
+        }
+        
         const { error } = await supabase
             .from('sessions')
             .update({ 
                 name: tempSession.name, 
                 notes: tempSession.notes ,
-                rpe: tempSession.rpe
+                rpe: tempSession.rpe,
+                start_datetime: newStart.toISO(),
+                end_datetime: newEnd.toISO(),
+                duration: newDuration
             })
             .eq('id', tempSession.id);
 
@@ -664,12 +703,40 @@ export default function CoachCalendar() {
 
             {/* Delete confirmation */}
             {showDeleteConfirmation && selectedSession && showSessionEditor && (
-                <DELETE_CONFIRMATION
-                    session={selectedSession}
-                    onConfirm={deleteSession}
-                    onClose={() => setShowDeleteConfirmation(false)}
-                    deleting={isDeleting}
-                />
+                <div id="drill-modal-overlay"
+                    onClick={(e) => {
+                        if (deleteConfirmRef.current && !deleteConfirmRef.current.contains(e.target)) {
+                            setShowDeleteConfirmation(false);
+                        }
+                    }}
+                >
+                    <div className="drill-modal" ref={deleteConfirmRef}>
+                        <div className="drill-modal-header">
+                            <span className="drill-modal-title">Delete Session</span>
+                            <button className="drill-icon-btn" onClick={() => setShowDeleteConfirmation(false)} style={{ border: 'none', background: 'transparent' }}>
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="drill-modal-body">
+                            <div className="drill-delete-title">
+                                {`Delete "${selectedSession.title.length > 0 
+                                            ? selectedSession.title 
+                                            : 'this session'}" ?
+                                `}
+                            </div>
+                            <div className="drill-delete-body">
+                                This session will be permanently removed.
+                            </div>
+                        </div>
+                        <div className="drill-modal-footer">
+                            <button className="drill-btn drill-btn-danger-solid" onClick={deleteSession} disabled={isDeleting}>
+                                {isDeleting ? 'Deleting...' : 'Delete Session'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Calendar */}
@@ -694,11 +761,11 @@ export default function CoachCalendar() {
 
                     currentUser={currentUserID}
 
-                    setIsDraggingEvent={setIsDraggingEvent}
-
                     isMobile={isMobile}
 
                     setShowMobileSessionCreator={setShowMobileSessionCreator}
+
+                    currentCalendarView={currentCalendarView} setCurrentCalendarView={setCurrentCalendarView}
 
                     ref={calendarRef}
                 />
@@ -785,13 +852,20 @@ export default function CoachCalendar() {
                         sessionSettings={sessionSettings}
                         sessionCoaches={selectedCoaches}
                         sessionPlayers={selectedPlayers}
+                        currentCalendarView={currentCalendarView}
                     />
                 </div>
             </div>
 
             {isMobile && showMobileSessionCreator && (
-                <div id="mobile-session-creator-container">
-                    <div id="mobile-session-creator">
+                <div id="mobile-session-creator-container"
+                    onClick={(e) => {
+                        if (mobileSessionCreatorRef.current && !mobileSessionCreatorRef.current.contains(e.target)) {
+                            setShowMobileSessionCreator(false);
+                        }
+                    }}
+                >
+                    <div id="mobile-session-creator" ref={mobileSessionCreatorRef}>
                         <h2 class="content-header">Session Creator</h2>
                         <TYPING_INPUT 
                             label="NAME *" 
@@ -906,16 +980,26 @@ export default function CoachCalendar() {
                         </div>
                         
                         <div id="mobile-session-creator-bottom">
-                            <button
+                            <button 
+                                class="drill-btn drill-btn-ghost"
+                                onClick={() => setShowMobileSessionCreator(false)}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                class="drill-btn drill-btn-primary"
                                 onClick={() => mobilePushSession({
                                     sessionSettings: sessionSettings,
                                     currentDay: weekStart,
                                     startTimeStr: mobileSessionStart,
                                     endTimeStr: mobileSessionEnd
-                                })}        
-                    
-                            >Add To Calendar</button>
-                            <button onClick={() => setShowMobileSessionCreator(false)}>Cancel</button>
+                                })}   
+                            >
+                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Add to Calendar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -1133,8 +1217,15 @@ export default function CoachCalendar() {
             )}
 
             {isMobile && showSessionEditor && selectedSession && (
-                <div id="mobile-session-editor-container">
-                    <div id="mobile-session-editor">
+                <div id="mobile-session-editor-container"
+                    onClick={(e) => {
+                        if (mobileSessionEditorRef.current && !mobileSessionEditorRef.current.contains(e.target)) {
+                            setShowSessionEditor(false);
+                            setSelectedSession(null);
+                        }
+                    }}
+                >
+                    <div id="mobile-session-editor" ref={mobileSessionEditorRef}>
                         <h2 class="content-header">Session Editor</h2>
                         <TYPING_INPUT 
                             label="NAME *" 
@@ -1184,11 +1275,14 @@ export default function CoachCalendar() {
                                 <div class="mobile-session-creator-times-container">
                                     <p>Start</p>
                                     <select
-                                        value={DateTime.fromJSDate(selectedSession.start).toFormat('HH:mm:ss')}
+                                        value={
+                                            tempSession?.startTime || 
+                                            DateTime.fromJSDate(selectedSession.start).toFormat('HH:mm:ss')
+                                        }
                                         onChange={(e) => {
                                             const val = e.target.value;
+                                            setTempSession({ ...tempSession, startTime: val });
                                             setMobileSessionStart(val);
-                                            updateSessionField('sessionStart', val);
                                         }}
                                     >
                                         {mobileSessionCreatorTimes.map(time => (
@@ -1205,11 +1299,14 @@ export default function CoachCalendar() {
                                 <div class="mobile-session-creator-times-container">
                                     <p>End</p>
                                     <select
-                                        value={DateTime.fromJSDate(selectedSession.end).toFormat('HH:mm:ss')}
+                                        value={
+                                            tempSession?.endTime ||
+                                            DateTime.fromJSDate(selectedSession.end).toFormat('HH:mm:ss')
+                                        }
                                         onChange={(e) => {
                                             const val = e.target.value;
+                                            setTempSession({ ...tempSession, endTime: val });
                                             setMobileSessionEnd(val);
-                                            updateSessionField('sessionEnd', val);
                                         }}
                                     >
                                         {validEndTimes.map(time => (
@@ -1259,8 +1356,25 @@ export default function CoachCalendar() {
                         </div>
                         
                         <div id="mobile-editor-creator-bottom">
-                            <button onClick={saveSessionChanges}>Save Changes</button>
-                            <button onClick={() => setShowSessionEditor(false)}>Cancel</button>
+                            <button 
+                                class="drill-btn drill-btn-danger" 
+                                id="delete-session" 
+                                onClick={() => setShowDeleteConfirmation(true)}
+                            >
+                                <svg width="15" height="15" fill="none" stroke="#dc2626" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Delete
+                            </button>
+                            <button 
+                                class="drill-btn drill-btn-primary"
+                                onClick={saveSessionChanges}
+                            >
+                                <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Save Changes
+                            </button>
                         </div>
                     </div>
                 </div>

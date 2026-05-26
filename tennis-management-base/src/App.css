@@ -1454,6 +1454,7 @@ btn, button:hover {
   #drill-modal-overlay {
     align-items: flex-end;
     padding: 0;
+    left: 0;
   }
 
   .drill-modal {

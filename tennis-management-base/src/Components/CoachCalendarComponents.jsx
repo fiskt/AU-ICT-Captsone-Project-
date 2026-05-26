@@ -88,38 +88,7 @@ export function PEOPLE_SELECTOR({ role, people = [], selectedPeople = [], setSel
     );
 }
 
-export function DELETE_CONFIRMATION({ session, onConfirm, onClose, deleting }) {
-    const sessionName = session.title.length > 0
-        ? session.title
-        : "this session";
-    return (
-        <div id="drill-modal-overlay">
-            <div className="drill-modal">
-                <div className="drill-modal-header">
-                    <span className="drill-modal-title">Delete Session</span>
-                    <button className="drill-icon-btn" onClick={onClose} style={{ border: 'none', background: 'transparent' }}>
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                <div className="drill-modal-body">
-                    <div className="drill-delete-title">Delete "{sessionName}"?</div>
-                    <div className="drill-delete-body">
-                        This session will be permanently removed.
-                    </div>
-                </div>
-                <div className="drill-modal-footer">
-                    <button className="drill-btn drill-btn-danger-solid" onClick={onConfirm} disabled={deleting}>
-                        {deleting ? 'Deleting...' : 'Delete Drill'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlayers }) {
+export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlayers, currentCalendarView }) {
     const sessionRef = useRef(null);
 
     // ensure session has a name
@@ -130,9 +99,13 @@ export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlay
     // ensure session has at least 1 person selected
     const sessionHasPeople = sessionCoaches.length > 0 || sessionPlayers.length > 0;
 
-    const sessionIsValid = sessionHasName && sessionHasPeople && sessionHasRPE;
+    const sessionIsValid = 
+        sessionHasName && 
+        sessionHasPeople && 
+        sessionHasRPE && 
+        currentCalendarView === 'timeGridWeek';
 
-    let sessionWarningText = "Drag into the calendar to schedule the session.";
+    let sessionWarningText = "Drag into the calendar to schedule the session";
 
     if (!sessionHasName) sessionWarningText = "Invalid: Name";
     if (!sessionHasPeople) sessionWarningText = "Invalid: People";
@@ -141,6 +114,8 @@ export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlay
     if (!sessionHasName && !sessionHasRPE) sessionWarningText = "Invalid: Name, RPE";
     if (!sessionHasRPE && !sessionHasPeople) sessionWarningText = "Invalid: RPE, People";
     if (!sessionHasName && !sessionHasRPE && !sessionHasPeople) sessionWarningText = "Invalid: Name, RPE, People";
+
+    if (currentCalendarView !== 'timeGridWeek') sessionWarningText = "Use calendar week view to schedule sessions"
 
     useEffect(() => {
         if (!sessionIsValid) return;
@@ -236,9 +211,9 @@ export const CALENDAR = forwardRef(({
     selectedPlayers, setSelectedPlayers,
     selectedDrills,
     currentUser,
-    setIsDraggingEvent,
     isMobile,
     setShowMobileSessionCreator,
+    currentCalendarView, setCurrentCalendarView
     }, ref) => {
 
     const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
@@ -255,7 +230,6 @@ export const CALENDAR = forwardRef(({
     const currentWeekStart = activeStart || todayStart;
 
     const currentWeekEnd = activeEnd ? activeEnd.minus({ days: 1 }) : currentWeekStart.endOf('week');
-
 
     const isSingleDay = currentWeekStart.hasSame(currentWeekEnd, 'day');
 
@@ -353,7 +327,7 @@ export const CALENDAR = forwardRef(({
                 <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()}>
                     {calendarTitle} 
                 </h1>
-                {isMobile && (
+                {isMobile && currentCalendarView === 'timeGridDay' && (
                     <button
                         onClick={() => setShowMobileSessionCreator(true)}
                     >Add Session</button>
@@ -395,12 +369,12 @@ export const CALENDAR = forwardRef(({
                         
                         return classes;
                     }}
-                    datesSet={(dateInfo) => {
+                    datesSet={(info) => {
+                        setCurrentCalendarView(info.view.type);
                         setIsAnimating(false);
-                        
                         setTimeout(() => {
                             setIsAnimating(true);
-                            onDateChange(dateInfo.start, dateInfo.end);
+                            onDateChange(info.start, info.end);
                         }, 10);
                     }}
                     eventDidMount={(info) => {
@@ -452,29 +426,6 @@ export const CALENDAR = forwardRef(({
                             console.log("update session times ran");
                             updateSessionTimes(info.event);
                         }
-                    }}
-                    eventDragStart={(info) => {
-                        if (isMobile) return;
-
-                        if (info.event.extendedProps.type === 'session') return;
-
-                        setIsDraggingEvent(true);
-                    }}
-                    eventDragStop={(info) => {
-                        if (isMobile) return;
-
-                        setIsDraggingEvent(false);
-                        if (info.event.extendedProps.type === 'session') return;
-
-                        const delArea = document.getElementById('calendar-del-area');
-                        if (!delArea) return;
-                        const rect = delArea.getBoundingClientRect();
-
-                        const inDelArea = 
-                            info.jsEvent.clientX >= rect.left &&
-                            info.jsEvent.clientX <= rect.right &&
-                            info.jsEvent.clientY >= rect.top &&
-                            info.jsEvent.clientY <= rect.bottom;
                     }}
                 />
             </div>
