@@ -248,7 +248,7 @@ export default function CoachCalendar() {
                                 <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
                             </div>
                             <div class="input-container">
-                                <span class="input-container-label">RPE</span>
+                                <span class="input-container-label">PLANNED RPE</span>
                                 <div class="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
                             </div>
                             {selectedSession.extendedProps.notes.length > 0 && (
@@ -321,7 +321,7 @@ export default function CoachCalendar() {
                             <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
                         </div>
                         <div class="input-container">
-                            <span class="input-container-label">RPE</span>
+                            <span class="input-container-label">PLANNED RPE</span>
                             <div class="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
                         </div>
                         <div class="input-container">

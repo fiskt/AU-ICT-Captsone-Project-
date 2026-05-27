@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import { COACH_SIDEBAR} from '../Components/SharedComponents';
+import { COACH_SIDEBAR } from '../Components/SharedComponents';
 
 import '../App.css';
 import './Dashboard.css';
@@ -19,70 +19,6 @@ import {
     Legend,
 } from "recharts";
 
-const weeklyData = [
-    {
-        week: "2026-03-30",
-        player: "Alex Johnson",
-        plannedLoad: 420,
-        actualLoad: 460,
-    },
-    {
-        week: "2026-03-30",
-        player: "Maria Garcia",
-        plannedLoad: 380,
-        actualLoad: 350,
-    },
-    {
-        week: "2026-04-06",
-        player: "Alex Johnson",
-        plannedLoad: 520,
-        actualLoad: 610,
-    },
-    {
-        week: "2026-04-06",
-        player: "Maria Garcia",
-        plannedLoad: 450,
-        actualLoad: 400,
-    },
-    {
-        week: "2026-04-13",
-        player: "Alex Johnson",
-        plannedLoad: 600,
-        actualLoad: 640,
-    },
-    {
-        week: "2026-04-13",
-        player: "Maria Garcia",
-        plannedLoad: 300,
-        actualLoad: 250,
-    },
-    {
-        week: "2026-04-20",
-        player: "Alex Johnson",
-        plannedLoad: 200,
-        actualLoad: 180,
-    },
-    {
-        week: "2026-04-20",
-        player: "Maria Garcia",
-        plannedLoad: 200,
-        actualLoad: 180,
-    },
-];
-const weeklyIntensityData = [
-    { week: "Week 1", player: "Alex Johnson", easy: 1, medium: 2, hard: 1 },
-    { week: "Week 1", player: "Maria Garcia", easy: 2, medium: 1, hard: 0 },
-
-    { week: "Week 2", player: "Alex Johnson", easy: 0, medium: 1, hard: 3 },
-    { week: "Week 2", player: "Maria Garcia", easy: 1, medium: 2, hard: 1 },
-
-    { week: "Week 3", player: "Alex Johnson", easy: 2, medium: 1, hard: 1 },
-    { week: "Week 3", player: "Maria Garcia", easy: 1, medium: 3, hard: 0 },
-
-    { week: "Week 4", player: "Alex Johnson", easy: 1, medium: 1, hard: 2 },
-    { week: "Week 4", player: "Maria Garcia", easy: 0, medium: 2, hard: 2 },
-];
-
 
 export default function Dashboard() {
     // NAVIGATE TO OTHER PAGES
@@ -90,6 +26,8 @@ export default function Dashboard() {
 
     // DEFAULT STATE
     const [selectedPlayer, setSelectedPlayer] = useState("All Players");
+    const [players, setPlayers] = useState([]);
+    const [weeklyData, setWeeklyData] = useState([]);
 
     // STATE FOR SESSIONS
     const [sessions, setSessions] = useState([]);
@@ -104,7 +42,7 @@ export default function Dashboard() {
         )
     ).size;
 
-    // FETCH SESSIONS DATA
+    // FETCH SESSIONS DATA, INCL RPE VALUES
     async function fetchSessions() {
         const { data, error } = await supabase
             .from("sessions")
@@ -112,15 +50,47 @@ export default function Dashboard() {
                 *,
                 session_people!inner(
                     signin_details!inner(id, first_name, last_name, role)
-                )
+                ),
+                session_feedback(
+                session_id, player_id, intensity, rpe_load, intensity_zone)
             `)
             .order("start_datetime", { ascending: true });
 
-        if (error) {console.log("Error fetching sessions:", error.message);
-            return;}
+        if (error) {
+            console.log("Error fetching sessions:", error.message);
+            return;
+        }
 
         setSessions(data || []);
 
+        // DATA TO USE IN RPE GRAPH
+        const graphRows = [];
+
+        (data || []).forEach(session => {
+            const week = new Date(session.start_datetime).toISOString().slice(0, 10);
+
+            const sessionPlayers = session.session_people
+                ?.filter(p => p.signin_details.role === "player") || [];
+
+            sessionPlayers.forEach(p => {
+                const player = p.signin_details;
+                const playerName = `${player.first_name} ${player.last_name}`;
+
+                const feedback = session.session_feedback?.find(f =>
+                    f.player_id === player.id &&
+                    f.session_id === session.id
+                );
+
+                graphRows.push({
+                    week,
+                    player: playerName,
+                    plannedLoad: Number(session.rpe || 0),
+                    actualLoad: Number(feedback?.rpe_load || 0),
+                });
+            });
+        });
+
+        setWeeklyData(graphRows);
         const now = new Date();
 
         const upcoming = (data || []).filter(session =>
@@ -130,8 +100,22 @@ export default function Dashboard() {
         setUpcomingSessions(upcoming);
     }
 
+    async function fetchPlayers() {
+    const { data, error } = await supabase
+        .from("signin_details")
+        .select("id, first_name, last_name, role")
+        .eq("role", "player");
+
+    if (error) {
+        console.log("Error fetching players:", error.message);
+        setPlayers([]);
+    } else {
+        setPlayers(data || []);
+    }
+}
     useEffect(() => {
         fetchSessions();
+        fetchPlayers();
     }, []);
 
     // FILTERED DATA
@@ -155,34 +139,36 @@ export default function Dashboard() {
             )
             : weeklyData.filter((d) => d.player === selectedPlayer);
 
-    const filteredIntensityData =
+    const filteredSessions =
         selectedPlayer === "All Players"
-            ? Object.values(
-                weeklyIntensityData.reduce((acc, item) => {
-                    if (!acc[item.week]) {
-                        acc[item.week] = {
-                            week: item.week,
-                            easy: 0,
-                            medium: 0,
-                            hard: 0,
-                        };
-                    }
-
-                    acc[item.week].easy += item.easy;
-                    acc[item.week].medium += item.medium;
-                    acc[item.week].hard += item.hard;
-
-                    return acc;
-                }, {})
-            )
-            : weeklyIntensityData.filter(
-                (item) => item.player === selectedPlayer
+            ? sessions
+            : sessions.filter(session =>
+                session.session_people?.some(
+                    p =>
+                        p.signin_details.role === "player" &&
+                        `${p.signin_details.first_name} ${p.signin_details.last_name}` === selectedPlayer
+                )
             );
+
     const intensitySummary = {
-        easy: filteredIntensityData.reduce((sum, item) => sum + item.easy, 0),
-        medium: filteredIntensityData.reduce((sum, item) => sum + item.medium, 0),
-        hard: filteredIntensityData.reduce((sum, item) => sum + item.hard, 0),
+        easy: 0,
+        medium: 0,
+        hard: 0,
     };
+
+    filteredSessions.forEach(session => {
+        session.session_feedback?.forEach(feedback => {
+            const intensity = Number(feedback.intensity || 0);
+
+            if (intensity >= 1 && intensity <= 3) {
+                intensitySummary.easy++;
+            } else if (intensity >= 4 && intensity <= 6) {
+                intensitySummary.medium++;
+            } else if (intensity >= 7) {
+                intensitySummary.hard++;
+            }
+        });
+    });
 
     return (
         <div id="layout">
@@ -205,8 +191,15 @@ export default function Dashboard() {
                                 onChange={(e) => setSelectedPlayer(e.target.value)}
                             >
                                 <option>All Players</option>
-                                <option>Alex Johnson</option>
-                                <option>Maria Garcia</option>
+
+                                {players.map(player => (
+                                    <option
+                                        key={player.id}
+                                        value={`${player.first_name} ${player.last_name}`}
+                                    >
+                                        {player.first_name} {player.last_name}
+                                    </option>
+                                ))}
                             </select>
                         </div>
 
@@ -397,32 +390,32 @@ export default function Dashboard() {
                                     </div>
 
                                     <div className="sessionList">
-                                    {upcomingSessions.length > 0 ? (
-                                        upcomingSessions.map((s) => (
-                                            <div key={s.id} className="sessionItem"
-                                                onClick={() =>navigate("/CoachCalendar", { state: { openSessionId: s.id} }) }
-                                                style={{ cursor: "pointer" }}>
-                                                <div className="sessionMain">
-                                                    <p className="sessionClient">
-                                                        {s.session_people
-                                                            ?.filter(p => p.signin_details.role === "player")
-                                                            .map(p => `${p.signin_details.first_name} ${p.signin_details.last_name}`)
-                                                            .join(", ") || "No player"}
-                                                    </p>
+                                        {upcomingSessions.length > 0 ? (
+                                            upcomingSessions.map((s) => (
+                                                <div key={s.id} className="sessionItem"
+                                                    onClick={() => navigate("/CoachCalendar", { state: { openSessionId: s.id } })}
+                                                    style={{ cursor: "pointer" }}>
+                                                    <div className="sessionMain">
+                                                        <p className="sessionClient">
+                                                            {s.session_people
+                                                                ?.filter(p => p.signin_details.role === "player")
+                                                                .map(p => `${p.signin_details.first_name} ${p.signin_details.last_name}`)
+                                                                .join(", ") || "No player"}
+                                                        </p>
 
-                                                    <p className="sessionName">{s.name}</p>
-                                                </div>
+                                                        <p className="sessionName">{s.name}</p>
+                                                    </div>
 
-                                                <div className="sessionInfo">
-                                                    <span>{new Date(s.start_datetime).toLocaleDateString("en-AU")}</span>
-                                                    <span>{new Date(s.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</span>
-                                                    <span>{s.duration}</span>
+                                                    <div className="sessionInfo">
+                                                        <span>{new Date(s.start_datetime).toLocaleDateString("en-AU")}</span>
+                                                        <span>{new Date(s.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</span>
+                                                        <span>{s.duration}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p>No upcoming sessions.</p>
-                                    )}
+                                            ))
+                                        ) : (
+                                            <p>No upcoming sessions.</p>
+                                        )}
                                     </div>
                                 </div>
 

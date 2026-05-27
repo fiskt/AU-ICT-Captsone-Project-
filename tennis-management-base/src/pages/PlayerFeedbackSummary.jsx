@@ -38,13 +38,7 @@ export default function FeedbackSummary() {
         let query = supabase
             .from("session_feedback")
             .select(`
-                *,
-                sessions (
-                    id,
-                    name,
-                    start_datetime,
-                    duration
-                )
+                *, sessions (id, name, start_datetime, duration)
             `)
             .order("created_at", { ascending: false });
 

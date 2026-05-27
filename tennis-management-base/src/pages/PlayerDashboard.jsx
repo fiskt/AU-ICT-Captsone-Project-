@@ -80,7 +80,7 @@ export default function PlayerDashboard() {
             return d >= startOfWeek && d <= endOfWeek;
         }));
 
-        // Fetch code for Coach Updates.
+        // Fetch code: Coach Updates.
         const { data: updatesData, error: updatesError } = await supabase
             .from("coach_updates")
             .select("*")
@@ -95,20 +95,22 @@ export default function PlayerDashboard() {
             setCoachUpdates(updatesData || []);
         }
 
+        // Fetch code: Sessions Feedback.
         const { data: feedbackData, error: feedbackError } = await supabase
             .from("session_feedback").select("*").eq("player_id", userId);
 
         if (feedbackError) { console.log("Error fetching feedback:", feedbackError.message); return; }
 
         const latest = [...feedbackData].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-        setLatestFeedback(latest || null);
+        const latestSession = sessionData.find(s => s.id === latest?.session_id);
+        setLatestFeedback(latest? {...latest, session_name: latestSession?.name || "Unknown session"}: null);
 
         const ratedSessionIDs = feedbackData.map(f => f.session_id);
         const unrated = sessionData.find(s => new Date(s.end_datetime) < now && !ratedSessionIDs.includes(s.id));
         setPendingSession(unrated || null);
         if (unrated) setDurationMinutes(durationToMinutes(unrated.duration));
 
-        // Fetch code for strength and weaknesses.
+        // Fetch code: strength and weaknesses.
         const { data: playerProfile, error: profileError } = await supabase
             .from("player_details")
             .select("strengths, weaknesses")
@@ -148,13 +150,9 @@ export default function PlayerDashboard() {
     function getFocusArea(weaknesses) {
 
         if (!weaknesses || weaknesses.length === 0) {return "Balanced Training";}
-
         if (weaknesses.includes("5m Sprint") || weaknesses.includes("10m Sprint") || weaknesses.includes("505 Agility Left") || weaknesses.includes("505 Agility Right")) {return "Court Movement";}
-
         if (weaknesses.includes("Vertical Jump")) {return "Explosive Power";}
-
         if (weaknesses.includes("Front Plank")) {return "Core Strength";}
-
         if (weaknesses.includes("Beep Test") || weaknesses.includes("Yo-Yo Test")) {return "Endurance";}
 
         return "General Development";
@@ -225,6 +223,7 @@ export default function PlayerDashboard() {
                 <div className="statCard">
                     <p className="cardLabel">LAST RATING</p>
                     <h2 className="drill-stat-value">{latestFeedback ? `${latestFeedback.intensity}/10` : "—"}</h2>
+                    <p className="drill-stat-sub">{latestFeedback ? latestFeedback.session_name : "No feedback yet"}</p>
                 </div>
 
                 <div className="statCard">
@@ -284,7 +283,7 @@ export default function PlayerDashboard() {
                                 <p className="dashboardLabel">PLAYER FEEDBACK</p>
                                 <h3>Session Feedback</h3>
                             </div>
-                            {!pendingSession ? <p>No pending feedback!</p> : (
+                            {!pendingSession ? <p>No pending feedback.</p> : (
                                 <div className="feedbackForm">
                                     <p><strong>{pendingSession.name}</strong></p>
                                     <p>{new Date(pendingSession.start_datetime).toLocaleString("en-AU")}</p>
