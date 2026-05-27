@@ -101,6 +101,9 @@ export default function Login() {
                   {showPass ? 'Hide' : 'Show'}
                 </button>
               </div>
+              <Link to="/ForgotPassword" style={{ fontFamily: 'DM Sans Light, sans-serif', fontSize: '12px', color: '#C8714E', textDecoration: 'none', textAlign: 'left' }}>
+                Forgot password?
+              </Link>
             </div>
 
             {error && <p style={{ margin: 0, fontSize: '13px', color: '#DC2626', fontFamily: 'DM Sans Light, sans-serif' }}>{error}</p>}
