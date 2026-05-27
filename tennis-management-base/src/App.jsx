@@ -6,6 +6,8 @@ import ProtectedRoute from './Components/ProtectedRoute';
 import Login          from './pages/Login';
 import Register       from './pages/Register';
 import AuthCallback   from './pages/AuthCallback';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword  from './pages/ResetPassword';
 
 import CoachCalendar   from './pages/CoachCalendar';
 import CoachDashboard  from './pages/CoachDashboard';
@@ -41,24 +43,29 @@ function AppLayout() {
                 <main id={isAuthPage ? undefined : 'main-content'}>
                     <Routes>
                         {/* Public routes: no sign in required */}
-                        <Route path="/"              element={<Login />} />
-                        <Route path="/Login"         element={<Login />} />
-                        <Route path="/login"         element={<Login />} />
-                        <Route path="/Register"      element={<Register />} />
-                        <Route path="/register"      element={<Register />} />
-                        <Route path="/auth/callback" element={<AuthCallback />} />
+                        <Route path="/"                element={<Login />} />
+                        <Route path="/Login"           element={<Login />} />
+                        <Route path="/login"           element={<Login />} />
+                        <Route path="/Register"        element={<Register />} />
+                        <Route path="/register"        element={<Register />} />
+                        <Route path="/auth/callback"   element={<AuthCallback />} />
+                        <Route path="/ForgotPassword"  element={<ForgotPassword />} />
+                        <Route path="/forgotpassword"  element={<ForgotPassword />} />
+                        <Route path="/ResetPassword"   element={<ResetPassword />} />
+                        <Route path="/resetpassword"   element={<ResetPassword />} />
 
                         {/* Protected routes: must be logged in */}
-                        <Route path="/CoachDashboard"  element={<ProtectedRoute><CoachDashboard /></ProtectedRoute>} />
-                        <Route path="/CoachCalendar"   element={<ProtectedRoute><CoachCalendar /></ProtectedRoute>} />
-                        <Route path="/PlayerProfile"   element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
-                        <Route path="/PlayerDashboard" element={<ProtectedRoute><PlayerDashboard /></ProtectedRoute>} />
-                        <Route path="/PlayerCalendar"  element={<ProtectedRoute><PlayerCalendar /></ProtectedRoute>} />
-                        <Route path="/DrillLibrary"    element={<ProtectedRoute><DrillLibrary /></ProtectedRoute>} />
-                        <Route path="/Testing"         element={<ProtectedRoute><Testing /></ProtectedRoute>} />
-                        <Route path="/SessionFeedback" element={<ProtectedRoute><SessionFeedback /></ProtectedRoute>} />
-                        <Route path="/PlayerFeedbackSummary" element={<ProtectedRoute><FeedbackSummary /></ProtectedRoute>} />
-                        <Route path="/OtherUsers"      element={<ProtectedRoute><OtherUsers /></ProtectedRoute>} />
+                        <Route path="/CoachDashboard"  element={<ProtectedRoute allowedRoles={['coach']}><CoachDashboard /></ProtectedRoute>} />
+                        <Route path="/CoachCalendar"   element={<ProtectedRoute allowedRoles={['coach']}><CoachCalendar /></ProtectedRoute>} />
+                        <Route path="/PlayerProfile"   element={<ProtectedRoute allowedRoles={['coach']}><PlayerProfile /></ProtectedRoute>} />
+                        <Route path="/DrillLibrary"    element={<ProtectedRoute allowedRoles={['coach']}><DrillLibrary /></ProtectedRoute>} />
+                        <Route path="/Testing"         element={<ProtectedRoute allowedRoles={['coach']}><Testing /></ProtectedRoute>} />
+                        <Route path="/OtherUsers"      element={<ProtectedRoute allowedRoles={['coach']}><OtherUsers /></ProtectedRoute>} />
+
+                        <Route path="/PlayerDashboard" element={<ProtectedRoute allowedRoles={['player']}><PlayerDashboard /></ProtectedRoute>} />
+                        <Route path="/PlayerCalendar"  element={<ProtectedRoute allowedRoles={['player']}><PlayerCalendar /></ProtectedRoute>} />
+                        <Route path="/SessionFeedback" element={<ProtectedRoute allowedRoles={['player']}><SessionFeedback /></ProtectedRoute>} />
+                        <Route path="/PlayerFeedbackSummary" element={<ProtectedRoute allowedRoles={['player']}><FeedbackSummary /></ProtectedRoute>} />
                     </Routes>
                 </main>
             </div>
