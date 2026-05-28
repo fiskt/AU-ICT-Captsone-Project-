@@ -195,10 +195,16 @@ export default function PlayerDashboard() {
             {/* HEADER */}
             <div className="dashboardHeader">
                 <div>
-                    <p className="dashboardLabel">PLAYER OVERVIEW</p>
-                    <h1 className="dashboardTitle">
+                    <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>
                         {isCoachPreview ? `${previewPlayer}'s Dashboard` : 'Player Dashboard'}
-                    </h1>
+                    </h2>
+                    <p style={{
+                        fontFamily: "'DM Sans Light', sans-serif",
+                        fontSize: '13px',
+                        color: 'var(--content-subhead-color)'
+                    }}>
+                        Overview of your player performance.
+                    </p>
                 </div>
             </div>
 

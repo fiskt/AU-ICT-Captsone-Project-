@@ -228,7 +228,6 @@ button.active {
 }
 
 #user-selector {
-    min-height: 750px;
     overflow-y: auto;
 
     animation: entry-fade 0.3s ease-in;
@@ -327,6 +326,10 @@ button.active {
         min-height: auto;
         overflow-y: visible;
     }
+
+    #other-users-main-panel {
+        flex-direction: column !important;
+    }
 }
 
 .mobile-session-details .input-container .input-box-wrapper,
@@ -339,4 +342,15 @@ button.active {
 .session-details-drills span {
     color: black;
     font-family: 'DM Sans Light', sans-serif;
+}
+
+#other-users-main-panel {
+  display: flex;
+  flex-direction: row;
+  gap: 14px;
+  flex: 1;
+}
+
+#main-content {
+    flex-direction: column;
 }

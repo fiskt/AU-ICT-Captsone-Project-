@@ -238,137 +238,221 @@ export default function CoachCalendar() {
         <>
             {/* Loading overlay */}
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
-            
-            {/* User selector */}
-            { !showCollapsedUsers && (
-                <div class="content-box" id='user-selector'>
-                    <div class="user-selector-top">
-                        <h2 class="content-header">Users</h2>
-                        { isMobile && (
-                            <button
-                                className='drill-btn'
-                                onClick={() => setShowCollapsedUsers(true)}
-                            >Show Less</button>
-                        )}
-                    </div>
-                    <div class="content-box-top">
-                        <div id="user-filter-container">
-                            <div class="content-box-middle">
-                                <input
-                                    class="typing-input-box"
-                                    placeholder='Search user'
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                >
-                                </input>
-                            </div>
-                            <div class="content-box-bottom" id="users-filter-btn">
-                                    <button 
-                                        onClick={() => setSearchFilter("coaches")}
-                                        className={`user-filter-btn drill-btn drill-btn-secondary ${searchFilter === 'coaches' ? 'active' : ''}`}
-                                    >Coach</button>
-                                    <button 
-                                        onClick={() => setSearchFilter("players")}
-                                        className={`user-filter-btn drill-btn drill-btn-secondary ${searchFilter === 'players' ? 'active' : ''}`}
-                                    >Player</button>
-                                    <button
-                                        className="drill-btn user-filter-btn"
-                                        onClick={() => {
-                                            setSearchFilter("all");
-                                            setSearchQuery("");
-                                        }}
-                                    >Reset</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="content-box-middle">
-                        <USERS_LIST 
-                            coaches={filteredCoaches} players={filteredPlayers} 
-                            selectedUser={selectedUser}
-                            setSelectedUser={setSelectedUser} 
-                        />
-                    </div>
-                </div> 
-            )}
-
-            { showCollapsedUsers && isMobile && (
-                <div class="content-box" id='collapsed-users'>
-                    <div class="user-selector-top">
-                        <h2 class="content-header">Users</h2>
-                            <button
-                                className='drill-btn'
-                                onClick={() => setShowCollapsedUsers(false)}
-                            >Show More</button>
-                    </div>
-                    <ul class="user-list">
-                        <li
-                            key={selectedUser?.id}
-                            className={`${selectedUser ? 'active' : ''}`}
-                        >
-                            <span>{`
-                                ${selectedUser 
-                                    ? `${selectedUser.first_name} ${selectedUser.last_name}`
-                                    : 'Select a user'
-                                }
-                            `}
-                            </span>
-                        </li>
-                    </ul>
-                </div> 
-            )}
-
-            {/* Calendar */}
-            <div class="content-box" id="calendar-box">
-                <OTHER_CALENDARS 
-                    events={calendarEvents}
-                    activeStart={weekStart} activeEnd={weekEnd}
-                    onDateChange={handleDateChange}
-                    onSessionClick = {(eventData) => {
-                        setSelectedSession(eventData);
-                        setShowSessionDetails(true);
-                    }}
-
-                    selectedSession={selectedSession}
-
-                    selectedUser={selectedUser}
-
-                    isMobile={isMobile}
-
-                    ref={calendarRef}
-                />
+            <div>
+                <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>Other Users</h2>
+                <p style={{
+                    fontFamily: "'DM Sans Light', sans-serif",
+                    fontSize: '13px',
+                    color: 'var(--content-subhead-color)',
+                    textAlign: 'left'
+                }}>
+                    Calendars and schedules for other users.
+                </p>
             </div>
-            
-            {/* Session details */}
-            { !showCollapsedUsers && selectedSession && showSessionDetails && !isMobile && (
-                <div 
-                    class="session-details-container" 
-                    onClick={(e) => {
-                        if (sessionDetailsRef.current && !sessionDetailsRef.current.contains(e.target)) {
-                            setShowSessionDetails(false);
-                            setSelectedSession(null);
-                        }
-                    }}
-                >
-                    <div class="session-details" ref={sessionDetailsRef}>
-                        <div class="session-details-top-left">
-                            <h2 class="session-details-header">Session Details</h2>
-                        </div>
-                        <div class="session-details-top-right">
-                            <button 
-                                class="drill-icon-btn"
-                                onClick={() => {
-                                    setShowSessionDetails(false);
-                                    setSelectedSession(null);
-                                }}
-                            >
-                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
 
-                        <div class="session-details-middle-left">
+            <div id="other-users-main-panel">
+                {/* User selector */}
+                { !showCollapsedUsers && (
+                    <div class="content-box" id='user-selector'>
+                        <div class="user-selector-top">
+                            <h2 class="content-header">Users</h2>
+                            { isMobile && (
+                                <button
+                                    className='drill-btn'
+                                    onClick={() => setShowCollapsedUsers(true)}
+                                >Show Less</button>
+                            )}
+                        </div>
+                        <div class="content-box-top">
+                            <div id="user-filter-container">
+                                <div class="content-box-middle">
+                                    <input
+                                        class="typing-input-box"
+                                        placeholder='Search user'
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    >
+                                    </input>
+                                </div>
+                                <div class="content-box-bottom" id="users-filter-btn">
+                                        <button 
+                                            onClick={() => setSearchFilter("coaches")}
+                                            className={`user-filter-btn drill-btn drill-btn-secondary ${searchFilter === 'coaches' ? 'active' : ''}`}
+                                        >Coach</button>
+                                        <button 
+                                            onClick={() => setSearchFilter("players")}
+                                            className={`user-filter-btn drill-btn drill-btn-secondary ${searchFilter === 'players' ? 'active' : ''}`}
+                                        >Player</button>
+                                        <button
+                                            className="drill-btn user-filter-btn"
+                                            onClick={() => {
+                                                setSearchFilter("all");
+                                                setSearchQuery("");
+                                            }}
+                                        >Reset</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="content-box-middle">
+                            <USERS_LIST 
+                                coaches={filteredCoaches} players={filteredPlayers} 
+                                selectedUser={selectedUser}
+                                setSelectedUser={setSelectedUser} 
+                            />
+                        </div>
+                    </div> 
+                )}
+
+                { showCollapsedUsers && isMobile && (
+                    <div class="content-box" id='collapsed-users'>
+                        <div class="user-selector-top">
+                            <h2 class="content-header">Users</h2>
+                                <button
+                                    className='drill-btn'
+                                    onClick={() => setShowCollapsedUsers(false)}
+                                >Show More</button>
+                        </div>
+                        <ul class="user-list">
+                            <li
+                                key={selectedUser?.id}
+                                className={`${selectedUser ? 'active' : ''}`}
+                            >
+                                <span>{`
+                                    ${selectedUser 
+                                        ? `${selectedUser.first_name} ${selectedUser.last_name}`
+                                        : 'Select a user'
+                                    }
+                                `}
+                                </span>
+                            </li>
+                        </ul>
+                    </div> 
+                )}
+
+                {/* Calendar */}
+                <div class="content-box" id="calendar-box">
+                    <OTHER_CALENDARS 
+                        events={calendarEvents}
+                        activeStart={weekStart} activeEnd={weekEnd}
+                        onDateChange={handleDateChange}
+                        onSessionClick = {(eventData) => {
+                            setSelectedSession(eventData);
+                            setShowSessionDetails(true);
+                        }}
+
+                        selectedSession={selectedSession}
+
+                        selectedUser={selectedUser}
+
+                        isMobile={isMobile}
+
+                        ref={calendarRef}
+                    />
+                </div>
+                {/* Session details */}
+                { !showCollapsedUsers && selectedSession && showSessionDetails && !isMobile && (
+                    <div 
+                        class="session-details-container" 
+                        onClick={(e) => {
+                            if (sessionDetailsRef.current && !sessionDetailsRef.current.contains(e.target)) {
+                                setShowSessionDetails(false);
+                                setSelectedSession(null);
+                            }
+                        }}
+                    >
+                        <div class="session-details" ref={sessionDetailsRef}>
+                            <div class="session-details-top-left">
+                                <h2 class="session-details-header">Session Details</h2>
+                            </div>
+                            <div class="session-details-top-right">
+                                <button 
+                                    class="drill-icon-btn"
+                                    onClick={() => {
+                                        setShowSessionDetails(false);
+                                        setSelectedSession(null);
+                                    }}
+                                >
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div class="session-details-middle-left">
+                                <div class="input-container">
+                                    <span class="input-container-label">NAME</span>
+                                    <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
+                                </div>
+                                <div class="input-container">
+                                    <span class="input-container-label">RPE</span>
+                                    <div class="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
+                                </div>
+                                {selectedSession.extendedProps.notes.length > 0 && (
+                                    <div class="input-container">
+                                        <span class="input-container-label">NOTES</span>
+                                        <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
+                                    </div>
+                                )}
+                            </div>
+                            <div class="session-details-middle-middle">
+                                <div class="input-container session-details-people-container">
+                                    <span class="input-container-label">PEOPLE</span>
+                                    <div class="session-details-people">
+                                        <div>Coaches</div>
+                                        <ul>
+                                            {selectedSessionPeople
+                                                .filter(coach => coach.role === 'coach')
+                                                .map(coach => (
+                                                    <li key={coach.id}>{coach.first_name} {coach.last_name}</li>
+                                                ))
+                                            }
+                                        </ul>
+                                        <div>Players</div>
+                                        <ul>
+                                            {selectedSessionPeople
+                                                .filter(player => player.role === 'player')
+                                                .map(player => (
+                                                    <li key={player.id}>{player.first_name} {player.last_name}</li>
+                                                ))
+                                            }
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="session-details-middle-right">
+                                <div class="input-container session-details-drills-container">
+                                    <span class="input-container-label">DRILLS</span>
+                                    <div class="session-details-drills">
+                                        {selectedSessionDrills.length > 0 && (
+                                            <SESSION_DETAILS_DRILLS
+                                                selectedDrills={selectedSessionDrills}
+                                            />
+                                        )} {selectedSessionDrills.length === 0 && (
+                                            <span>No drills selected for this session.</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                { isMobile && showSessionDetails && selectedSession && (
+                    <div class="mobile-session-details-container"
+                        onClick={(e) => {
+                            if (sessionDetailsRef.current && !sessionDetailsRef.current.contains(e.target)) {
+                                setShowSessionDetails(false);
+                                setSelectedSession(null);
+                            }
+                        }}
+                    >
+                        <div class="mobile-session-details" ref={sessionDetailsRef}>
+                            <div class="mobile-session-details-top">
+                                <h2 class="content-header">Session Details</h2>
+                            </div>
+
                             <div class="input-container">
                                 <span class="input-container-label">NAME</span>
                                 <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
@@ -377,17 +461,14 @@ export default function CoachCalendar() {
                                 <span class="input-container-label">RPE</span>
                                 <div class="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
                             </div>
-                            {selectedSession.extendedProps.notes.length > 0 && (
-                                <div class="input-container">
-                                    <span class="input-container-label">NOTES</span>
-                                    <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
-                                </div>
-                            )}
-                        </div>
-                        <div class="session-details-middle-middle">
-                            <div class="input-container session-details-people-container">
+                            <div class="input-container">
+                                <span class="input-container-label">NOTES</span>
+                                <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
+                            </div>
+
+                            <div class="input-container mobile-session-details-people-container">
                                 <span class="input-container-label">PEOPLE</span>
-                                <div class="session-details-people">
+                                <div class="mobile-session-details-people">
                                     <div>Coaches</div>
                                     <ul>
                                         {selectedSessionPeople
@@ -408,9 +489,7 @@ export default function CoachCalendar() {
                                     </ul>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="session-details-middle-right">
                             <div class="input-container session-details-drills-container">
                                 <span class="input-container-label">DRILLS</span>
                                 <div class="session-details-drills">
@@ -425,75 +504,8 @@ export default function CoachCalendar() {
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-
-            { isMobile && showSessionDetails && selectedSession && (
-                <div class="mobile-session-details-container"
-                    onClick={(e) => {
-                        if (sessionDetailsRef.current && !sessionDetailsRef.current.contains(e.target)) {
-                            setShowSessionDetails(false);
-                            setSelectedSession(null);
-                        }
-                    }}
-                >
-                    <div class="mobile-session-details" ref={sessionDetailsRef}>
-                        <div class="mobile-session-details-top">
-                            <h2 class="content-header">Session Details</h2>
-                        </div>
-
-                        <div class="input-container">
-                            <span class="input-container-label">NAME</span>
-                            <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
-                        </div>
-                        <div class="input-container">
-                            <span class="input-container-label">RPE</span>
-                            <div class="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
-                        </div>
-                        <div class="input-container">
-                            <span class="input-container-label">NOTES</span>
-                            <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
-                        </div>
-
-                        <div class="input-container mobile-session-details-people-container">
-                            <span class="input-container-label">PEOPLE</span>
-                            <div class="mobile-session-details-people">
-                                <div>Coaches</div>
-                                <ul>
-                                    {selectedSessionPeople
-                                        .filter(coach => coach.role === 'coach')
-                                        .map(coach => (
-                                            <li key={coach.id}>{coach.first_name} {coach.last_name}</li>
-                                        ))
-                                    }
-                                </ul>
-                                <div>Players</div>
-                                <ul>
-                                    {selectedSessionPeople
-                                        .filter(player => player.role === 'player')
-                                        .map(player => (
-                                            <li key={player.id}>{player.first_name} {player.last_name}</li>
-                                        ))
-                                    }
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div class="input-container session-details-drills-container">
-                            <span class="input-container-label">DRILLS</span>
-                            <div class="session-details-drills">
-                                {selectedSessionDrills.length > 0 && (
-                                    <SESSION_DETAILS_DRILLS
-                                        selectedDrills={selectedSessionDrills}
-                                    />
-                                )} {selectedSessionDrills.length === 0 && (
-                                    <span>No drills selected for this session.</span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                )}
+            </div>
         </>
     );
 }

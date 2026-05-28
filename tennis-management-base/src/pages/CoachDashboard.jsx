@@ -181,8 +181,14 @@ export default function Dashboard() {
                         {/* HEADER */}
                         <div className="dashboardHeader">
                             <div>
-                                <p className="dashboardLabel">PERFORMANCE OVERVIEW</p>
-                                <h1 className="dashboardTitle">Coach Dashboard</h1>
+                                <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>Coach Dashboard</h2>
+                                <p style={{
+                                    fontFamily: "'DM Sans Light', sans-serif",
+                                    fontSize: '13px',
+                                    color: 'var(--content-subhead-color)'
+                                }}>
+                                    Overview of your schedule and RPE.
+                                </p>
                             </div>
 
                             <select

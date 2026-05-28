@@ -93,7 +93,6 @@ function USER_CARD() {
                     cursor: 'pointer',
                     userSelect: 'none',
                     padding: '3px 10px',
-                    margin: '3px 7px',
                     borderRadius: '7px',
                     transition: 'background 0.2s',
                     justifyContent: 'space-between',

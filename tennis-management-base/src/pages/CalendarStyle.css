@@ -20,12 +20,15 @@
 
 .player-calendar-box {
     width: 100% !important;
+    background-color: transparent !important;
+    border: none !important;
+    width: 100%;
 }
 
 
 .fc-view-harness {
     overflow: auto;
-    min-height: 750px;
+    min-height: 680;
 }
 
 .fc {
@@ -54,6 +57,10 @@
 
 /* HEADER TOOLBAR */
 
+.fc .fc-header-toolbar {
+    margin-bottom: 10px !important;
+}
+
 .fc .fc-button {
     background-color: white;
     border: 2px solid var(--content-input-border-color);
@@ -61,6 +68,8 @@
 
     font-family: 'DM Mono Light', sans-serif;
     text-transform: capitalize;
+
+    font-size: 15px;
 }
 
 .fc .fc-button:focus,
