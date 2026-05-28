@@ -236,6 +236,7 @@ export default function CoachCalendar() {
 
     return (
         <>
+            <div id="other-users-page">
             {/* Loading overlay */}
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
             <div>
@@ -505,6 +506,7 @@ export default function CoachCalendar() {
                         </div>
                     </div>
                 )}
+            </div>
             </div>
         </>
     );

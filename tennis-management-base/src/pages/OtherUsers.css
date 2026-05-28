@@ -351,6 +351,9 @@ button.active {
   flex: 1;
 }
 
-#main-content {
+#other-users-page {
+    width: 100%;
+    display: flex;
     flex-direction: column;
+    gap: 20px;
 }
