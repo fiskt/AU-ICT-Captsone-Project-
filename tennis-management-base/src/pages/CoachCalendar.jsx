@@ -25,6 +25,62 @@ export default function CoachCalendar() {
     const mobileSessionEditorRef = useRef(null);
     const mobileSessionCreatorRef = useRef(null);
     const deleteConfirmRef = useRef(null);
+    const sendEmailRef = useRef(null);
+
+    // email session notification
+    const [showSendEmail, setShowSendEmail] = useState(false);
+    const [isSending, setIsSending] = useState(false);
+
+    const [unsentSessions, setUnsentSessions] = useState([]);
+
+    async function fetchUnsentSessions() {
+        console.log("fetch unsent sessions run");
+        const { data, error } = await supabase
+            .from('sessions')
+            .select('id')
+            .eq('sent_notify', false);
+
+        if (error) {
+            console.log("Error fetching session IDs for email invites: ", error.message);
+            setUnsentSessions([]);
+        } else {
+            if (data.length === 0) {
+                setUnsentSessions([]);
+                return;
+            }
+            const ids = data.map(ses => ses.id);
+            setUnsentSessions(ids);
+        }
+    }
+
+    async function sendEmail() {
+        // get list of all sessions that havent sent a email invite
+        setIsSending(true);
+
+        await Promise.allSettled(
+            unsentSessions.map(id =>
+                fetch('/api/notify-session-created', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId: id })
+                })
+            )
+        );
+
+        const { error: sent_update_error } = await supabase
+            .from('sessions')
+            .update({ sent_notify: true })
+            .in('id', unsentSessions);
+
+        if (sent_update_error) {
+            console.log("Error updating sent_notify:", sent_update_error.message);
+        }
+
+        fetchUnsentSessions();
+        setIsSending(false);
+        setShowSendEmail(false);
+    }
+
 
     // auto save current session inputs in local storage and restore the saved inputs
     const [sessionSettings, setSessionSettings] = useState(() => {
@@ -254,13 +310,6 @@ export default function CoachCalendar() {
 
             fetchCalendarData();
             setShowMobileSessionCreator(false);
-
-            // email notification for mobile session created
-            fetch('/api/notify-session-created', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: data.id })
-            }).catch(err => console.error('Email notification failed:', err));
         } else {
             console.log(error);
         }
@@ -421,8 +470,6 @@ export default function CoachCalendar() {
             if (selectedSession) {
                 setIsDataLoading(true);
 
-
-
                 const [sessionCoaches, sessionPlayers, sessionDrillIDs] = await Promise.all([
                     fetchSessionCoaches(selectedSession.id),
                     fetchSessionPlayers(selectedSession.id),
@@ -494,6 +541,7 @@ export default function CoachCalendar() {
         fetchDrillLibraryTags();
         fetchPlayers();
         fetchCoaches();
+        fetchUnsentSessions();
     }, []);
 
     useEffect(() => {
@@ -739,6 +787,44 @@ export default function CoachCalendar() {
                 </div>
             )}
 
+            {/* Send email popup */}
+            {showSendEmail && (
+                <div id="drill-modal-overlay"
+                    onClick={(e) => {
+                        if (sendEmailRef.current && !sendEmailRef.current.contains(e.target)) {
+                            setShowSendEmail(false);
+                        }
+                    }}
+                >
+                    <div className="drill-modal" ref={sendEmailRef}>
+                        <div className="drill-modal-header">
+                            <span className="drill-modal-title">Send Email Calendar Invitations</span>
+                            <button className="drill-icon-btn" onClick={() => setShowSendEmail(false)} style={{ border: 'none', background: 'transparent' }}>
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="drill-modal-body">
+                            <div className="drill-delete-title">
+                                {`${unsentSessions.length === 0
+                                    ? 'You have no unsent calendar invitations.'
+                                    : 'Send calendar invitations?'
+                                }`}
+                            </div>
+                            <div className="drill-delete-body">
+                                You have {unsentSessions.length} sessions with unsent calendar invitations.
+                            </div>
+                        </div>
+                        <div className="drill-modal-footer">
+                            <button className="drill-btn drill-btn-primary" onClick={sendEmail} disabled={isSending || unsentSessions.length === 0}>
+                                {isSending ? 'Sending...' : 'Send'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Calendar */}
             <div class="content-box" id="calendar-box">
                 <CALENDAR 
@@ -766,6 +852,10 @@ export default function CoachCalendar() {
                     setShowMobileSessionCreator={setShowMobileSessionCreator}
 
                     currentCalendarView={currentCalendarView} setCurrentCalendarView={setCurrentCalendarView}
+
+                    setShowSendEmail={setShowSendEmail}
+
+                    fetchUnsentSessions={fetchUnsentSessions}
 
                     ref={calendarRef}
                 />

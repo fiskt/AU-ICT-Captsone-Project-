@@ -216,7 +216,9 @@ export const CALENDAR = forwardRef(({
     currentUser,
     isMobile,
     setShowMobileSessionCreator,
-    currentCalendarView, setCurrentCalendarView
+    currentCalendarView, setCurrentCalendarView,
+    setShowSendEmail,
+    fetchUnsentSessions
     }, ref) => {
 
     const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
@@ -293,12 +295,7 @@ export const CALENDAR = forwardRef(({
             ]);
 
             event.setProp('id', data.id);
-
-            fetch('/api/notify-session-created', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: data.id })
-            }).catch(err => console.error('Email notification failed:', err));
+            fetchUnsentSessions();
         } else {
             console.log(error);
         }
@@ -330,6 +327,12 @@ export const CALENDAR = forwardRef(({
                 <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()}>
                     {calendarTitle} 
                 </h1>
+                <button
+                    className='drill-btn drill-btn-secondary'
+                    onClick={() => setShowSendEmail(true)}
+                >
+                    Notify
+                </button>
                 {isMobile && currentCalendarView === 'timeGridDay' && (
                     <button
                         class="drill-btn drill-btn-primary"
