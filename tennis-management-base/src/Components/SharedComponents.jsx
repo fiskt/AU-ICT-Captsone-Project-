@@ -60,6 +60,32 @@ function USER_CARD() {
                     boxShadow: '0 -4px 16px rgba(0,0,0,0.5)',
                     zIndex: 200,
                 }}>
+                    {/* Account Settings */}
+                    <div
+                        onClick={() => { setOpen(false); navigate('/AccountSettings'); }}
+                        style={{
+                            padding: '10px 14px',
+                            color: '#FFFFFF90',
+                            fontSize: '13px',
+                            fontFamily: 'DM Sans Light, sans-serif',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            borderBottom: '1px solid #3a3835',
+                            transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2a2825'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        Account Settings
+                    </div>
+
+                    {/* Log out */}
                     <div
                         onClick={handleLogout}
                         style={{

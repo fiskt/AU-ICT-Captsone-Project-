@@ -18,9 +18,11 @@ import DrillLibrary    from './pages/DrillLibrary';
 import Testing         from './pages/Testing';
 import SessionFeedback from './pages/SessionFeedback';
 import FeedbackSummary from './pages/PlayerFeedbackSummary';
-import OtherUsers      from './pages/OtherUsers';
+import OtherUsers        from './pages/OtherUsers';
+import AccountSettings  from './pages/AccountSettings';
 
 const AUTH_ROUTES   = ['/', '/Login', '/login', '/Register', '/register', '/auth/callback', '/ForgotPassword', '/forgotpassword', '/ResetPassword', '/resetpassword'];
+const SETTINGS_ROUTES = ['/AccountSettings'];
 const PLAYER_ROUTES = ['/PlayerDashboard', '/PlayerCalendar', '/SessionFeedback'];
 
 function AppLayout() {
@@ -66,6 +68,9 @@ function AppLayout() {
                         <Route path="/PlayerCalendar"  element={<ProtectedRoute allowedRoles={['player']}><PlayerCalendar /></ProtectedRoute>} />
                         <Route path="/SessionFeedback" element={<ProtectedRoute allowedRoles={['player']}><SessionFeedback /></ProtectedRoute>} />
                         <Route path="/PlayerFeedbackSummary" element={<ProtectedRoute allowedRoles={['player']}><FeedbackSummary /></ProtectedRoute>} />
+
+                        {/* Shared routes — both coach and player */}
+                        <Route path="/AccountSettings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
                     </Routes>
                 </main>
             </div>
