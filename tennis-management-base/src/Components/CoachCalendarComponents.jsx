@@ -13,9 +13,6 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import { Draggable } from '@fullcalendar/interaction'
 import interactionPlugin from '@fullcalendar/interaction'
 
-import 'tippy.js/dist/tippy.css'
-import tippy from 'tippy.js';
-
 import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
@@ -203,22 +200,108 @@ export function SIMPLE_DRILL_CARD({ drill, addDrillToSession, removeDrillFromSes
     );
 }
 
+export function DELETE_CONFIRM({
+    deleteRef,
+    setShowDelete,
+    selectedSession,
+    deleteSession,
+    isDeleting
+}) {
+    return (
+        <div id="drill-modal-overlay"
+            onClick={(e) => {
+                if (deleteRef.current && !deleteRef.current.contains(e.target)) {
+                    setShowDelete(false);
+                }
+            }}
+        >
+            <div className="drill-modal" ref={deleteRef}>
+                <div className="drill-modal-header">
+                    <span className="drill-modal-title">Delete Session</span>
+                    <button className="drill-icon-btn" onClick={() => setShowDelete(false)} style={{ border: 'none', background: 'transparent' }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div className="drill-modal-body">
+                    <div className="drill-delete-title">
+                        {`Delete "${selectedSession.title.length > 0 
+                                    ? selectedSession.title 
+                                    : 'this session'}" ?
+                        `}
+                    </div>
+                    <div className="drill-delete-body">
+                        This session will be permanently removed.
+                    </div>
+                </div>
+                <div className="drill-modal-footer">
+                    <button className="drill-btn drill-btn-danger-solid" onClick={deleteSession} disabled={isDeleting}>
+                        {isDeleting ? 'Deleting...' : 'Delete Session'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export function SEND_CONFIRM({
+    sendRef,
+    setShowSend,
+    unsentSessions,
+    send,
+    isSending
+}) {
+    return (
+        <div id="drill-modal-overlay"
+            onClick={(e) => {
+                if (sendRef.current && !sendRef.current.contains(e.target)) {
+                    setShowSend(false);
+                }
+            }}
+        >
+            <div className="drill-modal" ref={sendRef}>
+                <div className="drill-modal-header">
+                    <span className="drill-modal-title">Send Email Calendar Invitations</span>
+                    <button className="drill-icon-btn" onClick={() => setShowSend(false)} style={{ border: 'none', background: 'transparent' }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div className="drill-modal-body">
+                    <div className="drill-delete-title">
+                        {`${unsentSessions.length === 0
+                            ? 'You have no unsent calendar invitations.'
+                            : 'Send calendar invitations?'
+                        }`}
+                    </div>
+                    <div className="drill-delete-body">
+                        You have {unsentSessions.length} sessions with unsent calendar invitations.
+                    </div>
+                </div>
+                <div className="drill-modal-footer">
+                    <button className="drill-btn drill-btn-primary" onClick={send} disabled={isSending || unsentSessions.length === 0}>
+                        {isSending ? 'Sending...' : 'Send'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export const CALENDAR = forwardRef(({ 
     onSessionClick, 
     events, 
     onDateChange, 
     activeStart, activeEnd, 
     selectedSession, 
-    toggleTooltips, tooltipsEnabled, 
-    selectedCoaches, setSelectedCoaches,
-    selectedPlayers, setSelectedPlayers,
+    selectedCoaches, selectedPlayers,
     selectedDrills,
-    currentUser,
-    isMobile,
+    isMobile, 
     setShowMobileSessionCreator,
     currentCalendarView, setCurrentCalendarView,
-    setShowSendEmail,
-    fetchUnsentSessions
+    setShowSendEmail, fetchUnsentSessions
     }, ref) => {
 
     const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
@@ -396,29 +479,6 @@ export const CALENDAR = forwardRef(({
                             onDateChange(info.start, info.end);
                         }, 10);
                     }}
-                    eventDidMount={(info) => {
-                        if (isMobile) return;
-
-                        if (tooltipsEnabled && info.event.extendedProps.type === 'session') {
-                            const duration = info.event.extendedProps.duration || "-";
-                            const notes = info.event.extendedProps.notes || "No notes";
-                            tippy(info.el, {
-                                content: `
-                                    <div class="calendar-event-tooltip">
-                                        <span class="calendar-event-tooltip-title">${info.event.title}</span>
-                                        <div class="calendar-event-tooltip-divider"></div>
-                                        <span>DURATION: ${duration}</span>
-                                        <span>NOTES:</span>
-                                        <span class="calendar-event-tooltip-notes-area">${notes}</span>
-                                    </div>
-                                `,
-                                allowHTML: true,
-                                placement: 'top-start',
-                                theme: 'light'
-                            })
-                        }
-                        }
-                    }
                     displayEventTime={!isMobile}
                     displayEventEnd={false}
                     editable={true}

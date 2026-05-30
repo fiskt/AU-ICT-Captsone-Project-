@@ -14,9 +14,6 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import { Draggable } from '@fullcalendar/interaction'
 import interactionPlugin from '@fullcalendar/interaction'
 
-import 'tippy.js/dist/tippy.css'
-import tippy from 'tippy.js';
-
 function Stars({ level, size = '' }) {
     const levelMap = { Beginner: 1, Intermediate: 2, Advanced: 3, Elite: 5 };
     const filled = levelMap[level] ?? 2;
@@ -232,29 +229,6 @@ export const OTHER_CALENDARS = forwardRef(({
                             onDateChange(dateInfo.start, dateInfo.end);
                         }, 10);
                     }}
-                    eventDidMount={(info) => {
-                        if (isMobile) return;
-
-                        if (info.event.extendedProps.type === 'session') {
-                            const duration = info.event.extendedProps.duration || "-";
-                            const notes = info.event.extendedProps.notes || "No notes";
-                            tippy(info.el, {
-                                content: `
-                                    <div class="calendar-event-tooltip">
-                                        <span class="calendar-event-tooltip-title">${info.event.title}</span>
-                                        <div class="calendar-event-tooltip-divider"></div>
-                                        <span>DURATION: ${duration}</span>
-                                        <span>NOTES:</span>
-                                        <span class="calendar-event-tooltip-notes-area">${notes}</span>
-                                    </div>
-                                `,
-                                allowHTML: true,
-                                placement: 'top-start',
-                                theme: 'light'
-                            })
-                        }
-                        }
-                    }
                     displayEventTime={!isMobile}
                     displayEventEnd={false}
                     editable={false}

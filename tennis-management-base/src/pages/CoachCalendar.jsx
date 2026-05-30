@@ -1,5 +1,5 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS, DELETE_CONFIRM, SEND_CONFIRM } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
 import { useCurrentUser } from '../hooks/useCurrentUser.jsx';
@@ -749,80 +749,26 @@ export default function CoachCalendar() {
             {/* Loading overlay */}
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
 
-            {/* Delete confirmation */}
+            {/* Delete confirmation popup */}
             {showDeleteConfirmation && selectedSession && showSessionEditor && (
-                <div id="drill-modal-overlay"
-                    onClick={(e) => {
-                        if (deleteConfirmRef.current && !deleteConfirmRef.current.contains(e.target)) {
-                            setShowDeleteConfirmation(false);
-                        }
-                    }}
-                >
-                    <div className="drill-modal" ref={deleteConfirmRef}>
-                        <div className="drill-modal-header">
-                            <span className="drill-modal-title">Delete Session</span>
-                            <button className="drill-icon-btn" onClick={() => setShowDeleteConfirmation(false)} style={{ border: 'none', background: 'transparent' }}>
-                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="drill-modal-body">
-                            <div className="drill-delete-title">
-                                {`Delete "${selectedSession.title.length > 0 
-                                            ? selectedSession.title 
-                                            : 'this session'}" ?
-                                `}
-                            </div>
-                            <div className="drill-delete-body">
-                                This session will be permanently removed.
-                            </div>
-                        </div>
-                        <div className="drill-modal-footer">
-                            <button className="drill-btn drill-btn-danger-solid" onClick={deleteSession} disabled={isDeleting}>
-                                {isDeleting ? 'Deleting...' : 'Delete Session'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <DELETE_CONFIRM
+                    deleteRef={deleteConfirmRef}
+                    setShowDelete={setShowDeleteConfirmation}
+                    selectedSession={selectedSession}
+                    deleteSession={deleteSession}
+                    isDeleting={isDeleting}
+                />
             )}
 
             {/* Send email popup */}
             {showSendEmail && (
-                <div id="drill-modal-overlay"
-                    onClick={(e) => {
-                        if (sendEmailRef.current && !sendEmailRef.current.contains(e.target)) {
-                            setShowSendEmail(false);
-                        }
-                    }}
-                >
-                    <div className="drill-modal" ref={sendEmailRef}>
-                        <div className="drill-modal-header">
-                            <span className="drill-modal-title">Send Email Calendar Invitations</span>
-                            <button className="drill-icon-btn" onClick={() => setShowSendEmail(false)} style={{ border: 'none', background: 'transparent' }}>
-                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="drill-modal-body">
-                            <div className="drill-delete-title">
-                                {`${unsentSessions.length === 0
-                                    ? 'You have no unsent calendar invitations.'
-                                    : 'Send calendar invitations?'
-                                }`}
-                            </div>
-                            <div className="drill-delete-body">
-                                You have {unsentSessions.length} sessions with unsent calendar invitations.
-                            </div>
-                        </div>
-                        <div className="drill-modal-footer">
-                            <button className="drill-btn drill-btn-primary" onClick={sendEmail} disabled={isSending || unsentSessions.length === 0}>
-                                {isSending ? 'Sending...' : 'Send'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <SEND_CONFIRM
+                    sendRef={sendEmailRef}
+                    setShowSend={setShowSendEmail}
+                    unsentSessions={unsentSessions}
+                    send={sendEmail}
+                    isSending={isSending}
+                />
             )}
 
             {/* Calendar */}
@@ -835,32 +781,19 @@ export default function CoachCalendar() {
                         setSelectedSession(eventData);
                         setShowSessionEditor(true);
                     }}
-
                     selectedSession={selectedSession}
-
-                    toggleTooltips={toggleTooltips} tooltipsEnabled={toggleEventTooltips}
-                    
-                    selectedCoaches={selectedCoaches} setSelectedCoaches={setSelectedCoaches}
-                    selectedPlayers={selectedPlayers} setSelectedPlayers={setSelectedPlayers}
-
+                    selectedCoaches={selectedCoaches} selectedPlayers={selectedPlayers}
                     selectedDrills={selectedDrills}
-
-                    currentUser={currentUserID}
-
                     isMobile={isMobile}
-
                     setShowMobileSessionCreator={setShowMobileSessionCreator}
-
                     currentCalendarView={currentCalendarView} setCurrentCalendarView={setCurrentCalendarView}
-
-                    setShowSendEmail={setShowSendEmail}
-
-                    fetchUnsentSessions={fetchUnsentSessions}
+                    setShowSendEmail={setShowSendEmail} fetchUnsentSessions={fetchUnsentSessions}
 
                     ref={calendarRef}
                 />
             </div>
             
+            {/* Session editor */}
             <div id="session-creator">
                 <div id="session-creator-top">
                     <h2 class="content-header">Session Creator</h2>
@@ -950,6 +883,7 @@ export default function CoachCalendar() {
                 </div>
             </div>
 
+            {/* Mobile session creator */}
             {isMobile && showMobileSessionCreator && (
                 <div id="mobile-session-creator-container"
                     onClick={(e) => {
@@ -1101,7 +1035,7 @@ export default function CoachCalendar() {
                 </div>
             )}
 
-            {/* Drill library */}
+            {/* Drill library popup */}
             { showAddDrill && (
                 <div 
                     id="add-drill-container"
@@ -1315,6 +1249,7 @@ export default function CoachCalendar() {
                 </div>
             )}
 
+            {/* Mobile session editor */}
             {isMobile && showSessionEditor && selectedSession && (
                 <div id="mobile-session-editor-container"
                     onClick={(e) => {
