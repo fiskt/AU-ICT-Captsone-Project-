@@ -125,7 +125,7 @@ export default function PlayerDashboard() {
         }
     }
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => { fetchData(); }, [previewPlayerId]);
 
     async function handleSave() {
         const { data: { user } } = await supabase.auth.getUser();
