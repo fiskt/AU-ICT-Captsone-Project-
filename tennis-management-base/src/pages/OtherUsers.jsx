@@ -236,9 +236,9 @@ export default function CoachCalendar() {
 
     return (
         <>
-            <div id="other-users-page">
             {/* Loading overlay */}
             {isDataLoading && <LOADING_OVERLAY caption={"session data"}/>}
+            <div id="other-users-page">
             <div>
                 <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>Other Users</h2>
                 <p style={{
@@ -251,107 +251,7 @@ export default function CoachCalendar() {
                 </p>
             </div>
 
-            <div id="other-users-main-panel">
-                {/* User selector */}
-                { !showCollapsedUsers && (
-                    <div class="content-box" id='user-selector'>
-                        <div class="user-selector-top">
-                            <h2 class="content-header">Users</h2>
-                            { isMobile && (
-                                <button
-                                    className='drill-btn'
-                                    onClick={() => setShowCollapsedUsers(true)}
-                                >Show Less</button>
-                            )}
-                        </div>
-                        <div class="content-box-top">
-                            <div id="user-filter-container">
-                                <div class="content-box-middle">
-                                    <input
-                                        class="typing-input-box"
-                                        placeholder='Search user'
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                    >
-                                    </input>
-                                </div>
-                                <div class="content-box-bottom" id="users-filter-btn">
-                                        <button 
-                                            onClick={() => setSearchFilter("coaches")}
-                                            className={`user-filter-btn drill-btn drill-btn-secondary ${searchFilter === 'coaches' ? 'active' : ''}`}
-                                        >Coach</button>
-                                        <button 
-                                            onClick={() => setSearchFilter("players")}
-                                            className={`user-filter-btn drill-btn drill-btn-secondary ${searchFilter === 'players' ? 'active' : ''}`}
-                                        >Player</button>
-                                        <button
-                                            className="drill-btn user-filter-btn"
-                                            onClick={() => {
-                                                setSearchFilter("all");
-                                                setSearchQuery("");
-                                            }}
-                                        >Reset</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="content-box-middle">
-                            <USERS_LIST 
-                                coaches={filteredCoaches} players={filteredPlayers} 
-                                selectedUser={selectedUser}
-                                setSelectedUser={setSelectedUser} 
-                            />
-                        </div>
-                    </div> 
-                )}
-
-                { showCollapsedUsers && isMobile && (
-                    <div class="content-box" id='collapsed-users'>
-                        <div class="user-selector-top">
-                            <h2 class="content-header">Users</h2>
-                                <button
-                                    className='drill-btn'
-                                    onClick={() => setShowCollapsedUsers(false)}
-                                >Show More</button>
-                        </div>
-                        <ul class="user-list">
-                            <li
-                                key={selectedUser?.id}
-                                className={`${selectedUser ? 'active' : ''}`}
-                            >
-                                <span>{`
-                                    ${selectedUser 
-                                        ? `${selectedUser.first_name} ${selectedUser.last_name}`
-                                        : 'Select a user'
-                                    }
-                                `}
-                                </span>
-                            </li>
-                        </ul>
-                    </div> 
-                )}
-
-                {/* Calendar */}
-                <div class="content-box" id="calendar-box">
-                    <OTHER_CALENDARS 
-                        events={calendarEvents}
-                        activeStart={weekStart} activeEnd={weekEnd}
-                        onDateChange={handleDateChange}
-                        onSessionClick = {(eventData) => {
-                            setSelectedSession(eventData);
-                            setShowSessionDetails(true);
-                        }}
-
-                        selectedSession={selectedSession}
-
-                        selectedUser={selectedUser}
-
-                        isMobile={isMobile}
-
-                        ref={calendarRef}
-                    />
-                </div>
-                {/* Session details */}
+            {/* Session details */}
                 { !showCollapsedUsers && selectedSession && showSessionDetails && !isMobile && (
                     <div 
                         class="session-details-container" 
@@ -506,6 +406,107 @@ export default function CoachCalendar() {
                         </div>
                     </div>
                 )}
+
+            <div id="other-users-main-panel">
+                {/* User selector */}
+                { !showCollapsedUsers && (
+                    <div class="content-box" id='user-selector'>
+                        <div class="user-selector-top">
+                            <h2 class="content-header">Users</h2>
+                            { isMobile && (
+                                <button
+                                    className='drill-btn'
+                                    onClick={() => setShowCollapsedUsers(true)}
+                                >Show Less</button>
+                            )}
+                        </div>
+                        <div class="content-box-top">
+                            <div id="user-filter-container">
+                                <div class="content-box-middle">
+                                    <input
+                                        class="typing-input-box"
+                                        placeholder='Search user'
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    >
+                                    </input>
+                                </div>
+                                <div class="content-box-bottom" id="users-filter-btn">
+                                        <button 
+                                            onClick={() => setSearchFilter("coaches")}
+                                            className={`user-filter-btn drill-btn drill-btn-secondary ${searchFilter === 'coaches' ? 'active' : ''}`}
+                                        >Coach</button>
+                                        <button 
+                                            onClick={() => setSearchFilter("players")}
+                                            className={`user-filter-btn drill-btn drill-btn-secondary ${searchFilter === 'players' ? 'active' : ''}`}
+                                        >Player</button>
+                                        <button
+                                            className="drill-btn user-filter-btn"
+                                            onClick={() => {
+                                                setSearchFilter("all");
+                                                setSearchQuery("");
+                                            }}
+                                        >Reset</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="content-box-middle">
+                            <USERS_LIST 
+                                coaches={filteredCoaches} players={filteredPlayers} 
+                                selectedUser={selectedUser}
+                                setSelectedUser={setSelectedUser} 
+                            />
+                        </div>
+                    </div> 
+                )}
+
+                { showCollapsedUsers && isMobile && (
+                    <div class="content-box" id='collapsed-users'>
+                        <div class="user-selector-top">
+                            <h2 class="content-header">Users</h2>
+                                <button
+                                    className='drill-btn'
+                                    onClick={() => setShowCollapsedUsers(false)}
+                                >Show More</button>
+                        </div>
+                        <ul class="user-list">
+                            <li
+                                key={selectedUser?.id}
+                                className={`${selectedUser ? 'active' : ''}`}
+                            >
+                                <span>{`
+                                    ${selectedUser 
+                                        ? `${selectedUser.first_name} ${selectedUser.last_name}`
+                                        : 'Select a user'
+                                    }
+                                `}
+                                </span>
+                            </li>
+                        </ul>
+                    </div> 
+                )}
+
+                {/* Calendar */}
+                <div class="content-box" id="calendar-box">
+                    <OTHER_CALENDARS 
+                        events={calendarEvents}
+                        activeStart={weekStart} activeEnd={weekEnd}
+                        onDateChange={handleDateChange}
+                        onSessionClick = {(eventData) => {
+                            setSelectedSession(eventData);
+                            setShowSessionDetails(true);
+                        }}
+
+                        selectedSession={selectedSession}
+
+                        selectedUser={selectedUser}
+
+                        isMobile={isMobile}
+
+                        ref={calendarRef}
+                    />
+                </div>
             </div>
             </div>
         </>

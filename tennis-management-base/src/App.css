@@ -1047,11 +1047,13 @@ button:hover {
   /* z-index 600 sits above sidebar (100), topbar (50), and everything else */
   z-index: 500;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
   /* Scrollable overlay so very tall modals can scroll */
   overflow-y: auto;
-  padding: 80px 20px 40px 20px;
+
+  left: 14%;
+
+  align-items: center;
+  justify-content: center;
 }
 
 .drill-modal {

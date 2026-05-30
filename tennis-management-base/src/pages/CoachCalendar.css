@@ -627,3 +627,10 @@ select::picker(select) {
 #session-creator-drills .drill-card:hover::before {
     transform: none;
 }
+
+#calendar-date-btn-group {
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    gap: 5px;
+}
