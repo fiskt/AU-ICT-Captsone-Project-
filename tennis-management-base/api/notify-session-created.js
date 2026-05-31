@@ -66,14 +66,12 @@ export default async function handler(req, res) {
             to: r.email,
             subject: `New session: ${session.name}`,
             html: `
-                <p>Hi ${r.first_name},</p>
-                <p>You've been added to a session:</p>
-                <ul>
-                    <li><strong>${session.name}</strong></li>
-                    <li>${startStr}</li>
-                    ${session.notes ? `<li>Notes: ${session.notes}</li>` : ''}
-                </ul>
-                <p>The attached calendar file will add this to your calendar.</p>
+                <div>
+                    <h1>Hi ${r.first_name}, you've been added to a session.</h1>
+                    <h2>${startStr}</h2>
+                    <p>${session.name}</p>
+                    ${session.notes ? `<p>Notes: ${session.notes}</p>` : ''}
+                </div>
             `,
             attachments: [{
                 filename: 'session.ics',
