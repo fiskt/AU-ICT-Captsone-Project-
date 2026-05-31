@@ -1,7 +1,7 @@
 // api/notify-session-created.js
 import { createClient } from '@supabase/supabase-js';
 import nodemailer from 'nodemailer';
-
+import { DateTime } from 'luxon';
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -55,10 +55,10 @@ export default async function handler(req, res) {
     }
 
     const icsContent = buildICS(session);
-    const startStr = new Date(session.start_datetime).toLocaleString('en-AU', {
-        weekday: 'long', day: 'numeric', month: 'long',
-        hour: 'numeric', minute: '2-digit'
-    });
+    
+    const dateStr = DateTime.fromISO(session.start_datetime).toISODate().toFormat('cccc, LLL d');
+    const startStr = DateTime.fromISO(session.start_datetime).toFormat('hh:mm');
+    const endStr = DateTime.fromISO(session.end_datetime).toFormat('hh:mm');
 
     const results = await Promise.allSettled(recipients.map(r =>
         transporter.sendMail({
@@ -66,11 +66,33 @@ export default async function handler(req, res) {
             to: r.email,
             subject: `New session: ${session.name}`,
             html: `
-                <div>
-                    <h1>Hi ${r.first_name}, you've been added to a session.</h1>
-                    <h2>${startStr}</h2>
-                    <p>${session.name}</p>
-                    ${session.notes ? `<p>Notes: ${session.notes}</p>` : ''}
+                <div
+                    style="
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                        max-width: 560px; 
+                        margin: 0 auto; 
+                        padding: 32px 24px; 
+                        color: #1a1a1a; 
+                        line-height: 1.6;
+                    "
+                >
+                    <h1
+                        style="font-size: 24px; font-weight: 600; margin: 0 0 16px; color: #1a1a1a;"
+                    >
+                        Hi ${r.first_name}, you've been added to a session.
+                    </h1>
+                    <p
+                        style="font-size: 16px; margin: 0 0 16px;"
+                    >
+                        ${dateStr}, ${startStr} - ${endStr}
+                    </p>
+                    <h2>${session.name}</h2>
+                    ${session.notes 
+                        ? `<p
+                                style="font-size: 16px; margin: 0 0 16px;"
+                            >${session.notes}</p>` 
+                        : ''
+                    }
                 </div>
             `,
             attachments: [{
