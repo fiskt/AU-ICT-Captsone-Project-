@@ -55,10 +55,13 @@ export default async function handler(req, res) {
     }
 
     const icsContent = buildICS(session);
-    
-    const dateStr = DateTime.fromISO(session.start_datetime).toISODate().toFormat('cccc, LLL d');
-    const startStr = DateTime.fromISO(session.start_datetime).toFormat('hh:mm');
-    const endStr = DateTime.fromISO(session.end_datetime).toFormat('hh:mm');
+
+    const start = DateTime.fromISO(session.start_datetime).setZone('Australia/Adelaide');
+    const end = DateTime.fromISO(session.end_datetime).setZone('Australia/Adelaide');
+
+    const dateStr = start.toFormat('cccc, LLL d');
+    const startStr = start.toFormat('HH:mm');
+    const endStr = end.toFormat('HH:mm');
 
     const results = await Promise.allSettled(recipients.map(r =>
         transporter.sendMail({
