@@ -256,8 +256,10 @@ export default function AccountSettings() {
             {/* Header */}
             <div className="dashboardHeader" style={{ marginBottom: '24px' }}>
                 <div>
-                    <p className="dashboardLabel">PROFILE</p>
-                    <h1 className="dashboardTitle">Account Settings</h1>
+                    <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>Account Settings</h2>
+                    <p style={{ fontFamily: "'DM Sans Light', sans-serif", fontSize: '13px', color: 'var(--content-subhead-color)' }}>
+                        Manage your profile and account.
+                    </p>
                 </div>
             </div>
 
