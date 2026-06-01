@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import { COACH_SIDEBAR } from '../Components/SharedComponents';
+import { COACH_SIDEBAR, LOADING_OVERLAY } from '../Components/SharedComponents';
 
 import '../App.css';
 import './Dashboard.css';
@@ -25,16 +25,16 @@ export default function Dashboard() {
     const navigate = useNavigate();
 
     // DEFAULT STATE
-    const [selectedPlayer, setSelectedPlayer] = useState("All Players");
-    const [players, setPlayers] = useState([]);
+    const [selectedPlayer, setSelectedPlayer] = useState("All Athletes");
+    const [Athletes, setAthletes] = useState([]);
+
     const [weeklyData, setWeeklyData] = useState([]);
 
     // STATE FOR SESSIONS
     const [sessions, setSessions] = useState([]);
-    const [upcomingSessions, setUpcomingSessions] = useState([]);
 
-    // PLAYERS STATE
-    const activePlayers = new Set(
+    // Athletes STATE
+    const activeAthletes = new Set(
         sessions.flatMap(session =>
             session.session_people
                 ?.filter(p => p.signin_details.role === "player")
@@ -42,8 +42,16 @@ export default function Dashboard() {
         )
     ).size;
 
+    // LOADING STATE
+    const [isLoading, setIsLoading] = useState(true);
+
+    // WEEK OFFSET STATE
+    const [weekOffset, setWeekOffset] = useState(0);
+
     // FETCH SESSIONS DATA, INCL RPE VALUES
     async function fetchSessions() {
+        setIsLoading(true);
+
         const { data, error } = await supabase
             .from("sessions")
             .select(`
@@ -69,10 +77,14 @@ export default function Dashboard() {
         (data || []).forEach(session => {
             const week = new Date(session.start_datetime).toISOString().slice(0, 10);
 
-            const sessionPlayers = session.session_people
+            const sessionAthletes = session.session_people
                 ?.filter(p => p.signin_details.role === "player") || [];
 
-            sessionPlayers.forEach(p => {
+            const assignedAthletes = sessionAthletes
+                .map(p => `${p.signin_details.first_name} ${p.signin_details.last_name}`)
+                .join(", ");
+
+            sessionAthletes.forEach(p => {
                 const player = p.signin_details;
                 const playerName = `${player.first_name} ${player.last_name}`;
 
@@ -80,10 +92,12 @@ export default function Dashboard() {
                     f.player_id === player.id &&
                     f.session_id === session.id
                 );
-
                 graphRows.push({
+                    label: `${week}\n${session.name}`,
                     week,
                     player: playerName,
+                    assignedAthletes,
+                    sessionName: session.name,
                     plannedLoad: Number(session.rpe || 0),
                     actualLoad: Number(feedback?.rpe_load || 0),
                 });
@@ -91,56 +105,78 @@ export default function Dashboard() {
         });
 
         setWeeklyData(graphRows);
-        const now = new Date();
-
-        const upcoming = (data || []).filter(session =>
-            new Date(session.end_datetime) >= now
-        );
-
-        setUpcomingSessions(upcoming);
+        setIsLoading(false);
     }
 
-    async function fetchPlayers() {
-    const { data, error } = await supabase
-        .from("signin_details")
-        .select("id, first_name, last_name, role")
-        .eq("role", "player");
+    async function fetchAthletes() {
+        setIsLoading(true);
 
-    if (error) {
-        console.log("Error fetching players:", error.message);
-        setPlayers([]);
-    } else {
-        setPlayers(data || []);
+        const { data, error } = await supabase
+            .from("signin_details")
+            .select("id, first_name, last_name, role")
+            .eq("role", "player");
+
+        if (error) {
+            console.log("Error fetching Athletes:", error.message);
+            setAthletes([]);
+        }
+        else {
+            setAthletes(data || []);
+        }
+
+        setIsLoading(false);
     }
-}
+
     useEffect(() => {
         fetchSessions();
-        fetchPlayers();
+        fetchAthletes();
     }, []);
 
-    // FILTERED DATA
+    // CUSTOM TOOLTIP DISPLAY: RPE GRAPH HOVER
+    function CustomTooltip({ active, payload }) {
+        if (active && payload && payload.length) {
+            const data = payload[0].payload;
+
+            return (
+                <div className="customTooltip">
+                    <p>Date: {data.week}</p>
+                    <p>Session: {data.sessionName}</p>
+                    <p>Athlete: {data.assignedAthletes || "No Athlete Assigned"}</p>
+                    <p>Planned Load: {data.plannedLoad}</p>
+                    <p>Actual Load: {data.actualLoad}</p>
+                </div>
+            );
+        }
+
+        return null;
+    }
+
+    // FILTERED DATA: SELECTED ATHLETES GRAPH DATA
     const filteredData =
-        selectedPlayer === "All Players"
+        selectedPlayer === "All Athletes"
             ? Object.values(
                 weeklyData.reduce((acc, item) => {
-                    if (!acc[item.week]) {
-                        acc[item.week] = {
+                    const key = `${item.week}-${item.sessionName}`;
+
+                    if (!acc[key]) {
+                        acc[key] = {
+                            label: item.label,
                             week: item.week,
-                            plannedLoad: 0,
+                            sessionName: item.sessionName,
+                            assignedAthletes: item.assignedAthletes,
+                            plannedLoad: item.plannedLoad,
                             actualLoad: 0,
                         };
                     }
-
-                    acc[item.week].plannedLoad += item.plannedLoad;
-                    acc[item.week].actualLoad += item.actualLoad;
-
+                    acc[key].actualLoad += item.actualLoad;
                     return acc;
                 }, {})
             )
             : weeklyData.filter((d) => d.player === selectedPlayer);
 
+    // FILTERED DATA: SELECTED ATHLETES SESSIONS DATA
     const filteredSessions =
-        selectedPlayer === "All Players"
+        selectedPlayer === "All Athletes"
             ? sessions
             : sessions.filter(session =>
                 session.session_people?.some(
@@ -150,21 +186,53 @@ export default function Dashboard() {
                 )
             );
 
+    const filteredUpcomingSessions = filteredSessions.filter(session =>
+        new Date(session.end_datetime) >= new Date()
+    );
+
+    // WEEKLY NAVIGATION
+    const today = new Date();
+
+    const startOfSelectedWeek = new Date(today);
+    startOfSelectedWeek.setDate(today.getDate() - today.getDay() + 1 + weekOffset * 7);
+    startOfSelectedWeek.setHours(0, 0, 0, 0);
+
+    const endOfSelectedWeek = new Date(startOfSelectedWeek);
+    endOfSelectedWeek.setDate(startOfSelectedWeek.getDate() + 6);
+    endOfSelectedWeek.setHours(23, 59, 59, 999);
+
+    // WEEKLY NAVIGATION: RESPONSE TO GRAPH DATA
+    const weeklyGraphData = filteredData.filter(item => {
+        const itemDate = new Date(item.week);
+        return itemDate >= startOfSelectedWeek && itemDate <= endOfSelectedWeek;
+    });
+
+    // WEEKLY NAVIGATION: RESPONSE TO SESSIONS
+    const weeklySessions = filteredSessions.filter(session => {
+        const sessionDate = new Date(session.start_datetime);
+        return sessionDate >= startOfSelectedWeek && sessionDate <= endOfSelectedWeek;
+    });
+
+    // CALCULATES TOTAL RPE, DEPENDING ON WEEKLY NAVIGATION
+    const totalRPE = weeklySessions.reduce((total, session) => {
+        const sessionLoad = session.session_feedback?.reduce(
+            (sum, feedback) => sum + Number(feedback.rpe_load || 0), 0) || 0;
+        return total + sessionLoad;
+    }, 0);
+
+    // CALCULATES EACH INTENSITY ZONE FOR INTENSITY CARD
     const intensitySummary = {
         easy: 0,
         medium: 0,
         hard: 0,
     };
-
     filteredSessions.forEach(session => {
         session.session_feedback?.forEach(feedback => {
-            const intensity = Number(feedback.intensity || 0);
-
-            if (intensity >= 1 && intensity <= 3) {
+            if (feedback.intensity_zone === "easy") {
                 intensitySummary.easy++;
-            } else if (intensity >= 4 && intensity <= 6) {
+            } else if (feedback.intensity_zone === "medium") {
                 intensitySummary.medium++;
-            } else if (intensity >= 7) {
+            } else if (feedback.intensity_zone === "hard") {
                 intensitySummary.hard++;
             }
         });
@@ -172,6 +240,9 @@ export default function Dashboard() {
 
     return (
         <div id="layout">
+            {/* Loading overlay */}
+            {isLoading && <LOADING_OVERLAY caption={"coach dashboard"} />}
+
             <COACH_SIDEBAR />
 
             <div id="main-content-wrapper">
@@ -187,18 +258,19 @@ export default function Dashboard() {
                                     fontSize: '13px',
                                     color: 'var(--content-subhead-color)'
                                 }}>
-                                    Overview of your schedule and RPE.
+                                    Overview of RPE and Upcoming Sessions.
                                 </p>
                             </div>
 
+                            {/* PLAYER DROPDOWN SELECTER */}
                             <select
-                                className="playerSelect"
+                                className="Athleteselect"
                                 value={selectedPlayer}
                                 onChange={(e) => setSelectedPlayer(e.target.value)}
                             >
-                                <option>All Players</option>
+                                <option>All Athletes</option>
 
-                                {players.map(player => (
+                                {Athletes.map(player => (
                                     <option
                                         key={player.id}
                                         value={`${player.first_name} ${player.last_name}`}
@@ -219,8 +291,8 @@ export default function Dashboard() {
                             </div>
 
                             <div className="drill-stat-card">
-                                <p className="drill-stat-label">ACTIVE PLAYERS</p>
-                                <h2 className="drill-stat-value">{activePlayers}</h2>
+                                <p className="drill-stat-label">ACTIVE Athletes</p>
+                                <h2 className="drill-stat-value">{activeAthletes}</h2>
                             </div>
 
                             <div className="drill-stat-card">
@@ -229,8 +301,9 @@ export default function Dashboard() {
                             </div>
 
                             <div className="drill-stat-card">
-                                <p className="drill-stat-label">AVG RPE</p>
-                                <h2 className="drill-stat-value">7.2</h2>
+                                <p className="drill-stat-label">TOTAL RPE LOAD</p>
+                                <h2 className="drill-stat-value">{totalRPE}</h2>
+                                <span className="drill-stat-sub"> {selectedPlayer === "All Players" ? "Selected week" : selectedPlayer}</span>
                             </div>
                         </div>
 
@@ -244,17 +317,32 @@ export default function Dashboard() {
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">
-                                            PLAYER DASHBOARD
+                                            SESSIONS RPE
                                         </p>
-
-                                        <h3>
-                                            Planned vs Actual Training Load
-                                        </h3>
+                                        <h3>Planned vs Actual Training Load</h3>
                                     </div>
+
+                                    <div className="weekControls">
+                                        <button className="weekButton" onClick={() => setWeekOffset(weekOffset - 1)}>
+                                            Previous Week
+                                        </button>
+
+                                        <button className={`weekButton ${weekOffset === 0 ? "active" : ""}`} onClick={() => setWeekOffset(0)}>
+                                            This Week
+                                        </button>
+
+                                        <button className="weekButton" onClick={() => setWeekOffset(weekOffset + 1)}>
+                                            Next Week
+                                        </button>
+                                    </div>
+
+                                    <p className="dashboardLabel">
+                                        {startOfSelectedWeek.toLocaleDateString("en-AU")} - {endOfSelectedWeek.toLocaleDateString("en-AU")}
+                                    </p>
 
                                     <ResponsiveContainer width="100%" height={340}>
                                         <LineChart
-                                            data={filteredData}
+                                            data={weeklyGraphData}
                                             margin={{
                                                 top: 10,
                                                 right: 10,
@@ -269,8 +357,21 @@ export default function Dashboard() {
                                             />
 
                                             <XAxis
-                                                dataKey="week"
-                                                tick={{ fill: "#6b7280", fontSize: 12 }}
+                                                dataKey="label"
+                                                tick={({ x, y, payload }) => {
+                                                    const [date, sessionName] = payload.value.split("\n");
+
+                                                    return (
+                                                        <g transform={`translate(${x},${y})`}>
+                                                            <text x={0} y={0} dy={12} textAnchor="middle" fill="#6b7280" fontSize={12}>
+                                                                {date}
+                                                            </text>
+                                                            <text x={0} y={16} dy={12} textAnchor="middle" fill="#9ca3af" fontSize={10}>
+                                                                {sessionName}
+                                                            </text>
+                                                        </g>
+                                                    );
+                                                }}
                                                 tickLine={false}
                                                 axisLine={false}
                                             />
@@ -281,13 +382,7 @@ export default function Dashboard() {
                                                 axisLine={false}
                                             />
 
-                                            <Tooltip
-                                                contentStyle={{
-                                                    borderRadius: "12px",
-                                                    border: "none",
-                                                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                                                }}
-                                            />
+                                            <Tooltip content={<CustomTooltip />} />
 
                                             <Legend />
 
@@ -328,11 +423,8 @@ export default function Dashboard() {
                                         <p className="dashboardLabel">
                                             TRAINING INTENSITY
                                         </p>
-
                                         <h3>RPE Intensity Zones</h3>
-
                                         <div className="intensityCards">
-
                                             <div className="intensityCard easy"
                                                 onClick={() =>
                                                     navigate("/PlayerFeedbackSummary", {
@@ -389,15 +481,14 @@ export default function Dashboard() {
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">
-                                            COACH DASHBOARD
+                                            SESSION DETAILS
                                         </p>
-
                                         <h3>Upcoming Sessions</h3>
                                     </div>
 
                                     <div className="sessionList">
-                                        {upcomingSessions.length > 0 ? (
-                                            upcomingSessions.map((s) => (
+                                        {filteredUpcomingSessions.length > 0 ? (
+                                            filteredUpcomingSessions.map((s) => (
                                                 <div key={s.id} className="sessionItem"
                                                     onClick={() => navigate("/CoachCalendar", { state: { openSessionId: s.id } })}
                                                     style={{ cursor: "pointer" }}>

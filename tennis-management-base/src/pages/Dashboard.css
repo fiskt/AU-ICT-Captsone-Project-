@@ -1,5 +1,4 @@
 /* PAGE */
-
 .dashboardPage {
     display: flex;
     flex-direction: column;
@@ -8,7 +7,6 @@
 }
 
 /* HEADER */
-
 .dashboardHeader {
     display: flex;
     justify-content: space-between;
@@ -32,7 +30,6 @@
 }
 
 /* SELECT */
-
 .playerSelect {
     border: 2px solid var(--content-input-border-color);
     background-color: white;
@@ -47,7 +44,6 @@
 }
 
 /* MAIN GRID */
-
 .dashboardGrid {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -62,7 +58,6 @@
 }
 
 /* STATS */
-
 .statsGrid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -98,7 +93,6 @@
 }
 
 /* CONTENT BOX */
-
 .chartBox {
     background-color: var(--content-bg-color);
 
@@ -110,7 +104,6 @@
 }
 
 /* SECTION */
-
 .sectionHeader {
     margin-bottom: 18px;
 }
@@ -126,7 +119,6 @@
 }
 
 /* SESSION LIST */
-
 .sessionList {
     display: flex;
     flex-direction: column;
@@ -155,7 +147,6 @@
 }
 
 /* SESSION LEFT */
-
 .sessionMain {
     display: flex;
     flex-direction: column;
@@ -180,7 +171,6 @@
 }
 
 /* SESSION RIGHT */
-
 .sessionInfo {
     display: flex;
     flex-direction: column;
@@ -194,7 +184,6 @@
 }
 
 /* BUTTON */
-
 .dashboardBtn {
     background-color: var(--accent-color);
     border: 2px solid var(--accent-color);
@@ -236,15 +225,16 @@
 
 .feedbackForm select,
 .feedbackForm textarea {
+    padding: 9px 12px;
     border: 2px solid var(--content-input-border-color);
     border-radius: 8px;
-    padding: 10px;
     font-family: 'DM Sans Light', sans-serif;
-}
-
-.feedbackForm textarea {
-    min-height: 90px;
-    resize: none;
+    font-size: 13px;
+    color: var(--content-body-color);
+    background-color: var(--content-bg-color);
+    outline: none;
+    transition: border-color 0.15s ease;
+    width: 100%;
 }
 
 .tagList {
@@ -305,7 +295,6 @@
 }
 
 /* INTENSITY CARD */
-
 .intensityCards {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -349,4 +338,50 @@
 
 .intensityCard.hard {
     background: #fff1f2;
+}
+
+/* GRAPH TOOL TIP */
+.customTooltip {
+    background: white;
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    font-family: 'DM Sans Light', sans-serif;
+    font-size: 13px;
+    color: var(--content-body-color);
+}
+
+.customTooltip p {
+    margin: 4px 0;
+}
+
+/* WEEK CONTROLS */
+.weekControls {
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.weekButton {
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 2px solid var(--content-input-border-color);
+    background: var(--content-bg-color);
+    color: var(--content-subhead-color);
+
+    font-family: 'DM Mono Light', sans-serif;
+    font-size: 11px;
+
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.weekButton:hover {
+    border-color: var(--accent-color);
+}
+
+.weekButton.active {
+    border-color: var(--accent-color);
+    background: var(--accent-color);
+    color: white;
 }

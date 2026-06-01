@@ -203,7 +203,7 @@ export default function PlayerDashboard() {
                         fontSize: '13px',
                         color: 'var(--content-subhead-color)'
                     }}>
-                        Overview of your player performance.
+                        Overview of your performance.
                     </p>
                 </div>
             </div>
@@ -289,7 +289,7 @@ export default function PlayerDashboard() {
                     {!isCoachPreview && (
                         <div className="chartBox">
                             <div className="sectionHeader">
-                                <p className="dashboardLabel">PLAYER FEEDBACK</p>
+                                <p className="dashboardLabel">Rate of Perceived Exertion (RPE)</p>
                                 <h3>Session Feedback</h3>
                             </div>
                             {!pendingSession ? <p>No pending feedback.</p> : (
@@ -304,7 +304,7 @@ export default function PlayerDashboard() {
                                     <label>Actual Duration (minutes)</label>
                                     <input type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} />
                                     <label>Comment</label>
-                                    <textarea placeholder="How did you feel during the session?" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                                    <textarea placeholder="How was the session?" value={notes} onChange={(e) => setNotes(e.target.value)} />
                                     <button className="dashboardBtn" onClick={handleSave}>Submit Feedback</button>
                                 </div>
                             )}
