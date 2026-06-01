@@ -188,7 +188,7 @@ function DeleteAccount() {
                 borderRadius: '8px', padding: '16px', marginBottom: '24px',
             }}>
                 <p style={{ margin: '0 0 8px', fontFamily: 'DM Sans Light, sans-serif', fontSize: '14px', color: '#991B1B', fontWeight: '600' }}>
-                    ⚠️ This action cannot be undone.
+                    This action cannot be undone.
                 </p>
                 <p style={{ margin: 0, fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: '#B91C1C' }}>
                     Your account will be permanently deleted. You will lose access to all your data including sessions, feedback, and performance records.
