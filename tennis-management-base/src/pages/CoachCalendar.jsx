@@ -13,7 +13,6 @@ export default function CoachCalendar() {
     const { userId: currentUserID, isLoading: authLoading } = useCurrentUser();
 
     const location = useLocation();
-
     const openSessionId = location.state?.openSessionId;
 
     useEffect(() => {

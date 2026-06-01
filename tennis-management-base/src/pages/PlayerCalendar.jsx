@@ -4,6 +4,7 @@ import { USERS_LIST, OTHER_CALENDARS, SESSION_DETAILS_DRILLS } from '../Componen
 import { useState, useRef, useEffect } from 'react';
 
 import { useCurrentUser } from '../hooks/useCurrentUser.jsx';
+import { useLocation } from "react-router-dom";
 
 import { createClient } from '@supabase/supabase-js';
 import { DateTime, Duration } from 'luxon';
@@ -26,6 +27,9 @@ export default function CoachCalendar() {
     const [selectedSessionPeople, setSelectedSessionPeople] = useState([]);
     const [selectedSessionDrills, setSelectedSessionDrills] = useState([]);
 
+    const location = useLocation();
+    const selectedSessionIdDashboard = location.state?.selectedSession;
+
     // detecting mobile window size
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -46,6 +50,19 @@ export default function CoachCalendar() {
         calendarApi.changeView(isMobile ? "timeGridDay" : "dayGridMonth");
         calendarApi.updateSize();
     }, [isMobile]);
+
+    useEffect(() => {
+    if (!selectedSessionIdDashboard || calendarEvents.length === 0) return;
+
+    const sessionToOpen = calendarEvents.find(
+        event => event.id === selectedSessionIdDashboard
+    );
+
+    if (sessionToOpen) {
+        setSelectedSession(sessionToOpen);
+        setShowSessionDetails(true);
+    }
+}, [selectedSessionIdDashboard, calendarEvents]);
 
     async function fetchSelectedSessionPeople() {
         const { data, error } = await supabase

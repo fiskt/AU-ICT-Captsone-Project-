@@ -267,8 +267,11 @@ export default function PlayerDashboard() {
                             <h3>Weekly Activity</h3>
                         </div>
                         <div className="sessionList">
-                            {weeklySessions.length > 0 ? weeklySessions.map((session) => (
-                                <div className="sessionItem" key={session.id}>
+                            {weeklySessions.length > 0 ? 
+                            weeklySessions.map((session) => (
+                                <div key={session.id} className="sessionItem"
+                                onClick={() => navigate("/PlayerCalendar", { state: { selectedSession: session.id } })}
+                                                    style={{ cursor: "pointer" }} >
                                     <div className="sessionMain">
                                         <p className="sessionClient">{session.name}</p>
                                         <p className="sessionName">{new Date(session.end_datetime) < new Date() ? "Completed" : "Upcoming"}</p>
