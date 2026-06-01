@@ -792,7 +792,7 @@ export default function CoachCalendar() {
                 />
             </div>
             
-            {/* Session editor */}
+            {/* Session creator */}
             <div id="session-creator">
                 <div id="session-creator-top">
                     <h2 class="content-header">Session Creator</h2>

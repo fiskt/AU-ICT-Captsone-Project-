@@ -94,7 +94,10 @@ export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlay
     const sessionHasRPE = sessionSettings.sessionRPE > 0;
 
     // ensure session has at least 1 person selected
-    const sessionHasPeople = sessionCoaches.length > 0 || sessionPlayers.length > 0;
+    const sessionHasCoaches = sessionCoaches.length > 0;
+    const sessionHasPlayers = sessionPlayers.length > 0;
+
+    const sessionHasPeople = sessionHasCoaches && sessionHasPlayers;
 
     const sessionIsValid = 
         sessionHasName && 
