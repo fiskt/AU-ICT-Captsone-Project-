@@ -103,7 +103,6 @@ function TagInput({ selectedTags, onTagsChange, allTags }) {
                     onKeyDown={handleKeyDown}
                 />
             </div>
-
             {showSuggestions && (suggestions.length > 0 || showCreateNew) && (
                 <div className="drill-tag-suggestions">
                     {suggestions.map(tag => (
@@ -244,11 +243,8 @@ function DrillFormModal({ mode, drill, allTags, onSave, onClose, onDelete }) {
                         </svg>
                     </button>
                 </div>
-
                 <div className="drill-modal-body">
-                    {error && (
-                        <div className="drill-error-banner">{error}</div>
-                    )}
+                    {error && <div className="drill-error-banner">{error}</div>}
 
                     <div className="drill-form-group">
                         <label className="drill-form-label">Drill Name *</label>
@@ -320,9 +316,7 @@ function DrillFormModal({ mode, drill, allTags, onSave, onClose, onDelete }) {
 
                 {mode === 'add' ? (
                     <div className="drill-modal-footer">
-                        <button className="drill-btn drill-btn-ghost" onClick={onClose} disabled={saving}>
-                            Cancel
-                        </button>
+                        <button className="drill-btn drill-btn-ghost" onClick={onClose} disabled={saving}>Cancel</button>
                         <button className="drill-btn drill-btn-primary" onClick={handleSubmit} disabled={saving}>
                             <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
@@ -339,9 +333,7 @@ function DrillFormModal({ mode, drill, allTags, onSave, onClose, onDelete }) {
                             Delete
                         </button>
                         <div className="modal-right">
-                            <button className="drill-btn drill-btn-ghost" onClick={onClose} disabled={saving}>
-                                Cancel
-                            </button>
+                            <button className="drill-btn drill-btn-ghost" onClick={onClose} disabled={saving}>Cancel</button>
                             <button className="drill-btn drill-btn-primary" onClick={handleSubmit} disabled={saving}>
                                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
@@ -380,12 +372,148 @@ function DeleteModal({ drill, onConfirm, onClose, deleting }) {
                     </div>
                 </div>
                 <div className="drill-modal-footer">
-                    <button className="drill-btn drill-btn-ghost" onClick={onClose} disabled={deleting}>
-                        Cancel
-                    </button>
+                    <button className="drill-btn drill-btn-ghost" onClick={onClose} disabled={deleting}>Cancel</button>
                     <button className="drill-btn drill-btn-danger-solid" onClick={onConfirm} disabled={deleting}>
                         {deleting ? 'Deleting...' : 'Delete Drill'}
                     </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── MANAGE TAGS MODAL ─────────────────────────────────────────────────────────
+function ManageTagsModal({ allTags, drills, onDeleteTag, onClose }) {
+    const [deletingTagId, setDeletingTagId] = useState(null);
+    const [confirmTagId, setConfirmTagId] = useState(null);
+
+    const getUsageCount = (tagId) =>
+        drills.filter(d => d.tags?.some(t => t.id === tagId)).length;
+
+    const handleDelete = async (tag) => {
+        const inUse = getUsageCount(tag.id) > 0;
+        if (inUse && confirmTagId !== tag.id) {
+            setConfirmTagId(tag.id);
+            return;
+        }
+        setDeletingTagId(tag.id);
+        await onDeleteTag(tag);
+        setDeletingTagId(null);
+        setConfirmTagId(null);
+    };
+
+    return (
+        <div id="drill-modal-overlay">
+            <div className="drill-modal" style={{ maxWidth: '480px' }}>
+                <div className="drill-modal-header">
+                    <span className="drill-modal-title">Manage Tags</span>
+                    <button className="drill-icon-btn" onClick={onClose} style={{ border: 'none', background: 'transparent' }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div className="drill-modal-body" style={{ padding: '16px 24px', maxHeight: '420px', overflowY: 'auto' }}>
+                    {allTags.length === 0 ? (
+                        <p style={{ fontFamily: "'DM Sans Light', sans-serif", fontSize: '13px', color: 'var(--content-subhead-color)', textAlign: 'center', padding: '24px 0' }}>
+                            No tags saved yet.
+                        </p>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {allTags.map(tag => {
+                                const usageCount = getUsageCount(tag.id);
+                                const isDeleting = deletingTagId === tag.id;
+                                const needsConfirm = confirmTagId === tag.id;
+
+                                return (
+                                    <div
+                                        key={tag.id}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            gap: '10px',
+                                            padding: '10px 14px',
+                                            border: '2px solid',
+                                            borderColor: needsConfirm ? 'var(--danger-border-color)' : 'var(--topbar-accent-color)',
+                                            borderRadius: '8px',
+                                            backgroundColor: needsConfirm ? 'var(--danger-bg-color)' : 'var(--content-bg-color)',
+                                            transition: 'all 0.15s ease',
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                                            <span style={{
+                                                fontFamily: "'DM Sans Light', sans-serif",
+                                                fontSize: '13px',
+                                                fontWeight: 600,
+                                                color: needsConfirm ? 'var(--danger-body-color)' : 'var(--content-head-color)',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                            }}>
+                                                {tag.name}
+                                            </span>
+                                            <span style={{
+                                                fontFamily: "'DM Mono Light', sans-serif",
+                                                fontSize: '10px',
+                                                color: needsConfirm ? 'var(--danger-body-color)' : 'var(--content-input-placeholder-color)',
+                                                flexShrink: 0,
+                                            }}>
+                                                {usageCount === 0 ? 'unused' : `${usageCount} drill${usageCount !== 1 ? 's' : ''}`}
+                                            </span>
+                                        </div>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                                            {needsConfirm && (
+                                                <>
+                                                    <span style={{ fontFamily: "'DM Mono Light', sans-serif", fontSize: '10px', color: 'var(--danger-body-color)' }}>
+                                                        Remove from {usageCount} drill{usageCount !== 1 ? 's' : ''}?
+                                                    </span>
+                                                    <button
+                                                        className="drill-btn drill-btn-ghost"
+                                                        style={{ padding: '4px 10px', fontSize: '10px' }}
+                                                        onClick={() => setConfirmTagId(null)}
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </>
+                                            )}
+                                            <button
+                                                className={`drill-icon-btn ${needsConfirm ? '' : 'danger'}`}
+                                                title={needsConfirm ? 'Confirm delete' : 'Delete tag'}
+                                                disabled={isDeleting}
+                                                onClick={() => handleDelete(tag)}
+                                                style={needsConfirm ? {
+                                                    background: 'var(--danger-body-color)',
+                                                    borderColor: 'var(--danger-body-color)',
+                                                    color: 'white',
+                                                    width: 'auto',
+                                                    padding: '4px 10px',
+                                                    fontFamily: "'DM Mono Light', sans-serif",
+                                                    fontSize: '10px',
+                                                } : {}}
+                                            >
+                                                {isDeleting ? (
+                                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ animation: 'spin 1s linear infinite' }}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                    </svg>
+                                                ) : needsConfirm ? 'Yes, delete' : (
+                                                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+
+                <div className="drill-modal-footer">
+                    <button className="drill-btn drill-btn-secondary" onClick={onClose}>Done</button>
                 </div>
             </div>
         </div>
@@ -478,10 +606,10 @@ export default function DrillLibrary() {
     const [isLoading, setIsLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
     const [search, setSearch] = useState('');
-    const [activeTagFilter, setActiveTagFilter] = useState(null);
+    const [activeTagFilters, setActiveTagFilters] = useState([]); // now an array for multi-select
     const [view, setView] = useState('list');
     const [selectedDrill, setSelectedDrill] = useState(null);
-    const [modal, setModal] = useState(null);
+    const [modal, setModal] = useState(null); // null | 'add' | 'edit' | 'delete' | 'manageTags'
     const [deleting, setDeleting] = useState(false);
     const { toast, show: showToast } = useToast();
 
@@ -576,14 +704,27 @@ export default function DrillLibrary() {
         if (error) console.error('Error saving drill tags:', error);
     };
 
+    // Toggle a tag filter on/off — multi-select
+    const toggleTagFilter = (tagId) => {
+        setActiveTagFilters(prev =>
+            prev.includes(tagId)
+                ? prev.filter(id => id !== tagId)
+                : [...prev, tagId]
+        );
+    };
+
+    const clearTagFilters = () => setActiveTagFilters([]);
+
+    // Drills must match ALL selected tags (AND logic) — or change to ANY (OR) based on preference
+    // Using OR logic (match any selected tag) as it's more useful for browsing
     const filtered = drills.filter(d => {
         const matchesSearch =
             d.name?.toLowerCase().includes(search.toLowerCase()) ||
             d.description?.toLowerCase().includes(search.toLowerCase()) ||
             d.tags?.some(t => t.name.toLowerCase().includes(search.toLowerCase()));
 
-        const matchesTag = !activeTagFilter ||
-            d.tags?.some(t => t.id === activeTagFilter);
+        const matchesTag = activeTagFilters.length === 0 ||
+            activeTagFilters.some(filterId => d.tags?.some(t => t.id === filterId));
 
         return matchesSearch && matchesTag;
     });
@@ -595,6 +736,32 @@ export default function DrillLibrary() {
     const handleView = (drill) => { setSelectedDrill(drill); setView('detail'); };
     const handleEdit = (drill) => { setSelectedDrill(drill); setModal('edit'); };
     const handleDeleteRequest = (drill) => { setSelectedDrill(drill); setModal('delete'); };
+
+    // Delete a tag from the tag library
+    const handleDeleteTag = async (tag) => {
+        // Remove from allTags optimistically
+        setAllTags(prev => prev.filter(t => t.id !== tag.id));
+        // Also clear from active filters if selected
+        setActiveTagFilters(prev => prev.filter(id => id !== tag.id));
+        // Remove from drill tags in junction table (cascade handles drill_library_tags)
+        const { error } = await supabase
+            .from('drill_tags')
+            .delete()
+            .eq('id', tag.id);
+
+        if (error) {
+            console.error('Error deleting tag:', error);
+            showToast('Failed to delete tag. Please try again.', 'red');
+            setAllTags(prev => [...prev, tag].sort((a, b) => a.name.localeCompare(b.name)));
+        } else {
+            // Remove tag from all drills in local state
+            setDrills(prev => prev.map(d => ({
+                ...d,
+                tags: d.tags?.filter(t => t.id !== tag.id) || [],
+            })));
+            showToast(`Tag "${tag.name}" deleted`, 'red');
+        }
+    };
 
     const handleSave = async (form) => {
         const resolvedTags = await ensureTagsExist(form.tags || []);
@@ -743,9 +910,7 @@ export default function DrillLibrary() {
                 {fetchError && (
                     <div className="drill-error-banner">
                         {fetchError}
-                        <button className="drill-btn drill-btn-danger" onClick={fetchData}>
-                            Retry
-                        </button>
+                        <button className="drill-btn drill-btn-danger" onClick={fetchData}>Retry</button>
                     </div>
                 )}
 
@@ -795,45 +960,95 @@ export default function DrillLibrary() {
                             />
                         </div>
 
-                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {/* Multi-select tag filter chips */}
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                             <button
                                 style={{
                                     padding: '6px 14px',
                                     borderRadius: '100px',
                                     border: '2px solid',
-                                    borderColor: !activeTagFilter ? 'var(--accent-color)' : 'var(--content-input-border-color)',
-                                    background: !activeTagFilter ? 'var(--accent-color)' : 'var(--content-bg-color)',
-                                    color: !activeTagFilter ? 'white' : 'var(--content-subhead-color)',
+                                    borderColor: activeTagFilters.length === 0 ? 'var(--accent-color)' : 'var(--content-input-border-color)',
+                                    background: activeTagFilters.length === 0 ? 'var(--accent-color)' : 'var(--content-bg-color)',
+                                    color: activeTagFilters.length === 0 ? 'white' : 'var(--content-subhead-color)',
                                     fontFamily: "'DM Mono Light', sans-serif",
                                     fontSize: '11px',
                                     cursor: 'pointer',
                                 }}
-                                onClick={() => setActiveTagFilter(null)}
+                                onClick={clearTagFilters}
                             >
                                 All
                             </button>
-                            {usedTags.map(tag => (
+                            {usedTags.map(tag => {
+                                const isActive = activeTagFilters.includes(tag.id);
+                                return (
+                                    <button
+                                        key={tag.id}
+                                        style={{
+                                            padding: '6px 14px',
+                                            borderRadius: '100px',
+                                            border: '2px solid',
+                                            borderColor: isActive ? 'var(--accent-color)' : 'var(--content-input-border-color)',
+                                            background: isActive ? 'var(--accent-color)' : 'var(--content-bg-color)',
+                                            color: isActive ? 'white' : 'var(--content-subhead-color)',
+                                            fontFamily: "'DM Mono Light', sans-serif",
+                                            fontSize: '11px',
+                                            cursor: 'pointer',
+                                        }}
+                                        onClick={() => toggleTagFilter(tag.id)}
+                                    >
+                                        {tag.name}
+                                    </button>
+                                );
+                            })}
+                            {/* Clear button — only shown when filters are active */}
+                            {activeTagFilters.length > 0 && (
                                 <button
-                                    key={tag.id}
                                     style={{
-                                        padding: '6px 14px',
+                                        padding: '6px 10px',
                                         borderRadius: '100px',
-                                        border: '2px solid',
-                                        borderColor: activeTagFilter === tag.id ? 'var(--accent-color)' : 'var(--content-input-border-color)',
-                                        background: activeTagFilter === tag.id ? 'var(--accent-color)' : 'var(--content-bg-color)',
-                                        color: activeTagFilter === tag.id ? 'white' : 'var(--content-subhead-color)',
+                                        border: '2px solid var(--content-input-border-color)',
+                                        background: 'transparent',
+                                        color: 'var(--content-subhead-color)',
                                         fontFamily: "'DM Mono Light', sans-serif",
-                                        fontSize: '11px',
+                                        fontSize: '10px',
                                         cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
                                     }}
-                                    onClick={() => setActiveTagFilter(tag.id)}
+                                    onClick={clearTagFilters}
                                 >
-                                    {tag.name}
+                                    <svg width="10" height="10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Clear ({activeTagFilters.length})
                                 </button>
-                            ))}
+                            )}
                         </div>
 
-                        <div id="drill-toolbar-right">
+                        <div id="drill-toolbar-right" style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+                            {/* Manage Tags button */}
+                            <button
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '8px 14px',
+                                    borderRadius: '8px',
+                                    border: '2px solid var(--content-input-border-color)',
+                                    background: 'var(--content-bg-color)',
+                                    color: 'var(--content-subhead-color)',
+                                    fontFamily: "'DM Mono Light', sans-serif",
+                                    fontSize: '11px',
+                                    cursor: 'pointer',
+                                }}
+                                onClick={() => setModal('manageTags')}
+                            >
+                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a2 2 0 012-2z" />
+                                </svg>
+                                Manage Tags
+                            </button>
                             <button id="add-drill-btn" onClick={() => setModal('add')}>
                                 <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
@@ -868,7 +1083,7 @@ export default function DrillLibrary() {
                             <div className="drill-empty-sub">
                                 {drills.length === 0
                                     ? 'Start building your coaching catalogue by adding your first drill.'
-                                    : "Try adjusting your search or filter."}
+                                    : 'Try adjusting your search or filter.'}
                             </div>
                             {drills.length === 0 && (
                                 <button className="drill-btn drill-btn-primary" onClick={() => setModal('add')}>
@@ -907,6 +1122,14 @@ export default function DrillLibrary() {
                     onConfirm={handleDeleteConfirm}
                     onClose={() => setModal(null)}
                     deleting={deleting}
+                />
+            )}
+            {modal === 'manageTags' && (
+                <ManageTagsModal
+                    allTags={allTags}
+                    drills={drills}
+                    onDeleteTag={handleDeleteTag}
+                    onClose={() => setModal(null)}
                 />
             )}
 
