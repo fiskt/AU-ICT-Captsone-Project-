@@ -314,8 +314,6 @@ Steps: Navigate to /Login, /Register, /ForgotPassword, /ResetPassword
 Expected: No sidebar or topbar visible on any of these pages
 Actual: No sidebar or topbar visible on any of these pages
 
-END OF TEST CASES
-
 SECTION 8: DRILL LIBRARY
 
 TC61) Drill Library Loads All Drills
