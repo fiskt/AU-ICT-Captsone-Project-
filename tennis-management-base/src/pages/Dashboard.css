@@ -57,55 +57,52 @@
     gap: 20px;
 }
 
-/* STATS */
-.statsGrid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-}
+/* RESPONSIVE - MOBILE LAYOUT */
 
-.statCard {
-    background-color: var(--content-bg-color);
+/* Mobile */
+@media (max-width: 768px) {
+    .dashboardGrid {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
 
-    border: 2px solid var(--topbar-accent-color);
+    .leftColumn,
+    .rightColumn {
+        width: 100%;
+        min-width: 0;
+        gap: 10px;
+        align-items: center;
+    }
 
-    border-radius: 8px;
+    .coachDashboardPage .rightColumn {
+    order: 1;
+    }
 
-    padding: 20px;
-}
+    .coachDashboardPage .leftColumn {
+        order: 2;
+    }
 
-.cardLabel {
-    font-family: 'DM Mono Light', sans-serif;
-    font-size: 11px;
-    letter-spacing: 2px;
-    color: var(--content-subhead-color);
-
-    margin-bottom: 10px;
-}
-
-.cardValue {
-    font-family: 'Bebas', sans-serif;
-    font-size: 42px;
-
-    color: var(--content-head-color);
-
-    margin: 0;
+    .chartBox {
+        width: 100%;
+        max-width: 100%;
+        gap: 10px;
+        padding: 15px;
+    }
 }
 
 /* CONTENT BOX */
 .chartBox {
     background-color: var(--content-bg-color);
-
     border: 2px solid var(--topbar-accent-color);
-
     border-radius: 8px;
-
     padding: 20px;
 }
 
 /* SECTION */
 .sectionHeader {
-    margin-bottom: 18px;
+    margin-bottom: 15px;
 }
 
 .sectionHeader h3 {
@@ -129,15 +126,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-
     border: 2px solid var(--topbar-accent-color);
-
     background-color: var(--main-bg-color);
-
     border-radius: 8px;
-
     padding: 14px;
-
     transition: all 0.2s ease;
 }
 

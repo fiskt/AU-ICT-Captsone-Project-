@@ -219,16 +219,16 @@ export default function PlayerDashboard() {
                 </div>
             </div>
 
-            {/* TOP STATS */}
-            <div className="statsGrid">
+            {/* STATS */}
+            <div className="drill-stats-row">
 
-                <div className="statCard">
-                    <p className="cardLabel">THIS WEEK</p>
+                <div className="drill-stat-card">
+                    <p className="drill-stat-label">THIS WEEK</p>
                     <h2 className="drill-stat-value accent">{weeklySessions.length}</h2>
                 </div>
 
-                <div className="statCard">
-                    <p className="cardLabel">NEXT SESSION</p>
+                <div className="drill-stat-card">
+                    <p className="drill-stat-label">NEXT SESSION</p>
                     <h2 className="drill-stat-value">
                         {nextSessionData
                             ? new Date(nextSessionData.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })
@@ -237,24 +237,22 @@ export default function PlayerDashboard() {
                     <p className="drill-stat-sub">{nextSessionData ? nextSessionData.name : "No upcoming session"}</p>
                 </div>
 
-                <div className="statCard">
-                    <p className="cardLabel">LAST RATING</p>
+                <div className="drill-stat-card">
+                    <p className="drill-stat-label">LAST RATING</p>
                     <h2 className="drill-stat-value">{latestFeedback ? `${latestFeedback.intensity}/10` : "—"}</h2>
                     <p className="drill-stat-sub">{latestFeedback ? latestFeedback.session_name : "No feedback yet"}</p>
                 </div>
 
-                <div className="statCard">
-                    <p className="cardLabel">FOCUS AREA</p>
+                <div className="drill-stat-card">
+                    <p className="drill-stat-label">FOCUS AREA</p>
                    <h2 className="drill-stat-value">{focusArea}</h2>
                 </div>
             </div>
 
             {/* MAIN GRID */}
             <div className="dashboardGrid">
-
                 {/* LEFT COLUMN */}
                 <div className="leftColumn">
-
                     <div className="chartBox">
                         <div className="sectionHeader">
                             <p className="dashboardLabel">NEXT SESSION</p>

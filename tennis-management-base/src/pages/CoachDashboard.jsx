@@ -264,7 +264,7 @@ export default function Dashboard() {
 
                             {/* PLAYER DROPDOWN SELECTER */}
                             <select
-                                className="Athleteselect"
+                                className="playerSelect"
                                 value={selectedPlayer}
                                 onChange={(e) => setSelectedPlayer(e.target.value)}
                             >
@@ -310,10 +310,8 @@ export default function Dashboard() {
 
                         {/* MAIN GRID */}
                         <div className="dashboardGrid">
-
                             {/* LEFT */}
-                            <div className="leftColumn">
-
+                            <div className="leftColumn coachDashboardPage">
                                 {/* RPE GRAPH */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
@@ -477,7 +475,7 @@ export default function Dashboard() {
                             </div>
 
                             {/* RIGHT */}
-                            <div className="rightColumn">
+                            <div className="rightColumn coachDashboardPage">
 
                                 <div className="chartBox">
                                     <div className="sectionHeader">
