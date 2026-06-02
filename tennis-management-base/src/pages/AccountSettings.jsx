@@ -163,13 +163,12 @@ function DeleteAccount() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { navigate('/Login'); return; }
 
-        // Soft delete — mark account as deleted in signin_details
-        const { error: dbError } = await supabase
-            .from('signin_details')
-            .update({ deleted_at: new Date().toISOString() })
-            .eq('id', user.id);
+        // Hard delete via Edge Function — removes from auth.users and signin_details
+        const { error } = await supabase.functions.invoke('hyper-responder', {
+            body: { userId: user.id }
+        });
 
-        if (dbError) { setError(dbError.message); setDeleting(false); return; }
+        if (error) { setError('Failed to delete account. Please try again.'); setDeleting(false); return; }
 
         await supabase.auth.signOut();
         navigate('/Login');

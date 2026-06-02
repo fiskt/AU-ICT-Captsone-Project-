@@ -10,15 +10,68 @@ import { createClient } from '@supabase/supabase-js';
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
+    /* CURRENT USER ------------------------------------------------------------------------ */ 
     const { userId: currentUserID, isLoading: authLoading } = useCurrentUser();
-
     const location = useLocation();
     const openSessionId = location.state?.openSessionId;
 
-    useEffect(() => {
-        console.log('userId:', currentUserID);
-    }, [currentUserID]);
 
+
+    /* LOADING SCREEN STATE ------------------------------------------------------------------------ */ 
+    const [isDataLoading, setIsDataLoading] = useState(true);
+
+
+
+    /* CALENDAR ------------------------------------------------------------------------ */ 
+    const [calendarEvents, setCalendarEvents] = useState([]);   // array of events for the calendar
+
+    const [weekStart, setWeekStart] = useState(DateTime.now().startOf('week'));
+    const [weekEnd, setWeekEnd] = useState(DateTime.now().endOf('week'));
+
+     const handleDateChange = (start, end) => { 
+        setWeekStart(DateTime.fromJSDate(start));
+        setWeekEnd(DateTime.fromJSDate(end));
+    };
+
+    async function fetchCalendarData() {
+        if (!currentUserID) return;
+        setIsDataLoading(true);
+        
+        // fetch data from the database
+        const { data, error } = await supabase
+            .from('sessions')
+            .select(`
+                *,
+                session_people!inner(user_id)
+            `)
+            .eq('session_people.user_id', currentUserID);
+
+        // set the session data for the calendar events
+        const session = (data || []).map(ses => {
+            const startTime = DateTime.fromISO(ses.start_datetime);
+            const endTime = DateTime.fromISO(ses.end_datetime);
+            const duration = Duration.fromISOTime(ses.duration);
+            return {
+                id: ses.id,
+                title: ses.name,
+                start: startTime.toISO(),
+                end: endTime.toISO(),
+                extendedProps: {
+                    type: 'session',
+                    duration: duration,
+                    rpe: ses.rpe,
+                    notes: ses.notes
+                }
+            };
+        })
+        setCalendarEvents(session);
+        setIsDataLoading(false);
+    }
+
+
+
+    /* REFS ------------------------------------------------------------------------ */ 
+    const calendarRef = useRef(null);
     const sessionEditorRef = useRef(null);
     const drillLibraryRef = useRef(null);
     const mobileSessionEditorRef = useRef(null);
@@ -26,14 +79,16 @@ export default function CoachCalendar() {
     const deleteConfirmRef = useRef(null);
     const sendEmailRef = useRef(null);
 
-    // email session notification
-    const [showSendEmail, setShowSendEmail] = useState(false);
-    const [isSending, setIsSending] = useState(false);
 
-    const [unsentSessions, setUnsentSessions] = useState([]);
+
+    /* EMAIL NOTIFICATION ------------------------------------------------------------------------ */ 
+    const [showSendEmail, setShowSendEmail] = useState(false);  // show state for sending popup
+    const [isSending, setIsSending] = useState(false);  
+
+    const [unsentSessions, setUnsentSessions] = useState([]);   // array of session IDs with unsent notifs
 
     async function fetchUnsentSessions() {
-        console.log("fetch unsent sessions run");
+        // fetch all sessions with unsent notifs
         const { data, error } = await supabase
             .from('sessions')
             .select('id')
@@ -47,15 +102,15 @@ export default function CoachCalendar() {
                 setUnsentSessions([]);
                 return;
             }
-            const ids = data.map(ses => ses.id);
+            const ids = data.map(ses => ses.id);    // store the ids in an array
             setUnsentSessions(ids);
         }
     }
 
     async function sendEmail() {
-        // get list of all sessions that havent sent a email invite
         setIsSending(true);
 
+        // send out the emails in parallel
         await Promise.allSettled(
             unsentSessions.map(id =>
                 fetch('/api/notify-session-created', {
@@ -66,6 +121,7 @@ export default function CoachCalendar() {
             )
         );
 
+        // update database, change sent status to true
         const { error: sent_update_error } = await supabase
             .from('sessions')
             .update({ sent_notify: true })
@@ -75,14 +131,17 @@ export default function CoachCalendar() {
             console.log("Error updating sent_notify:", sent_update_error.message);
         }
 
-        fetchUnsentSessions();
-        setIsSending(false);
-        setShowSendEmail(false);
+        fetchUnsentSessions();      // re-fetch unsent sessions
+        setIsSending(false);        
+        setShowSendEmail(false);    // close the popup
     }
 
 
-    // auto save current session inputs in local storage and restore the saved inputs
+
+    /* SESSION SETTINGS ------------------------------------------------------------------------ */ 
     const [sessionSettings, setSessionSettings] = useState(() => {
+        // save a draft of the name, notes, rpe in local storage
+        // apply the draft if there is one
         const savedDraft = localStorage.getItem('session_creator_draft');
         return savedDraft ? JSON.parse(savedDraft) : {
             sessionName: "Session Name",
@@ -102,10 +161,22 @@ export default function CoachCalendar() {
         });
     }
 
-    // detecting mobile window size
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    useEffect(() => {
+        localStorage.setItem('session_creator_draft', JSON.stringify(sessionSettings));
+    }, [sessionSettings]);
+
+
+    
+    /* MOBILE DETECTION ------------------------------------------------------------------------ */ 
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768); 
+    const [currentCalendarView, setCurrentCalendarView] = useState(
+            isMobile 
+            ? 'timeGridDay' 
+            : 'timeGridWeek'
+        );
 
     useEffect(() => {
+        // change the isMobile state depending on the active window size
         const handleResize = () => {
             setIsMobile(window.innerWidth < 768);
         };
@@ -115,24 +186,34 @@ export default function CoachCalendar() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const calendarRef = useRef(null);
-    const [showMobileSessionCreator, setShowMobileSessionCreator] = useState(false);
-    const [showSessionEditor, setShowSessionEditor] = useState(false);
-    const [selectedSession, setSelectedSession] = useState(null);
+    
+    useEffect(() => {
+        // update the current calendar view to make sure week view doesnt show on mobile
+        const calendarApi = calendarRef.current?.getApi();
+        if (!calendarApi) return;
 
-    const [calendarEvents, setCalendarEvents] = useState([]);
+        calendarApi.changeView(isMobile ? "timeGridDay" : "timeGridWeek");
+        calendarApi.updateSize();
+        
+    }, [isMobile]);
 
-    const [coaches, setCoaches] = useState([]);
-    const [players, setPlayers] = useState([]);
 
+
+    /* USERS ------------------------------------------------------------------------ */ 
+    const [coaches, setCoaches] = useState([]); 
+    const [players, setPlayers] = useState([]); 
+
+    // holds the coaches/players that are currently selected in the tickboxes
+    // stores only id
     const [selectedCoaches, setSelectedCoaches] = useState([]);
     const [selectedPlayers, setSelectedPlayers] = useState([]);
 
+    // holds the edited selected users from tickboxes
     const [editedSessionCoaches, setEditedSessionCoaches] = useState([]);
     const [editedSessionPlayers, setEditedSessionPlayers] = useState([]);
 
-    // fetch all coaches and players
     async function fetchCoaches() {
+        // fetches all coaches
         const { data, error } = await supabase
             .from('signin_details')
             .select('*')
@@ -148,6 +229,7 @@ export default function CoachCalendar() {
     }
 
     async function fetchPlayers() {
+        // fetches all players
         const { data, error } = await supabase
             .from('signin_details')
             .select('*')
@@ -162,8 +244,8 @@ export default function CoachCalendar() {
         }
     }
 
-    // fetch selected session coaches and players, return the user ids
     async function fetchSessionCoaches(sessionId) {
+        // fetches coaches that are in the selected session
         const { data, error } = await supabase
             .from('session_people')
             .select(`
@@ -177,11 +259,12 @@ export default function CoachCalendar() {
             console.log("Error when fetching selected session coaches: ", error.message);
             return [];
         } else {
-            return data.map(item => item.user_id);
+            return data.map(item => item.user_id);  
         }
     }
 
     async function fetchSessionPlayers(sessionId) {
+        // fetches coaches that are in the selected session
         const { data, error } = await supabase
             .from('session_people')
             .select(`
@@ -199,15 +282,11 @@ export default function CoachCalendar() {
         }
     }
 
-    // toggle for event tooltips
-    const [toggleEventTooltips, setToggleEventTooltips] = useState(true);
 
-    const toggleTooltips = () => {
-        toggleEventTooltips ? setToggleEventTooltips(false) : setToggleEventTooltips(true);
-        console.log(toggleEventTooltips);
-    }
 
-    // Time options for mobile session creator 
+    /* MOBILE SESSION CREATOR/EDITOR ------------------------------------------------------------------------ */ 
+    const [showMobileSessionCreator, setShowMobileSessionCreator] = useState(false);
+
     const mobileSessionCreatorTimes = [
         { name: "05:00", val: "05:00:00" },
         { name: "05:30", val: "05:30:00" },
@@ -244,14 +323,36 @@ export default function CoachCalendar() {
         { name: "21:00", val: "21:00:00" },
     ];
 
+    const [mobileSessionStart, setMobileSessionStart] = useState("05:00:00");
+    const [mobileSessionEnd, setMobileSessionEnd] = useState("06:00:00");
+
+    const mobileSessionStartIndex = 
+        mobileSessionCreatorTimes
+        .findIndex(time => time.val === mobileSessionStart);
+
+    const validEndTimes = 
+        mobileSessionCreatorTimes
+        .slice(mobileSessionStartIndex + 1);
+
+    useEffect(() => {
+        // update the end time to make sure its always after the start time
+        if (
+            validEndTimes.length > 0 && 
+            !validEndTimes.find(t => t.val === mobileSessionEnd)
+        ) {
+            setMobileSessionEnd(validEndTimes[0].val);
+            updateSessionField('sessionEnd', validEndTimes[0].val);
+        }
+    }, [mobileSessionStart]);
+
     async function mobilePushSession({ currentDay, sessionSettings, startTimeStr, endTimeStr }) {
-        if (!sessionSettings) return;
+        if (!sessionSettings) return;   
 
-        console.log(sessionSettings);
-
+        // combine the currently displayed day and the selected times 
         const start = DateTime.fromISO(`${currentDay.toISODate()}T${startTimeStr}`);
         const end = DateTime.fromISO(`${currentDay.toISODate()}T${endTimeStr}`);
 
+        // calculate the duration with the diff between start and end times
         const durationStr = end.diff(start).toFormat('hh:mm:ss');
 
         const { data, error } = await supabase
@@ -283,7 +384,8 @@ export default function CoachCalendar() {
                 drill_id: drill.id,
                 order: index
             }));
-
+            
+            // insert the users and drills into the database tables
             await Promise.all([
                 sessionCoaches.length > 0 && supabase.from('session_people').insert(sessionCoaches),
                 sessionPlayers.length > 0 && supabase.from('session_people').insert(sessionPlayers),
@@ -306,7 +408,6 @@ export default function CoachCalendar() {
                     console.log("Error saving coach update:", updateError.message);
                 }
             }
-
             fetchCalendarData();
             setShowMobileSessionCreator(false);
         } else {
@@ -314,33 +415,20 @@ export default function CoachCalendar() {
         }
     }
 
-    const [mobileSessionStart, setMobileSessionStart] = useState("05:00:00");
-    const [mobileSessionEnd, setMobileSessionEnd] = useState("06:00:00");
 
-    const mobileSessionStartIndex = mobileSessionCreatorTimes.findIndex(time => time.val === mobileSessionStart);
 
-    const validEndTimes = mobileSessionCreatorTimes.slice(mobileSessionStartIndex + 1);
-
-    useEffect(() => {
-        if (validEndTimes.length > 0 && !validEndTimes.find(t => t.val === mobileSessionEnd)) {
-            setMobileSessionEnd(validEndTimes[0].val);
-            updateSessionField('sessionEnd', validEndTimes[0].val);
-        }
-    }, [mobileSessionStart]);
-
-    // Drill library
+    /* DRILLS ------------------------------------------------------------------------ */ 
 
     const [drills, setDrills] = useState([]);
-
     const [showAddDrill, setShowAddDrill] = useState(false);
 
-    const [filteredDrills, setFilteredDrills] = useState([]);
+    // Drill filters
+    const [filteredDrills, setFilteredDrills] = useState([]);           // Array of filtered drills
+    const [drillSearchQuery, setDrillSearchQuery] = useState("");       // Search bar filters
+    const [drillSearchFilter, setDrillSearchFilter] = useState("ALL");  // Tag filters
 
-    const [drillSearchQuery, setDrillSearchQuery] = useState("");
-    const [drillSearchFilter, setDrillSearchFilter] = useState("ALL");
-
-    const [selectedDrills, setSelectedDrills] = useState([]);
-    const [editedSessionDrills, setEditedSessionDrills] = useState([]);
+    const [selectedDrills, setSelectedDrills] = useState([]);               // Drills selected in the session creator
+    const [editedSessionDrills, setEditedSessionDrills] = useState([]);     // Edited drills
 
     async function fetchDrills() {
         const { data, error } = await supabase
@@ -356,6 +444,7 @@ export default function CoachCalendar() {
     }
 
     async function fetchSessionDrills(sessionId) {
+        // Fetch drills that are used in the current session
         const { data } = await supabase
             .from('session_drills')
             .select('drill_id, order')
@@ -366,6 +455,7 @@ export default function CoachCalendar() {
     }
 
     const addDrillToSession = (drill) => {
+        // give the drills a unique id for ordering them
         const newInstance = { 
             ...drill, 
             instanceId: Date.now() + Math.random()
@@ -375,6 +465,7 @@ export default function CoachCalendar() {
     };
 
     const removeDrillFromSession = (instanceIdToRemove) => {
+        // remove the drill and maintain the ordering
         setSelectedDrills(prev => {
             const updatedList = prev.filter(drill => drill.instanceId !== instanceIdToRemove);
             
@@ -406,8 +497,10 @@ export default function CoachCalendar() {
     };
 
     const [drillTags, setDrillTags] = useState([]);
+    const [drillLibraryTags, setDrillLibraryTags] = useState([]);
 
     async function fetchDrillTags() {
+        // Fetches all the drill tags
         const { data, error } = await supabase
             .from('drill_tags')
             .select('*');
@@ -420,9 +513,8 @@ export default function CoachCalendar() {
         }
     }
 
-    const [drillLibraryTags, setDrillLibraryTags] = useState([]);
-
     async function fetchDrillLibraryTags() {
+        // Fetches the tags and the drill they are attached to
         const { data, error } = await supabase
             .from('drill_library_tags')
             .select('*');
@@ -455,12 +547,37 @@ export default function CoachCalendar() {
 
         setFilteredDrills(filtered);
     }, [drills, drillSearchQuery, drillSearchFilter, drillLibraryTags]);
+    
 
-    // loading screen appears when data isnt fully loaded
-    const [isDataLoading, setIsDataLoading] = useState(true);
 
-    const [weekStart, setWeekStart] = useState(DateTime.now().startOf('week'));
-    const [weekEnd, setWeekEnd] = useState(DateTime.now().endOf('week'));
+    /* DELETE SESSION ------------------------------------------------------------------------ */ 
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+
+    async function deleteSession() {
+        setIsDeleting(true);
+        const { error } = await supabase
+            .from('sessions')
+            .delete()
+            .eq('id', selectedSession.id);
+
+        if (error) {
+            console.log("Error when deleting session. Please try again.");
+            setIsDeleting(false);
+            setShowDeleteConfirmation(false);
+        } else {
+            selectedSession.remove();           // remove session from calendar
+            setIsDeleting(false);               
+            setShowDeleteConfirmation(false);   // close delete confirm popup
+            setShowSessionEditor(false);        // close session editor for current session
+            setSelectedSession(null);     
+            fetchCalendarData();                // re-fetch calendar data
+        }
+    }
+
+    /* SESSION EDITOR ------------------------------------------------------------------------ */ 
+    const [showSessionEditor, setShowSessionEditor] = useState(false);
+    const [selectedSession, setSelectedSession] = useState(null);
 
     const [tempSession, setTempSession] = useState(null);
 
@@ -485,7 +602,6 @@ export default function CoachCalendar() {
                         order: drill.sort_order
                     };
                 });
-
                 setEditedSessionCoaches(sessionCoaches);
                 setEditedSessionPlayers(sessionPlayers);
                 setEditedSessionDrills(sessionDrills);
@@ -501,7 +617,6 @@ export default function CoachCalendar() {
                     selectedDrills: sessionDrills,
                     rpe: selectedSession.extendedProps.rpe
                 });
-
                 setMobileSessionStart(DateTime.fromJSDate(selectedSession.start).toFormat('HH:mm:ss'));
                 setMobileSessionEnd(DateTime.fromJSDate(selectedSession.end).toFormat('HH:mm:ss'));
             } else {
@@ -514,7 +629,6 @@ export default function CoachCalendar() {
             }
             setIsDataLoading(false);
         };
-
         loadSessionData();
     }, [selectedSession]);
 
@@ -529,85 +643,6 @@ export default function CoachCalendar() {
         }
     }, [editedSessionCoaches, editedSessionPlayers, editedSessionDrills]);
 
-    const handleDateChange = (start, end) => { 
-        setWeekStart(DateTime.fromJSDate(start));
-        setWeekEnd(DateTime.fromJSDate(end));
-    };
-
-    useEffect(() => {
-        fetchDrills();
-        fetchDrillTags();
-        fetchDrillLibraryTags();
-        fetchPlayers();
-        fetchCoaches();
-        fetchUnsentSessions();
-    }, []);
-
-    useEffect(() => {
-        if (currentUserID) fetchCalendarData();
-    }, [currentUserID]);
-
-    // change calendar view when switching from mobile/desktop
-    const [currentCalendarView, setCurrentCalendarView] = useState(isMobile ? 'timeGridDay' : 'timeGridWeek');
-    useEffect(() => {
-        const calendarApi = calendarRef.current?.getApi();
-        if (!calendarApi) return;
-
-        calendarApi.changeView(isMobile ? "timeGridDay" : "timeGridWeek");
-        calendarApi.updateSize();
-        
-    }, [isMobile]);
-
-    async function fetchCalendarData() {
-        if (!currentUserID) return;
-        setIsDataLoading(true);
-        
-        // fetch data from the database
-        const { data, error } = await supabase
-            .from('sessions')
-            .select(`
-                *,
-                session_people!inner(user_id)
-            `)
-            .eq('session_people.user_id', currentUserID);
-
-        // set the session data for the calendar events
-        const session = (data || []).map(ses => {
-            const startTime = DateTime.fromISO(ses.start_datetime);
-            const endTime = DateTime.fromISO(ses.end_datetime);
-            const duration = Duration.fromISOTime(ses.duration);
-            return {
-                id: ses.id,
-                title: ses.name,
-                start: startTime.toISO(),
-                end: endTime.toISO(),
-                extendedProps: {
-                    type: 'session',
-                    duration: duration,
-                    rpe: ses.rpe,
-                    notes: ses.notes
-                }
-            };
-        })
-        
-        setCalendarEvents(session);
-        setIsDataLoading(false);
-    }
-
-    useEffect(() => {
-        if (openSessionId && calendarEvents.length > 0) {
-
-            const targetSession = calendarEvents.find(
-                event => event.id === openSessionId
-            );
-
-            if (targetSession) {
-                setSelectedSession(targetSession);
-                setShowSessionEditor(true);
-            }
-        }
-    }, [openSessionId, calendarEvents]);
-
     async function saveSessionChanges() {
         setIsDataLoading(true);
 
@@ -618,7 +653,6 @@ export default function CoachCalendar() {
         const newEnd = tempSession.endTime
             ? DateTime.fromISO(`${sessionDate}T${tempSession.endTime}`)
             : DateTime.fromJSDate(selectedSession.end);
-
         const newDuration = newEnd.diff(newStart).toFormat('hh:mm:ss');
 
         if (
@@ -651,12 +685,10 @@ export default function CoachCalendar() {
             session_id: tempSession.id,
             user_id: coachId
         }));
-
         const newPlayers = (tempSession.selectedPlayers || []).map(playerId => ({
             session_id: tempSession.id,
             user_id: playerId
         }));
-
         const newDrills = (tempSession.selectedDrills || []).map((drill, index) => ({
             session_id: tempSession.id,
             drill_id: drill.id,
@@ -669,7 +701,6 @@ export default function CoachCalendar() {
             newDrills.length > 0 && supabase.from('session_drills').insert(newDrills)
         ]);
 
-        // Adie: Dashboard update message
         const oldName = selectedSession.title;
         const newName = tempSession.name;
 
@@ -705,7 +736,6 @@ export default function CoachCalendar() {
                 console.log("Error saving coach update:", updateError.message);
             }
         }
-        // End of Adie's code
 
         if (!error) {
             fetchCalendarData();
@@ -715,33 +745,35 @@ export default function CoachCalendar() {
     }
 
     useEffect(() => {
-        localStorage.setItem('session_creator_draft', JSON.stringify(sessionSettings));
-    }, [sessionSettings]);
+        if (openSessionId && calendarEvents.length > 0) {
 
-    // delete session
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+            const targetSession = calendarEvents.find(
+                event => event.id === openSessionId
+            );
 
-    async function deleteSession() {
-        setIsDeleting(true);
-        const { error } = await supabase
-            .from('sessions')
-            .delete()
-            .eq('id', selectedSession.id);
-
-        if (error) {
-            console.log("Error when deleting session. Please try again.");
-            setIsDeleting(false);
-            setShowDeleteConfirmation(false);
-        } else {
-            selectedSession.remove();
-            setIsDeleting(false);
-            setShowDeleteConfirmation(false);
-            setShowSessionEditor(false);
-            setSelectedSession(null);
-            fetchCalendarData();
+            if (targetSession) {
+                setSelectedSession(targetSession);
+                setShowSessionEditor(true);
+            }
         }
-    }
+    }, [openSessionId, calendarEvents]);
+
+
+
+    /* START UP ------------------------------------------------------------------------ */ 
+    useEffect(() => {
+        fetchDrills();
+        fetchDrillTags();
+        fetchDrillLibraryTags();
+        fetchPlayers();
+        fetchCoaches();
+        fetchUnsentSessions();
+    }, []);
+
+    useEffect(() => {
+        // Fetch calendar data once it has the current user id
+        if (currentUserID) fetchCalendarData();
+    }, [currentUserID]);
 
     return (
         <>

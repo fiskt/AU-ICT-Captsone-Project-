@@ -52,20 +52,6 @@ export default function Login() {
       await supabase.auth.signOut(); setLoading(false); return;
     }
 
-    // Check if account has been soft deleted
-    const { data: profile } = await supabase
-      .from('signin_details')
-      .select('deleted_at')
-      .eq('id', data.user.id)
-      .single();
-
-    if (profile?.deleted_at) {
-      await supabase.auth.signOut();
-      setError('Invalid login credentials');
-      setLoading(false);
-      return;
-    }
-
     setLoading(false);
     navigate(role === 'coach' ? '/CoachDashboard' : '/PlayerDashboard');
   };
