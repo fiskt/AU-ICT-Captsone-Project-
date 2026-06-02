@@ -108,7 +108,7 @@ export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlay
     let sessionWarningText = "Drag into the calendar to schedule the session";
 
     if (!sessionHasName) sessionWarningText = "Invalid: Name";
-    if (!sessionHasPeople) sessionWarningText = "Invalid: People";
+    if (!sessionHasPeople) sessionWarningText = "Invalid: Please select at least one coach and one player";
     if (!sessionHasRPE) sessionWarningText = "Invalid: RPE";
     if (!sessionHasName && !sessionHasPeople) sessionWarningText = "Invalid: Name, People";
     if (!sessionHasName && !sessionHasRPE) sessionWarningText = "Invalid: Name, RPE";
