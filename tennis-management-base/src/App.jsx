@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { supabase } from './supabaseClient';
 
 import { COACH_SIDEBAR, PLAYER_SIDEBAR, TOPBAR } from './Components/SharedComponents';
 import ProtectedRoute from './Components/ProtectedRoute';
@@ -18,21 +20,32 @@ import DrillLibrary    from './pages/DrillLibrary';
 import Testing         from './pages/Testing';
 import SessionFeedback from './pages/SessionFeedback';
 import FeedbackSummary from './pages/PlayerFeedbackSummary';
-import OtherUsers        from './pages/OtherUsers';
-import AccountSettings  from './pages/AccountSettings';
+import OtherUsers      from './pages/OtherUsers';
+import AccountSettings from './pages/AccountSettings';
 
 const AUTH_ROUTES   = ['/', '/Login', '/login', '/Register', '/register', '/auth/callback', '/ForgotPassword', '/forgotpassword', '/ResetPassword', '/resetpassword'];
-const SETTINGS_ROUTES = ['/AccountSettings'];
 const PLAYER_ROUTES = ['/PlayerDashboard', '/PlayerCalendar', '/SessionFeedback'];
+const SHARED_ROUTES = ['/AccountSettings'];
 
 function AppLayout() {
     const location = useLocation();
+    const [userRole, setUserRole] = useState(null);
 
-    const isAuthPage     = AUTH_ROUTES.includes(location.pathname);
-    const isPlayerRoute  = PLAYER_ROUTES.includes(location.pathname);
+    const isAuthPage    = AUTH_ROUTES.includes(location.pathname);
+    const isPlayerRoute = PLAYER_ROUTES.includes(location.pathname);
+    const isSharedRoute = SHARED_ROUTES.includes(location.pathname);
     const isCoachPreview = location.state?.isCoachPreview ?? false;
 
-    const showPlayerSidebar = isPlayerRoute && !isCoachPreview;
+    // Fetch role when on a shared route so we know which sidebar to show
+    useEffect(() => {
+        if (!isSharedRoute) return;
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            setUserRole(user?.user_metadata?.role || null);
+        });
+    }, [location.pathname]);
+
+    const showPlayerSidebar = isPlayerRoute && !isCoachPreview
+        || (isSharedRoute && userRole === 'player');
     const showCoachSidebar  = !isAuthPage && !showPlayerSidebar;
 
     return (
@@ -44,7 +57,7 @@ function AppLayout() {
             <div id={isAuthPage ? undefined : 'main-content-wrapper'}>
                 <main id={isAuthPage ? undefined : 'main-content'}>
                     <Routes>
-                        {/* Public routes: no sign in required */}
+                        {/* Public routes */}
                         <Route path="/"                element={<Login />} />
                         <Route path="/Login"           element={<Login />} />
                         <Route path="/login"           element={<Login />} />
@@ -56,7 +69,7 @@ function AppLayout() {
                         <Route path="/ResetPassword"   element={<ResetPassword />} />
                         <Route path="/resetpassword"   element={<ResetPassword />} />
 
-                        {/* Protected routes: must be logged in */}
+                        {/* Coach routes */}
                         <Route path="/CoachDashboard"  element={<ProtectedRoute allowedRoles={['coach']}><CoachDashboard /></ProtectedRoute>} />
                         <Route path="/CoachCalendar"   element={<ProtectedRoute allowedRoles={['coach']}><CoachCalendar /></ProtectedRoute>} />
                         <Route path="/PlayerProfile"   element={<ProtectedRoute allowedRoles={['coach']}><PlayerProfile /></ProtectedRoute>} />
@@ -64,6 +77,7 @@ function AppLayout() {
                         <Route path="/Testing"         element={<ProtectedRoute allowedRoles={['coach']}><Testing /></ProtectedRoute>} />
                         <Route path="/OtherUsers"      element={<ProtectedRoute allowedRoles={['coach']}><OtherUsers /></ProtectedRoute>} />
 
+                        {/* Player routes */}
                         <Route path="/PlayerDashboard" element={<ProtectedRoute allowedRoles={['player']}><PlayerDashboard /></ProtectedRoute>} />
                         <Route path="/PlayerCalendar"  element={<ProtectedRoute allowedRoles={['player']}><PlayerCalendar /></ProtectedRoute>} />
                         <Route path="/SessionFeedback" element={<ProtectedRoute allowedRoles={['player']}><SessionFeedback /></ProtectedRoute>} />
