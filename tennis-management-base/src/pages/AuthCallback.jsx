@@ -23,6 +23,20 @@ export default function AuthCallback() {
         navigate('/CoachDashboard');
       } else if (role === 'player') {
         navigate('/PlayerDashboard');
+          const { data, error } = await supabase
+          .from('player_details')
+          .select('id')
+          .eq('id', session.user.id)
+          .single();
+
+          if (!data) {
+              await supabase.from('player_details').insert({
+                  id: session.user.id,
+                  strengths: [],
+                  weaknesses: [],
+              });
+          }
+
       } else {
         // Fallback if role is missing
         navigate('/Login');

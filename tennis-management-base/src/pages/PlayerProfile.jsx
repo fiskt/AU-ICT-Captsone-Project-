@@ -297,7 +297,7 @@ function PLAYER_DETAILS({ player, playerDetails, setSelectedPlayer, setShowDelet
                                 </button> 
                             </span>)
                         ) : (
-                            <p>No strengths added.</p>
+                            <p class="strength-weakness-empty">No strengths added.</p>
                         )}
                     </div>
                 </div>
@@ -333,7 +333,7 @@ function PLAYER_DETAILS({ player, playerDetails, setSelectedPlayer, setShowDelet
                                 </button>
                             </span>)
                         ) : (
-                            <p>No weakness added.</p>
+                            <p class="strength-weakness-empty">No weakness added.</p>
                         )}
                     </div>
                 </div>
@@ -398,18 +398,6 @@ export default function PlayerProfile() {
     async function deletePlayer() {
         if (!selectedPlayer) return;
         setIsDeleting(true);
-
-        // Delete from player_details first (foreign key dependency)
-        const { error: detailsError } = await supabase
-            .from('player_details')
-            .delete()
-            .eq('id', selectedPlayer.id);
-
-        if (detailsError) {
-            console.log("Error deleting player_details:", detailsError.message);
-            setIsDeleting(false);
-            return;
-        }
 
         // Then delete from signin_details
         const { error: signinError } = await supabase

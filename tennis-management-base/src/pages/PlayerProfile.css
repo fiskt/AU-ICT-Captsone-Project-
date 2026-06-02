@@ -226,3 +226,9 @@
         width: 100%;
     }
 }
+
+.strength-weakness-empty {
+    font-family: 'DM Sans Light', sans-serif;
+    color: var(--content-input-placeholder-color);
+    font-size: 15px;
+}
