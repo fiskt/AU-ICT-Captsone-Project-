@@ -293,6 +293,7 @@ export default function Dashboard() {
                             <div className="drill-stat-card">
                                 <p className="drill-stat-label">ACTIVE Athletes</p>
                                 <h2 className="drill-stat-value">{activeAthletes}</h2>
+                                <span className="drill-stat-sub">Athletes with scheduled sessions</span>
                             </div>
 
                             <div className="drill-stat-card">
