@@ -1040,20 +1040,19 @@ button:hover {
 }
 
 #drill-modal-overlay {
-  /* Must be fixed to full viewport — left: 0 so it covers sidebar too */
+  /* Must be fixed to viewport, not relative to parent */
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.55);
-  /* z-index 600 sits above sidebar (100), topbar (50), and everything else */
+  /* High z-index to sit above sidebar (100) and topbar (50) */
   z-index: 500;
   display: flex;
+  /* flex-start + padding-top so tall modals don't go off screen top */
+  align-items: flex-start;
+  justify-content: center;
   /* Scrollable overlay so very tall modals can scroll */
   overflow-y: auto;
-
-  left: 14%;
-
-  align-items: center;
-  justify-content: center;
+  padding: 80px 20px 40px 20px;
 }
 
 .drill-modal {
