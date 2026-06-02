@@ -164,7 +164,7 @@ function DeleteAccount() {
         if (!user) { navigate('/Login'); return; }
 
         // Hard delete via Edge Function — removes from auth.users and signin_details
-        const { error } = await supabase.functions.invoke('delete-user', {
+        const { error } = await supabase.functions.invoke('hyper-responder', {
             body: { userId: user.id }
         });
 
