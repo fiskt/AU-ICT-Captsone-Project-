@@ -399,14 +399,13 @@ export default function PlayerProfile() {
         if (!selectedPlayer) return;
         setIsDeleting(true);
 
-        // Then delete from signin_details
-        const { error: signinError } = await supabase
-            .from('signin_details')
-            .delete()
-            .eq('id', selectedPlayer.id);
+        // Hard delete via Edge Function — removes from auth.users and signin_details
+        const { error } = await supabase.functions.invoke('hyper-responder', {
+            body: { userId: selectedPlayer.id }
+        });
 
-        if (signinError) {
-            console.log("Error deleting signin_details:", signinError.message);
+        if (error) {
+            console.log("Error deleting player:", error.message);
             setIsDeleting(false);
             return;
         }
