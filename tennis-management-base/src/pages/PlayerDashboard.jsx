@@ -120,8 +120,8 @@ export default function PlayerDashboard() {
         if (profileError) {
             console.log("Error fetching player profile:", profileError.message);
         } else {
-            setStrengths(playerProfile.strengths? playerProfile.strengths.split(", "): []);
-            setWeaknesses(playerProfile.weaknesses? playerProfile.weaknesses.split(", "): []);
+            setStrengths(playerProfile.strengths || []);
+            setWeaknesses(playerProfile.weaknesses || []);
         }
     }
 
