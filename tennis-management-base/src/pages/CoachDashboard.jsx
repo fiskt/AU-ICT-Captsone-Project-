@@ -247,7 +247,7 @@ export default function Dashboard() {
 
             <div id="main-content-wrapper">
                 <div id="main-content">
-                    <div className="dashboardPage">
+                    <div className="dashboardPage coachDashboardPage">
 
                         {/* HEADER */}
                         <div className="dashboardHeader">
