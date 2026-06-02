@@ -1,0 +1,573 @@
+HPT TENNIS MANAGEMENT SYSTEM [TEST CASES]
+
+SECTION 1: REGISTRATION
+
+TC01) Valid Coach Registration
+Steps: Select Coach role, enter @tennis.com.au email, fill all fields with valid password, click Register
+Expected: Verification email sent, "Check your email" screen displayed
+Actual: Verification email sent, "Check your email" screen displayed
+
+TC02) Valid Player Registration
+Steps: Select Player role, enter any valid email, fill all fields with valid password, click Register
+Expected: Verification email sent, "Check your email" screen displayed
+Actual: Verification email sent, "Check your email" screen displayed
+
+TC03) Coach Registration with Non-Tennis Email
+Steps: Select Coach, enter gmail.com email, fill all fields, click Register
+Expected: Error — "This email is not authorised to register as a coach"
+Actual: Error — "This email is not authorised to register as a coach"
+
+TC04) Registration with Missing Fields
+Steps: Leave first name blank, fill rest, click Register
+Expected: Error — "Please fill in all fields"
+Actual: Error — "Please fill in all fields"
+
+TC05) Registration with Weak Password (too short)
+Steps: Enter password less than 8 characters
+Expected: Red dot shown for "At least 8 characters" requirement
+Actual: Red dot shown for "At least 8 characters" requirement
+
+TC06) Registration with Weak Password (no uppercase)
+Steps: Enter password with only lowercase letters
+Expected: Red dot shown for "Uppercase and lowercase letters" requirement
+Actual: Red dot shown for "Uppercase and lowercase letters" requirement
+
+TC07) Registration with Weak Password (no number)
+Steps: Enter password without any numbers
+Expected: Red dot shown for "At least one number" requirement
+Actual: Red dot shown for "At least one number" requirement
+
+TC08) Registration with Weak Password (no special character)
+Steps: Enter password without special characters
+Expected: Red dot shown for "Special character" requirement
+Actual: Red dot shown for "Special character" requirement
+
+TC09) Registration with Mismatched Passwords
+Steps: Enter valid password, enter different confirm password, click Register
+Expected: Error — "Passwords do not match"
+Actual: Error — "Passwords do not match"
+
+TC10) Registration with Already Registered Email
+Steps: Enter an email already in the system, fill all fields, click Register
+Expected: Error — "This email is already registered. Please log in instead"
+Actual: Error — "This email is already registered. Please log in instead"
+
+TC11) Password Turns Green When All Requirements Met
+Steps: Enter password meeting all 4 requirements
+Expected: All 4 dots turn green
+Actual: All 4 dots turn green
+
+TC12) Verify Email Link Redirects Correctly (Player)
+Steps: Register as player, click verification link in email
+Expected: Redirected to Player Dashboard
+Actual: Redirected to Player Dashboard
+
+TC13) Verify Email Link Redirects Correctly (Coach)
+Steps: Register as coach with @tennis.com.au email, click verification link
+Expected: Redirected to Coach Dashboard
+Actual: Redirected to Coach Dashboard
+
+SECTION 2: LOGIN
+
+TC14) Valid Coach Login
+Steps: Select Coach, enter valid @tennis.com.au credentials, click Sign In
+Expected: Redirected to Coach Dashboard
+Actual: Redirected to Coach Dashboard
+
+TC15) Valid Player Login
+Steps: Select Player, enter valid player credentials, click Sign In
+Expected: Redirected to Player Dashboard
+Actual: Redirected to Player Dashboard
+
+TC16) Login with Wrong Role (Coach credentials as Player)
+Steps: Select Player, enter coach email and password, click Sign In
+Expected: Error — "This account is registered as a coach, not a player"
+Actual: Error — "This account is registered as a coach, not a player"
+
+TC17) Login with Wrong Role (Player credentials as Coach)
+Steps: Select Coach, enter player email and password, click Sign In
+Expected: Error — "This email is not authorised to log in as a coach"
+Actual: Error — "This email is not authorised to log in as a coach"
+
+TC18) Login with Incorrect Password
+Steps: Enter valid email, wrong password, click Sign In
+Expected: Error — "Invalid login credentials"
+Actual: Error — "Invalid login credentials"
+
+TC19) Login with Empty Fields
+Steps: Leave email and password blank, click Sign In
+Expected: Error — "Please fill in all fields"
+Actual: Error — "Please fill in all fields"
+
+TC20) Login with Deleted Account
+Steps: Use credentials of a soft-deleted account
+Expected: Error — "Invalid login credentials", user not logged in
+Actual: Error — "Invalid login credentials", user not logged in
+
+TC21) Show/Hide Password Toggle
+Steps: Click "Show" button next to password field
+Expected: Password becomes visible as plain text; clicking "Hide" hides it again
+Actual: Password becomes visible as plain text; clicking "Hide" hides it again
+
+TC22) Case Sensitivity on Login URL
+Steps: Navigate to /login (lowercase)
+Expected: Login page shown without sidebar (same as /Login)
+Actual: Login page shown without sidebar (same as /Login)
+
+SECTION 3: FORGOT PASSWORD / RESET PASSWORD
+
+TC23) Forgot Password Link Visible on Login
+Steps: Open Login page
+Expected: "Forgot password?" link visible below password field in orange
+Actual: "Forgot password?" link visible below password field in orange
+
+TC24) Forgot Password with Valid Email
+Steps: Click "Forgot password?", enter registered email, click Send Reset Link
+Expected: "Check your email" screen shown with email address displayed
+Actual: "Check your email" screen shown with email address displayed
+
+TC25) Forgot Password with Empty Email
+Steps: Click Send Reset Link without entering email
+Expected: Error — "Please enter your email"
+Actual: Error — "Please enter your email"
+
+TC26) Reset Password with Valid New Password
+Steps: Click reset link in email, enter valid new password meeting all requirements, click Update Password
+Expected: Success screen shown, redirected to Login after 2 seconds
+Actual: Success screen shown, redirected to Login after 2 seconds
+
+TC27) Reset Password with Mismatched Passwords
+Steps: On reset page, enter different passwords in each field, click Update
+Expected: Error — "Passwords do not match"
+Actual: Error — "Passwords do not match"
+
+TC28) Reset Password with Weak Password
+Steps: Enter password not meeting requirements on reset page
+Expected: Error — "Password does not meet all requirements"
+Actual: Error — "Password does not meet all requirements"
+
+TC29) Back to Login Link on Forgot Password Page
+Steps: Click "Back to Log in" after sending reset email
+Expected: Navigated back to Login page
+Actual: Navigated back to Login page
+
+SECTION 4: ROUTE PROTECTION & ACCESS CONTROL
+
+TC30) Unauthenticated Access to Coach Dashboard
+Steps: Without logging in, navigate to /CoachDashboard
+Expected: Redirected to /Login
+Actual: Redirected to /Login
+
+TC31) Unauthenticated Access to Player Dashboard
+Steps: Without logging in, navigate to /PlayerDashboard
+Expected: Redirected to /Login
+Actual: Redirected to /Login
+
+TC32) Player Accessing Coach-Only Route
+Steps: Login as player, navigate to /CoachDashboard in URL bar
+Expected: Redirected to /PlayerDashboard
+Actual: Redirected to /PlayerDashboard
+
+TC33) Coach Accessing Player-Only Route
+Steps: Login as coach, navigate to /PlayerDashboard in URL bar
+Expected: Redirected to /CoachDashboard
+Actual: Redirected to /CoachDashboard
+
+TC34) Player Accessing Drill Library
+Steps: Login as player, navigate to /DrillLibrary
+Expected: Redirected to /PlayerDashboard
+Actual: Redirected to /PlayerDashboard
+
+TC35) Coach Accessing Session Feedback
+Steps: Login as coach, navigate to /SessionFeedback
+Expected: Redirected to /CoachDashboard
+Actual: Redirected to /CoachDashboard
+
+TC36) Case Insensitive Route Protection (/coachdashboard)
+Steps: Navigate to /coachdashboard (all lowercase) without login
+Expected: Redirected to Login
+Actual: Redirected to Login
+
+TC37) Authenticated User Cannot Access Login Page Directly
+Steps: Login as coach, manually navigate to /Login
+Expected: Login page shown (no redirect, but sidebar does not appear)
+Actual: Login page shown (no redirect, but sidebar does not appear)
+
+SECTION 5: COACH PREVIEW FEATURE
+
+TC38) Coach Opens Player Preview
+Steps: Login as coach, click Preview in sidebar, select a player
+Expected: Player's dashboard shown with "Previewing [Name]'s dashboard" banner and "× Exit Preview" button
+Actual: Player's dashboard shown with "Previewing [Name]'s dashboard" banner and "× Exit Preview" button
+
+TC39) Exit Preview Returns to Coach Dashboard
+Steps: In preview mode, click "× Exit Preview"
+Expected: Redirected back to Coach Dashboard, coach sidebar restored
+Actual: Redirected back to Coach Dashboard, coach sidebar restored
+
+TC40) Switch Between Players Without Exiting Preview
+Steps: In preview mode, click Preview dropdown again and select a different player
+Expected: Dashboard fully updates to show new player's data including strengths, weaknesses, weekly activity, next session
+Actual: Dashboard fully updates to show new player's data including strengths, weaknesses, weekly activity, next session
+
+TC41) Player With No Data Shows Empty States
+Steps: Preview a newly registered player with no sessions or feedback
+Expected: "No sessions this week", "No strengths added yet", "No feedback yet" shown correctly
+Actual: "No sessions this week", "No strengths added yet", "No feedback yet" shown correctly
+
+TC42) Player Sidebar Not Shown During Coach Preview
+Steps: Login as coach, enter preview mode
+Expected: Coach sidebar shown (not player sidebar)
+Actual: Coach sidebar shown (not player sidebar)
+
+TC43) Preview Banner Disappears After Exit
+Steps: Enter preview, exit preview
+Expected: Preview banner no longer visible on Coach Dashboard
+Actual: Preview banner no longer visible on Coach Dashboard
+
+SECTION 6: ACCOUNT SETTINGS
+
+TC44) Account Settings Accessible from User Card Dropup
+Steps: Click user card at bottom of sidebar, click "Account Settings"
+Expected: Account Settings page opens
+Actual: Account Settings page opens
+
+TC45) Account Settings Shows Correct Sidebar for Player
+Steps: Login as player, open Account Settings
+Expected: Player sidebar shown (not coach sidebar)
+Actual: Player sidebar shown (not coach sidebar)
+
+TC46) Account Settings Shows Correct Sidebar for Coach
+Steps: Login as coach, open Account Settings
+Expected: Coach sidebar shown
+Actual: Coach sidebar shown
+
+TC47) Change Details — Update First and Last Name
+Steps: In Account Settings > Change Details, update name, click Save Changes
+Expected: Success message shown, sidebar name updates immediately
+Actual: Success message shown, sidebar name updates immediately
+
+TC48) Change Details — Update DOB
+Steps: Select a date of birth, click Save Changes
+Expected: Success message shown, DOB saved
+Actual: Success message shown, DOB saved
+
+TC49) Change Details — Update Gender
+Steps: Select gender from dropdown, click Save Changes
+Expected: Success message shown, gender saved
+Actual: Success message shown, gender saved
+
+TC50) Change Details — Save with Empty Name
+Steps: Clear first name field, click Save Changes
+Expected: Error — "First and last name are required"
+Actual: Error — "First and last name are required"
+
+TC51) Change Details — Email Field is Read Only
+Steps: Try to edit the email field in Account Settings
+Expected: Field is greyed out and cannot be edited
+Actual: Field is greyed out and cannot be edited
+
+TC52) Delete Account — Cancel Flow
+Steps: Click "Delete Account", then click Cancel
+Expected: Returned to Delete Account section without deletion
+Actual: Returned to Delete Account section without deletion
+
+TC53) Delete Account — Wrong Confirmation Text
+Steps: Click Delete Account, type "delete" (lowercase), click Confirm
+Expected: Error — "Please type DELETE to confirm"
+Actual: Error — "Please type DELETE to confirm"
+
+TC54) Delete Account — Correct Confirmation
+Steps: Click Delete Account, type "DELETE", click Confirm Delete
+Expected: Signed out, redirected to Login page
+Actual: Signed out, redirected to Login page
+
+TC55) Deleted Account Cannot Login
+Steps: After deleting account, attempt to login with same credentials
+Expected: Error — "Invalid login credentials"
+Actual: Error — "Invalid login credentials"
+
+SECTION 7: SIDEBAR & NAVIGATION
+
+TC56) User Card Shows Correct Name and Role
+Steps: Login as any user, check bottom of sidebar
+Expected: Full name and role (Coach/Athlete) shown with correct initials in avatar
+Actual: Full name and role (Coach/Athlete) shown with correct initials in avatar
+
+TC57) Logout from User Card Dropup
+Steps: Click user card, click "Log out"
+Expected: Signed out, redirected to /Login
+Actual: Signed out, redirected to /Login
+
+TC58) User Card Dropup Opens and Closes
+Steps: Click user card — dropup opens. Click elsewhere — dropup closes
+Expected: Dropup toggles correctly with ▼/▲ arrow
+Actual: Dropup toggles correctly with ▼/▲ arrow
+
+TC59) Active Page Highlighted in Sidebar
+Steps: Navigate to Calendar page
+Expected: Calendar nav item highlighted in orange
+Actual: Calendar nav item highlighted in orange
+
+TC60) Sidebar Not Shown on Auth Pages
+Steps: Navigate to /Login, /Register, /ForgotPassword, /ResetPassword
+Expected: No sidebar or topbar visible on any of these pages
+Actual: No sidebar or topbar visible on any of these pages
+
+END OF TEST CASES
+
+SECTION 8: DRILL LIBRARY
+
+TC61) Drill Library Loads All Drills
+Steps: Login as coach, navigate to Drill Library
+Expected: All saved drills displayed as cards with name, tags and difficulty level
+Actual: All saved drills displayed as cards with name, tags and difficulty level
+
+TC62) Search Drills by Name
+Steps: Type a drill name in the search bar
+Expected: Only drills matching the search term are shown; others hidden
+Actual: Only drills matching the search term are shown; others hidden
+
+TC63) Search Drills by Tag
+Steps: Type a tag name in the search bar
+Expected: Only drills with that tag are shown
+Actual: Only drills with that tag are shown
+
+TC64) Search Drills by Description
+Steps: Type a word from a drill description in the search bar
+Expected: Drills containing that word in description are shown
+Actual: Drills containing that word in description are shown
+
+TC65) Search with No Results
+Steps: Type a term that matches no drills
+Expected: Empty state shown — no drill cards visible
+Actual: Empty state shown — no drill cards visible
+
+TC66) Add New Drill with All Fields
+Steps: Click Add Drill, fill in name, description, select difficulty, add tags, click Save
+Expected: New drill appears in the list with correct details, success toast shown
+Actual: New drill appears in the list with correct details, success toast shown
+
+TC67) Add New Drill with Missing Name
+Steps: Click Add Drill, leave name blank, click Save
+Expected: Error — "Name and description are required"
+Actual: Error — "Name and description are required"
+
+TC68) Add New Drill with Missing Description
+Steps: Click Add Drill, fill name but leave description blank, click Save
+Expected: Error — "Name and description are required"
+Actual: Error — "Name and description are required"
+
+TC69) Add New Tag While Creating Drill
+Steps: In Add Drill modal, type a new tag name not in existing list, press Enter
+Expected: Tag created and added to the drill
+Actual: Tag created and added to the drill
+
+TC70) Add Existing Tag While Creating Drill
+Steps: In Add Drill modal, type partial name of existing tag, select from suggestions
+Expected: Tag added from suggestions without creating duplicate
+Actual: Tag added from suggestions without creating duplicate
+
+TC71) Remove Tag from Drill Form
+Steps: While adding/editing a drill, click × on an added tag
+Expected: Tag removed from selection
+Actual: Tag removed from selection
+
+TC72) Remove Tag with Backspace
+Steps: While adding/editing a drill, clear input and press Backspace
+Expected: Last added tag removed
+Actual: Last added tag removed
+
+TC73) Select Difficulty Level
+Steps: In Add/Edit Drill modal, click each difficulty level — Beginner, Intermediate, Advanced, Elite
+Expected: Selected difficulty highlighted, others deselected
+Actual: Selected difficulty highlighted, others deselected
+
+TC74) Edit Existing Drill
+Steps: Click edit icon on a drill, update name or description, click Save
+Expected: Drill updated in list, success toast shown
+Actual: Drill updated in list, success toast shown
+
+TC75) Delete Drill — Confirm
+Steps: Click delete icon on a drill, confirm deletion in modal
+Expected: Drill removed from list
+Actual: Drill removed from list
+
+TC76) Delete Drill — Cancel
+Steps: Click delete icon on a drill, click Cancel in confirmation modal
+Expected: Drill remains in list, nothing deleted
+Actual: Drill remains in list, nothing deleted
+
+TC77) Filter Drills by Tag (Used Tags Filter)
+Steps: Click a tag in the used tags filter section
+Expected: Only drills with that tag shown
+Actual: Only drills with that tag shown
+
+TC78) Clear Tag Filter
+Steps: After filtering by tag, click the tag again to deselect
+Expected: All drills shown again
+Actual: All drills shown again
+
+SECTION 9: SESSION PLANNER / COACH CALENDAR
+
+TC79) Coach Calendar Loads with Sessions
+Steps: Login as coach, navigate to Calendar
+Expected: Calendar view shown with any existing sessions displayed on correct dates
+Actual: Calendar view shown with any existing sessions displayed on correct dates
+
+TC80) Create Session with Valid Details
+Steps: Enter session name, select start time, set RPE, select at least one player, click Save
+Expected: Session appears on calendar on correct date, players assigned
+Actual: Session appears on calendar on correct date, players assigned
+
+TC81) Create Session with Missing Name
+Steps: Leave session name blank, fill other fields, click Save
+Expected: Session not created, validation error or field highlighted
+Actual: Session not created, validation error or field highlighted
+
+TC82) Create Session with Missing Player
+Steps: Fill all fields but do not select any player, click Save
+Expected: Error — "INVALID: RPE, PEOPLE" or similar validation shown
+Actual: Error — "INVALID: RPE, PEOPLE" or similar validation shown
+
+TC83) Create Session with Missing RPE
+Steps: Fill name and players but leave RPE blank, click Save
+Expected: Validation error shown indicating RPE is required
+Actual: Validation error shown indicating RPE is required
+
+TC84) Add Drill to Session
+Steps: In session creator, click Add Drill, select a drill from library
+Expected: Drill added to session drill list
+Actual: Drill added to session drill list
+
+TC85) Switch Between Week and Month View
+Steps: Click "Month" button then "Week" button on calendar
+Expected: Calendar switches between month and week views correctly
+Actual: Calendar switches between month and week views correctly
+
+TC86) Navigate to Next Week/Month
+Steps: Click the forward arrow on the calendar
+Expected: Calendar advances to next week/month, sessions shown correctly
+Actual: Calendar advances to next week/month, sessions shown correctly
+
+TC87) Navigate to Previous Week/Month
+Steps: Click the back arrow on the calendar
+Expected: Calendar goes back to previous week/month
+Actual: Calendar goes back to previous week/month
+
+TC88) Navigate to Today
+Steps: Navigate away from current week, click "Today" button
+Expected: Calendar returns to current week/month with today highlighted
+Actual: Calendar returns to current week/month with today highlighted
+
+TC89) Click Existing Session to View Details
+Steps: Click on a session block on the calendar
+Expected: Session details shown — name, time, players, drills, RPE
+Actual: Session details shown — name, time, players, drills, RPE
+
+TC90) Delete Existing Session
+Steps: Click on a session, click Delete, confirm
+Expected: Session removed from calendar
+Actual: Session removed from calendar
+
+TC91) Session Creator Draft Saved Locally
+Steps: Enter partial session details, navigate away without saving
+Expected: Draft restored when returning to calendar page
+Actual: Draft restored when returning to calendar page
+
+TC92) Players List Populates in Session Creator
+Steps: Open session creator, check People section
+Expected: All registered players listed with checkboxes
+Actual: All registered players listed with checkboxes
+
+TC93) Coach Listed Under Coaches in Session Creator
+Steps: Open session creator, check Coaches section
+Expected: Logged-in coach's name shown under Coaches
+Actual: Logged-in coach's name shown under Coaches
+
+TC94) Session Appears on Player Calendar After Creation
+Steps: Create session and assign a player, login as that player, check their calendar
+Expected: Session visible on player's calendar on correct date
+Actual: Session visible on player's calendar on correct date
+
+SECTION 10: PERFORMANCE TESTING
+
+TC95) Performance Testing Page Loads
+Steps: Login as coach, navigate to Performance Testing
+Expected: Page loads with list of existing test records and "Add Test Result" button
+Actual: Page loads with list of existing test records and "Add Test Result" button
+
+TC96) Add Test Result with Valid Data
+Steps: Click Add Test Result, select player, enter test date, enter metric values, click Save
+Expected: New test record appears in list with correct player name and date
+Actual: New test record appears in list with correct player name and date
+
+TC97) Add Test Result with No Player Selected
+Steps: Click Add Test Result, leave player dropdown blank, click Save
+Expected: Error — "Please select a player"
+Actual: Error — "Please select a player"
+
+TC98) Add Test Result with No Date
+Steps: Click Add Test Result, select player, leave date blank, click Save
+Expected: Error — "Please enter a test date"
+Actual: Error — "Please enter a test date"
+
+TC99) Rating Badge Shows Correctly (Excellent)
+Steps: Enter a metric value that meets excellent benchmark for selected gender/PHV stage
+Expected: "Excellent" badge shown in green next to that field
+Actual: "Excellent" badge shown in green next to that field
+
+TC100) Rating Badge Shows Correctly (Poor)
+Steps: Enter a metric value below poor benchmark
+Expected: "Poor" badge shown in red next to that field
+Actual: "Poor" badge shown in red next to that field
+
+TC101) Gender Selection Affects Benchmarks
+Steps: Add test result, enter same metric value, toggle between Male and Female
+Expected: Rating badge changes based on gender-specific benchmark thresholds
+Actual: Rating badge changes based on gender-specific benchmark thresholds
+
+TC102) PHV Stage Selection Affects Benchmarks
+Steps: Add test result, enter same metric value, change PHV stage (Pre/During/Post)
+Expected: Rating badge updates to reflect correct benchmark for that PHV stage
+Actual: Rating badge updates to reflect correct benchmark for that PHV stage
+
+TC103) Test Card Shows Player Name
+Steps: Save a test result for a specific player
+Expected: Test card displays correct player first and last name
+Actual: Test card displays correct player first and last name
+
+TC104) Test Card Shows Gender and PHV Tags
+Steps: Save test with Female, Post-PHV settings
+Expected: Test card shows "Female" and "Post-PHV" tags correctly
+Actual: Test card shows "Female" and "Post-PHV" tags correctly
+
+TC105) Test Card Shows Good/Excellent Rating Count
+Steps: Save test result with several metrics meeting good/excellent thresholds
+Expected: Test card shows correct count e.g. "4/8 Good or Excellent ratings"
+Actual: Test card shows correct count e.g. "4/8 Good or Excellent ratings"
+
+TC106) Delete Test Result — Confirm
+Steps: Click delete on a test card, confirm deletion
+Expected: Test record removed from list
+Actual: Test record removed from list
+
+TC107) Delete Test Result — Cancel
+Steps: Click delete on a test card, click Cancel
+Expected: Test record remains, nothing deleted
+Actual: Test record remains, nothing deleted
+
+TC108) View Detailed Test Result
+Steps: Click on a test card to expand/view
+Expected: All metric values shown with individual rating badges and benchmark comparisons
+Actual: All metric values shown with individual rating badges and benchmark comparisons
+
+TC109) Search/Filter Tests by Player
+Steps: Use search or filter to find tests for a specific player
+Expected: Only that player's test records shown
+Actual: Only that player's test records shown
+
+TC110) Empty State When No Tests Recorded
+Steps: Login as new coach with no test records
+Expected: Empty state shown — "Start recording performance test results for your players"
+Actual: Empty state shown — "Start recording performance test results for your players"

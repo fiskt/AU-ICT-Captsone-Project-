@@ -125,7 +125,18 @@ export default function PlayerDashboard() {
         }
     }
 
-    useEffect(() => { fetchData(); }, [previewPlayerId]);
+    useEffect(() => {
+        // Reset all state before fetching new player data
+        setSessions([]);
+        setNextSessionData(null);
+        setPendingSession(null);
+        setLatestFeedback(null);
+        setWeeklySessions([]);
+        setStrengths([]);
+        setWeaknesses([]);
+        setCoachUpdates([]);
+        fetchData();
+    }, [previewPlayerId]);
 
     async function handleSave() {
         const { data: { user } } = await supabase.auth.getUser();
