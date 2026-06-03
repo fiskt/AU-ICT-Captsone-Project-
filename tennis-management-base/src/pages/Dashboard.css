@@ -89,7 +89,6 @@
     border-radius: 8px;
     padding: 14px;
     gap: 14px;
-
     border: 2px solid var(--topbar-accent-color);
     background-color: var(--main-bg-color);
 }
@@ -97,6 +96,8 @@
 .sessionItem:hover {
     background-color: white;
     transform: translateY(-1px);
+    border-color: var(--accent-color);
+    background: var(--main-bg-color);
 }
 
 /* SESSION LEFT */
@@ -164,6 +165,13 @@
     padding: 10px;
     border-radius: 8px;
     border: 2px solid var(--topbar-accent-color);
+    background: var(--main-bg-color);
+}
+
+.sessionDetailCard:hover {
+    background-color: white;
+    transform: translateY(-1px);
+    border-color: var(--accent-color);
     background: var(--main-bg-color);
 }
 

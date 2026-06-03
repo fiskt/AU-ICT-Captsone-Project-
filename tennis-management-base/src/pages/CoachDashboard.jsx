@@ -108,6 +108,7 @@ export default function Dashboard() {
         setIsLoading(false);
     }
 
+    // FETCH ATHLETES DETAILS
     async function fetchAthletes() {
         setIsLoading(true);
 

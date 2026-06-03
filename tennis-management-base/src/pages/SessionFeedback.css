@@ -7,6 +7,29 @@
   width: 100%;
 }
 
+#sf-main-panel {
+  background-color: var(--content-bg-color);
+  border: 2px solid var(--topbar-accent-color);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.sf-panel-header {
+    margin-bottom: 15px;
+}
+
+.sf-panel-header h3 {
+    font-family: 'Bebas', sans-serif;
+    font-size: 28px;
+    color: var(--content-head-color);
+    margin: 0;
+    letter-spacing: 1px;
+}
+
 .sf-header {
   display: flex;
   justify-content: space-between;
@@ -17,7 +40,6 @@
   font-family: 'DM Sans Light', sans-serif;
   font-size: 13px;
   color: var(--content-subhead-color);
-  margin-top: 4px;
 }
 
 .sf-grid {
@@ -49,26 +71,24 @@
   border-color: #ef4444;
 }
 
-.sf-card-date {
-  font-family: 'DM Mono Light', sans-serif;
-  font-size: 11px;
-  color: var(--content-subhead-color);
-  letter-spacing: 1px;
-  text-transform: uppercase;
+.sf-card-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
 }
 
-.sf-card-title {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 17px;
-  color: var(--content-head-color);
-  margin: 8px 0 6px;
+.sf-card-content h3 {
+    margin: 0 0 10px 0;
+    font-family: 'Bebas', sans-serif;
+    color: var(--content-head-color);
+    font-size: 25px;
 }
 
-.sf-card-info {
-  font-family: 'DM Sans Light', sans-serif;
-  font-size: 13px;
-  color: var(--content-body-color);
-  margin: 4px 0;
+.sf-card-content p {
+    margin: 1px 0;
+    font-family: 'DM Mono Light', sans-serif;
+    color: var(--content-subhead-color);
+    font-size: 13px;
 }
 
 .sf-status {
@@ -143,22 +163,27 @@
 }
 
 .sf-btn {
-  border: none;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  cursor: pointer;
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 2px solid var(--content-input-border-color);
+    background: var(--content-bg-color);
+    color: var(--content-subhead-color);
+
+    font-family: 'DM Mono Light', sans-serif;
+    font-size: 11px;
+
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.sf-btn-primary {
-  background: var(--content-head-color);
-  color: white;
+.sf-btn:hover {
+    border-color: var(--accent-color);
 }
 
-.sf-btn-ghost {
-  background: transparent;
-  color: var(--content-subhead-color);
+.sf-btn.active {
+    border-color: var(--accent-color);
+    background: var(--accent-color);
+    color: white;
 }
 
 .sf-form-actions {

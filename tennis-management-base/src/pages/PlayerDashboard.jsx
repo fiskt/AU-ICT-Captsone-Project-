@@ -274,7 +274,13 @@ export default function PlayerDashboard() {
                                 <p className="drill-stat-sub">{nextSessionData ? nextSessionData.name : "No upcoming session"}</p>
                             </div>
 
-                            <div className="drill-stat-card">
+                            <div className="drill-stat-card"
+                                onClick={() => {
+                                    if (!isCoachPreview) {
+                                        navigate("/SessionFeedback", { state: { selectedSessionId: latestFeedback.session_id } });
+                                    }
+                                }}
+                                style={{ cursor: isCoachPreview ? "default" : "pointer" }}>
                                 <p className="drill-stat-label">LAST RATING</p>
                                 <h2 className="drill-stat-value">{latestFeedback ? `${latestFeedback.intensity}/10` : "—"}</h2>
                                 <p className="drill-stat-sub">{latestFeedback ? latestFeedback.session_name : "No feedback yet"}</p>
@@ -364,7 +370,7 @@ export default function PlayerDashboard() {
                                         {!pendingSession ? <p>No pending feedback.</p> : (
                                             <div className="sessionList">
                                                 <div className="drill-form-group">
-                                                    <p className="drill-modal-title">{pendingSession.name} - {new Date(pendingSession.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</p>
+                                                    <p className="drill-modal-title" style={{ color: "var(--accent-color)" }} >{pendingSession.name} - {new Date(pendingSession.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</p>
 
                                                     <label className="drill-form-label">Session Intensity</label>
                                                     <select className="drill-form-select" value={intensity} onChange={(e) => setIntensity(e.target.value)}>

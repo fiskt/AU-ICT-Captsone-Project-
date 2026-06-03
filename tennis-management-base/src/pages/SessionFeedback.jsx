@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { PLAYER_SIDEBAR} from "../Components/SharedComponents";
+import { LOADING_OVERLAY } from "../Components/SharedComponents";
+import { useLocation } from "react-router-dom";
+
 import "./SessionFeedback.css";
 
 // Benchmark Logic RPE Session Intensity.
@@ -12,6 +14,7 @@ function getIntensityZone(intensity) {
 
 // Save feeedback to database
 export default function SessionFeedback() {
+
     const [sessions, setSessions] = useState([]);
     const [feedback, setFeedback] = useState([]);
     const [selectedSession, setSelectedSession] = useState(null);
@@ -20,13 +23,22 @@ export default function SessionFeedback() {
     const [durationMinutes, setDurationMinutes] = useState("");
     const [notes, setNotes] = useState("");
 
+    // LOADING STATE
+    const [isLoading, setIsLoading] = useState(true);
+
+    // EDIT FEEDBACK STATE
+    const [selectedFeedback, setSelectedFeedback] = useState(null);
+
+    // REACTIVE/LOCATION STATE
+    const location = useLocation();
+    const selectedSessionId = location.state?.selectedSessionId;
+
+    // FETCH SESSIONS DATA
     async function fetchMySessions() {
+        setIsLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
 
-        if (!user) {
-            console.log("No user logged in");
-            return;
-        }
+        if (!user) { console.log("No user logged in"); return; }
 
         const { data, error } = await supabase
             .from("sessions")
@@ -42,9 +54,12 @@ export default function SessionFeedback() {
         } else {
             setSessions(data);
         }
+        setIsLoading(false);
     }
 
+    // FETCH SESSION FEEDBACKS
     async function fetchFeedback() {
+        setIsLoading(true);
         const { data: { user } } = await supabase.auth.getUser();
 
         const { data, error } = await supabase
@@ -58,6 +73,7 @@ export default function SessionFeedback() {
         } else {
             setFeedback(data);
         }
+        setIsLoading(false);
     }
 
     useEffect(() => {
@@ -65,23 +81,65 @@ export default function SessionFeedback() {
         fetchFeedback();
     }, []);
 
+    useEffect(() => {
+        if (!selectedSessionId || sessions.length === 0) return;
+
+        const session = sessions.find(
+            s => s.id === selectedSessionId
+        );
+
+        if (!session) return;
+
+        const existingFeedback = feedback.find(
+            f => f.session_id === session.id
+        );
+
+        setSelectedSession(session);
+        setSelectedFeedback(existingFeedback || null);
+
+        if (existingFeedback) {
+            setIntensity(existingFeedback.intensity);
+            setDurationMinutes(existingFeedback.duration_minutes);
+            setNotes(existingFeedback.feedback_notes || "");
+        }
+    }, [selectedSessionId, sessions, feedback]);
+
     function durationToMinutes(duration) {
         if (!duration) return 0;
-
         const [hours, minutes, seconds] = duration.split(":").map(Number);
         return hours * 60 + minutes + Math.round(seconds / 60);
     }
 
+    // FILTER SESSIONS
+    const now = new Date();
+
+    // RATED FILTER
+    const ratedSessions = sessions.filter(session =>
+        feedback.some(f => f.session_id === session.id)
+    );
+    // SORT NEWEST TO OLDEST, AND TAKING 5 RECENT SESSIONS
+    const recentRatedSessions = [...ratedSessions]
+        .sort((a, b) => new Date(b.end_datetime) - new Date(a.end_datetime))
+        .slice(0, 5);
+
+    // UNRATED FILTER
+    const unratedSessions = sessions.filter(session =>
+        new Date(session.end_datetime) < now &&
+        !feedback.some(f => f.session_id === session.id)
+    );
+
+    // UPCOMING SESSIONS FILTER
+    const upcomingSessions = sessions.filter(session =>
+        new Date(session.end_datetime) >= now
+    );
+    // SORT NEWEST TO OLDEST, AND TAKING 5 RECENT SESSIONS
+    const recentUpcomingSessions = [...upcomingSessions]
+        .sort((a, b) => new Date(b.end_datetime) - new Date(a.end_datetime))
+        .slice(0, 5);
+
+    // SAVING INPUT TO SESSION_FEEDBACK
     async function handleSave() {
         const { data: { user } } = await supabase.auth.getUser();
-
-        if (!selectedSession) {
-            alert("Please select a session first.");
-            return;
-        }
-
-        const rpeLoad = Number(intensity) * Number(durationMinutes);
-        const intensityZone = getIntensityZone(Number(intensity));
 
         const intensityNum = Number(intensity);
         const durationMins = Number(durationMinutes);
@@ -96,19 +154,32 @@ export default function SessionFeedback() {
             feedback_notes: notes
         };
 
-        console.log("Saving payload:", payload);
+        let error;
 
-        const { error } = await supabase
-            .from("session_feedback")
-            .insert([payload]);
+        // Saves Updates
+        if (selectedFeedback) {
+            const result = await supabase
+                .from("session_feedback")
+                .update(payload)
+                .eq("id", selectedFeedback.id);
+
+            error = result.error;
+        } else {
+            const result = await supabase
+                .from("session_feedback")
+                .insert([payload]);
+
+            error = result.error;
+        }
 
         if (error) {
             console.log("SAVE ERROR", error);
             alert("Failed to save: " + error.message);
         }
         else {
-            alert("Feedback saved!");
+            alert(selectedFeedback ? "Feedback updated!" : "Feedback saved!");
             setSelectedSession(null);
+            setSelectedFeedback(null);
             setIntensity("");
             setDurationMinutes("");
             setNotes("");
@@ -116,127 +187,115 @@ export default function SessionFeedback() {
         }
     }
 
+    // HELPER FUNCTION FOR RENDERING SESSIONS
+    function renderSessionCard(session) {
+        const isCompleted = new Date(session.end_datetime) < new Date();
+        const existingFeedback = feedback.find(
+            f => f.session_id === session.id
+        );
+        const isRated = !!existingFeedback;
+
+        return (
+            <div
+                key={session.id}
+                className={`sf-card ${isRated ? "rated" : "not-rated"}`}
+                onClick={() => {
+                    if (!isCompleted) return;
+
+                    setSelectedSession(session);
+                    setSelectedFeedback(existingFeedback || null);
+
+                    if (existingFeedback) {
+                        setIntensity(existingFeedback.intensity);
+                        setDurationMinutes(existingFeedback.duration_minutes);
+                        setNotes(existingFeedback.feedback_notes || "");
+                    } else {
+                        setIntensity("");
+                        setDurationMinutes(durationToMinutes(session.duration));
+                        setNotes("");
+                    }
+                }}>
+
+                <div className="sf-card-content">
+                    <h3>{session.name}</h3>
+                    <p> {new Date(session.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} </p>
+                    <p> Duration: {session.duration} </p>
+                    <span className={`sf-status ${isRated ? "rated" : "not-rated"}`}> {isRated ? "Rated" : "Not Rated"}</span>
+
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div id="layout">
-            <PLAYER_SIDEBAR />
+            {/* Loading overlay */}
+            {isLoading && <LOADING_OVERLAY caption={"session feedbacks"} />}
 
             <div id="main-content-wrapper">
                 <div id="main-content">
                     <div id="sf-page">
                         <div className="sf-header">
                             <div>
-                                <h2 className="content-header">Session Feedback</h2>
+                                <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>Session Feedback</h2>
                                 <p className="sf-subtitle">
-                                    Rate your completed sessions and trach your training load.
+                                    Rate your completed sessions and track your training load.
                                 </p>
                             </div>
                         </div>
 
-                        <div className="sf-grid">
-                            {sessions.map(session => {
-                                const isRated = feedback.some(f => f.session_id === session.id);
+                        {/* Sessions Grid */}
+                        <div id="sf-main-panel">
+                            <div className="sf-panel-header"> <h3> RATED SESSIONS </h3> </div>
+                            <div className="sf-grid"> {recentRatedSessions.map(renderSessionCard)} </div>
+                        </div>
 
-                                return (
-                                    <div
-                                        key={session.id}
-                                        className={`sf-card ${isRated ? "rated" : "not-rated"}`}
-                                        onClick={() => {
-                                            if (!isRated) {
-                                                setSelectedSession(session);
-                                                setDurationMinutes(durationToMinutes(session.duration));
-                                            }
-                                        }}
-                                    >
-                                        <span className="sf-card-date">
-                                            {new Date(session.start_datetime).toLocaleString("en-AU")}
-                                        </span>
+                        <div id="sf-main-panel">
+                            <div className="sf-panel-header"> <h3> SESSIONS TO BE RATED </h3> </div>
+                            <div className="sf-grid"> {unratedSessions.map(renderSessionCard)} </div>
+                        </div>
 
-                                        <h3 className="sf-card-title">{session.name}</h3>
-
-                                        <p className="sf-card-info">
-                                            Duration: {session.duration}
-                                        </p>
-
-                                        <span className={`sf-status ${isRated ? "rated" : "not-rated"}`}>
-                                            {isRated ? "Rated" : "Not Rated"}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                        <div id="sf-main-panel">
+                            <div className="sf-panel-header"> <h3> UPCOMING SESSIONS </h3> </div>
+                            <div className="sf-grid"> {recentUpcomingSessions.map(renderSessionCard)} </div>
                         </div>
 
                         {selectedSession && (
-                            <div className="sf-form-box">
-                                <h3 className="sf-form-title">
-                                    Give Feedback for {selectedSession.name}
-                                </h3>
+                            <div id="drill-modal-overlay">
+                                <div className="drill-modal" style={{ maxWidth: '620px' }}>
+                                    <div className="drill-modal-header">
+                                        <span className="drill-modal-title"> Give Session Feedback </span>
+                                    </div>
 
-                                <p>
-                                    Planned Duration: {durationToMinutes(selectedSession.duration) + " minutes"}
-                                </p>
+                                    <div className="drill-modal-body">
+                                        <div className="drill-form-group">
+                                            <p className="drill-modal-title" style={{ color: "var(--accent-color)" }} >{selectedSession.name} - {new Date(selectedSession.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</p>
+                                            <p className="drill-form-label"> Planned Duration: {durationToMinutes(selectedSession.duration) + " minutes"} </p>
 
-                                <div className="sf-form-group">
-                                    <label className="sf-label">Intensity</label>
-                                    <select
-                                        className="sf-input"
-                                        value={intensity}
-                                        onChange={(e) => setIntensity(e.target.value)}
-                                    >
-                                        <option value="">Select Intensity</option>
+                                            <label className="drill-form-label">Session Intensity</label>
+                                            <select className="drill-form-select" value={intensity} onChange={(e) => setIntensity(e.target.value)}>
+                                                <option value="">Select intensity</option>
+                                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n}>{n}</option>)}
+                                            </select>
 
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
+                                            <label className="drill-form-label">Actual Duration (minutes)</label>
+                                            <input className="drill-form-input" type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} />
 
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                        <option value="6">6</option>
+                                            <label className="drill-form-label">Comment</label>
+                                            <textarea className="drill-form-textarea" placeholder="How was the session?" value={notes} onChange={(e) => setNotes(e.target.value)} />
 
-                                        <option value="7">7</option>
-                                        <option value="8">8</option>
-                                        <option value="9">9</option>
-                                        <option value="10">10</option>
-                                    </select>
+                                            <div className="sf-form-actions">
+                                                <button className="sf-btn sf-btn-ghost" onClick={() => setSelectedSession(null)}> Cancel </button>
+                                                <button className="sf-btn active" onClick={handleSave}> Save Feedback </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-
-                                <div className="sf-form-group">
-                                    <label className="sf-label">Actual Duration</label>
-                                    <input
-                                        className="sf-input"
-                                        type="number"
-                                        placeholder="Actual training duration in minutes"
-                                        value={durationMinutes}
-                                        onChange={(e) => setDurationMinutes(e.target.value)}
-                                    />
-                                </div>
-
-                                <div className="sf-form-group">
-                                    <label className="sf-label">Notes</label>
-                                    <textarea
-                                        className="sf-textarea"
-                                        placeholder="Notes"
-                                        value={notes}
-                                        onChange={(e) => setNotes(e.target.value)}
-                                    />
-                                </div>
-
-                                <div className="sf-form-actions">
-                                    <button
-                                        className="sf-btn sf-btn-ghost"
-                                        onClick={() => setSelectedSession(null)}
-                                    >
-                                        Cancel
-                                    </button>
-
-                                    <button className="sf-btn sf-btn-primary" onClick={handleSave}>
-                                        Save Feedback
-                                    </button>
-                                </div>
-
                             </div>
                         )}
                     </div>
                 </div>
-            </div></div>
+            </div >
+        </div >
     );
 }
