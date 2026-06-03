@@ -3,133 +3,139 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import '../App.css';
 
-// CHANGE DETAILS SECTION
-// Component for editing the user's profile details
-function ChangeDetails() {
-    // Allows the page to redirect the user when needed
-    const navigate = useNavigate();
-    // Tracks loading, saving, success, and error states
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving]   = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [error, setError]     = useState('');
+// Tracks window width so components can adjust layout for mobile vs desktop
+function useWindowWidth() {
+    const [width, setWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handle = () => setWidth(window.innerWidth);
+        window.addEventListener('resize', handle);
+        // Cleanup listener on unmount to prevent memory leaks
+        return () => window.removeEventListener('resize', handle);
+    }, []);
+    return width;
+}
 
-    // Stores the profile fields shown in the form
+// Allows users to update their first name, last name, DOB and gender.
+// Email is read-only — it cannot be changed from this page.
+// On save, updates both the signin_details table and Supabase user_metadata
+// so the sidebar name reflects the change immediately without re-login.
+function ChangeDetails() {
+    const navigate = useNavigate();
+    const width = useWindowWidth();
+    const isMobile = width < 768; 
+
+    // UI state
+    const [loading, setLoading] = useState(true);  
+    const [saving, setSaving]   = useState(false); 
+    const [success, setSuccess] = useState(false); 
+    const [error, setError]     = useState('');    
+
+    // Form field state
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName]   = useState('');
-    const [email, setEmail]         = useState('');
+    const [email, setEmail]         = useState(''); 
     const [dob, setDob]             = useState('');
     const [gender, setGender]       = useState('');
-    const [role, setRole]           = useState('');
+    const [role, setRole]           = useState(''); 
 
-    // Loads the current user's saved profile details when the page opens
     useEffect(() => {
-        // Defines the function that retrieves the user profile
         const load = async () => {
-            // Gets the currently logged in user
             const { data: { user } } = await supabase.auth.getUser();
-            // Sends the user to login when no active session exists
+            // If no session, redirect to login
             if (!user) { navigate('/Login'); return; }
-            // Fills the form using account metadata first
+
+            // Populate fields from Supabase auth user_metadata first
             setEmail(user.email || '');
             setFirstName(user.user_metadata?.first_name || '');
             setLastName(user.user_metadata?.last_name   || '');
             setRole(user.user_metadata?.role            || '');
 
-            // Reads extra profile details from the signin_details table
+            // Then fetch dob and gender from signin_details table
+            // These fields are not stored in user_metadata
             const { data } = await supabase
                 .from('signin_details')
                 .select('dob, gender, first_name, last_name')
                 .eq('id', user.id)
                 .single();
 
-            // Uses database values when they exist
             if (data) {
                 setDob(data.dob || '');
                 setGender(data.gender || '');
+                // Prefer signin_details name over metadata if available
                 if (data.first_name) setFirstName(data.first_name);
                 if (data.last_name)  setLastName(data.last_name);
             }
-            // Stops the loading spinner after the data check finishes
             setLoading(false);
         };
-        // Runs the profile loading function
         load();
     }, []);
 
-    // Handles the save button for profile updates
+    // Handle save 
     const handleSave = async (e) => {
-        // Stops the form from refreshing the page
         e.preventDefault();
-        // Clears old messages before saving again
         setError(''); setSuccess(false);
-        // Requires both first name and last name before saving
+
+        // Basic validation
         if (!firstName || !lastName) { setError('First and last name are required.'); return; }
-        // Shows the saving state while the update is running
         setSaving(true);
 
-        // Gets the current user before updating saved details
         const { data: { user } } = await supabase.auth.getUser();
-        // Updates the profile details stored in the database
+
+        // Update signin_details table with all editable fields
         const { error: dbError } = await supabase
             .from('signin_details')
             .update({ first_name: firstName, last_name: lastName, dob: dob || null, gender: gender || null })
             .eq('id', user.id);
 
-        // Stops saving and shows the database error if the update fails
         if (dbError) { setError(dbError.message); setSaving(false); return; }
-        // Updates the user's authentication metadata with the new name
+
+        // Also update user_metadata so the sidebar name updates immediately
         await supabase.auth.updateUser({ data: { first_name: firstName, last_name: lastName } });
 
-        // Shows a temporary success message after saving
         setSaving(false);
         setSuccess(true);
+        // Auto-hide success message after 3 seconds
         setTimeout(() => setSuccess(false), 3000);
     };
 
-    // Shared style for the form inputs
+    // Shared styles 
     const inputStyle = {
-        width: '100%', padding: '10px 12px', fontSize: '14px',
+        width: '100%', padding: '10px 12px',
+        fontSize: isMobile ? '16px' : '14px', // 16px prevents iOS auto-zoom
         fontFamily: 'DM Sans Light, sans-serif',
         border: '2px solid var(--content-input-border-color)',
         borderRadius: '8px', outline: 'none',
         boxSizing: 'border-box', color: '#000', background: '#fff',
     };
-    // Shared style for form labels
     const labelStyle = {
         fontFamily: 'DM Mono Light, sans-serif', fontSize: '12px',
         color: 'var(--content-subhead-color)', marginBottom: '6px', display: 'block',
     };
-    // Shared layout style for each form field
     const fieldStyle = { display: 'flex', flexDirection: 'column', marginBottom: '16px' };
 
-    // Shows a spinner while profile details are loading
+    // Loading spinner 
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
             <div style={{ width: '32px', height: '32px', border: '3px solid #DDDBD6', borderTop: '3px solid #C8714E', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
         </div>
     );
 
-    // Renders the change details form
     return (
         <div>
-            <h2 style={{ fontFamily: 'Bebas, sans-serif', fontSize: '22px', letterSpacing: '1px', margin: '0 0 4px', color: 'var(--content-head-color)' }}>Change Details</h2>
-            <p style={{ fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: 'var(--content-subhead-color)', margin: '0 0 24px' }}>
+            {/* Section title and subtitle */}
+            <h2 style={{ fontFamily: 'Bebas, sans-serif', fontSize: isMobile ? '20px' : '22px', letterSpacing: '1px', margin: '0 0 4px', color: 'var(--content-head-color)' }}>Change Details</h2>
+            <p style={{ fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: 'var(--content-subhead-color)', margin: '0 0 20px' }}>
                 Update your personal information below.
             </p>
 
-            {/* Role badge */}
-            <div style={{
-                display: 'inline-flex', alignItems: 'center',
-                background: 'var(--topbar-accent-color)',
-                border: '1.5px solid var(--content-input-border-color)',
-                borderRadius: '20px', padding: '4px 12px', marginBottom: '24px',
-            }}>
+            {/* Role badge — read only indicator showing coach or player */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--topbar-accent-color)', border: '1.5px solid var(--content-input-border-color)', borderRadius: '20px', padding: '4px 12px', marginBottom: '20px' }}>
                 <span style={{ fontFamily: 'DM Mono Light, sans-serif', fontSize: '11px', color: 'var(--content-subhead-color)', letterSpacing: '1px', textTransform: 'uppercase' }}>{role}</span>
             </div>
 
             <form onSubmit={handleSave}>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                {/* Name row — side by side on desktop, stacked on mobile */}
+                <div style={{ display: 'flex', gap: '12px', flexDirection: isMobile ? 'column' : 'row' }}>
                     <div style={{ ...fieldStyle, flex: 1 }}>
                         <label style={labelStyle}>FIRST NAME</label>
                         <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} style={inputStyle} />
@@ -140,18 +146,20 @@ function ChangeDetails() {
                     </div>
                 </div>
 
+                {/* Email field — disabled, shown for reference only */}
                 <div style={fieldStyle}>
                     <label style={labelStyle}>EMAIL</label>
-                    <input type="email" value={email} disabled
-                        style={{ ...inputStyle, background: 'var(--topbar-accent-color)', color: 'var(--content-subhead-color)', cursor: 'not-allowed' }} />
+                    <input type="email" value={email} disabled style={{ ...inputStyle, background: 'var(--topbar-accent-color)', color: 'var(--content-subhead-color)', cursor: 'not-allowed' }} />
                     <span style={{ fontSize: '11px', color: 'var(--content-subhead-color)', fontFamily: 'DM Sans Light, sans-serif', marginTop: '4px' }}>Email cannot be changed here.</span>
                 </div>
 
+                {/* Date of birth */}
                 <div style={fieldStyle}>
                     <label style={labelStyle}>DATE OF BIRTH</label>
                     <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} style={inputStyle} />
                 </div>
 
+                {/* Gender dropdown */}
                 <div style={fieldStyle}>
                     <label style={labelStyle}>GENDER</label>
                     <select value={gender} onChange={(e) => setGender(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
@@ -163,11 +171,13 @@ function ChangeDetails() {
                     </select>
                 </div>
 
+                {/* Error and success feedback messages */}
                 {error   && <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#DC2626', fontFamily: 'DM Sans Light, sans-serif' }}>{error}</p>}
                 {success && <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#16a34a', fontFamily: 'DM Sans Light, sans-serif' }}>✓ Profile updated successfully.</p>}
 
+                {/* Submit button — full width on mobile */}
                 <button type="submit" disabled={saving}
-                    style={{ padding: '12px 28px', background: 'var(--accent-color)', color: '#fff', border: 'none', borderRadius: '8px', fontFamily: 'Bebas, sans-serif', fontSize: '18px', letterSpacing: '2px', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+                    style={{ width: isMobile ? '100%' : 'auto', padding: '12px 28px', background: 'var(--accent-color)', color: '#fff', border: 'none', borderRadius: '8px', fontFamily: 'Bebas, sans-serif', fontSize: '18px', letterSpacing: '2px', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
                     {saving ? 'SAVING...' : 'SAVE CHANGES'}
                 </button>
             </form>
@@ -175,95 +185,88 @@ function ChangeDetails() {
     );
 }
 
-// ── DELETE ACCOUNT SECTION ────────────────────────────────────────────────────
-// Component for permanently deleting the user's account
+// Hard deletes the account via the Supabase Edge Function 'hyper-responder'.
+// The Edge Function removes the user from auth.users and signin_details.
+// Requires the user to type "DELETE" to confirm before proceeding.
 function DeleteAccount() {
-    // Allows redirecting the user after account deletion
     const navigate = useNavigate();
-    // Tracks delete confirmation, progress, errors, and typed text
-    const [confirm, setConfirm]   = useState(false);
-    const [deleting, setDeleting] = useState(false);
-    const [error, setError]       = useState('');
-    const [typed, setTyped]       = useState('');
+    const width = useWindowWidth();
+    const isMobile = width < 768;
 
-    // Handles the final account deletion action
+    // UI state
+    const [confirm, setConfirm]   = useState(false);  
+    const [deleting, setDeleting] = useState(false);  
+    const [error, setError]       = useState('');     
+    const [typed, setTyped]       = useState('');     
+
+    // Handle delete 
     const handleDelete = async () => {
-        // Clears any previous delete error message
         setError('');
-        // Requires the user to type DELETE before continuing
+
+        // Require exact text "DELETE" to prevent accidental deletion
         if (typed !== 'DELETE') { setError('Please type DELETE to confirm.'); return; }
-        // Shows the deleting state while the request is running
         setDeleting(true);
 
-        // Gets the logged in user before deleting the account
         const { data: { user } } = await supabase.auth.getUser();
-        // Sends the user to login when no active session exists
         if (!user) { navigate('/Login'); return; }
 
-        // Hard delete via Edge Function — removes from auth.users and signin_details
-        // Calls the Edge Function that performs the hard delete
+        // Call the Edge Function to hard delete from auth.users and signin_details
+        // The function name 'hyper-responder' is the Supabase-assigned endpoint name
         const { error } = await supabase.functions.invoke('hyper-responder', {
             body: { userId: user.id }
         });
 
-        // Stops deleting and shows a message if the delete request fails
         if (error) { setError('Failed to delete account. Please try again.'); setDeleting(false); return; }
 
-        // Signs the user out after the account is deleted
+        // Sign out and redirect to login after successful deletion
         await supabase.auth.signOut();
-        // Redirects the user back to the login page
         navigate('/Login');
     };
 
-    // Renders the delete account section
     return (
         <div>
-            <h2 style={{ fontFamily: 'Bebas, sans-serif', fontSize: '22px', letterSpacing: '1px', margin: '0 0 4px', color: 'var(--content-head-color)' }}>Delete Account</h2>
-            <p style={{ fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: 'var(--content-subhead-color)', margin: '0 0 24px' }}>
+            {/* Section title and subtitle */}
+            <h2 style={{ fontFamily: 'Bebas, sans-serif', fontSize: isMobile ? '20px' : '22px', letterSpacing: '1px', margin: '0 0 4px', color: 'var(--content-head-color)' }}>Delete Account</h2>
+            <p style={{ fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: 'var(--content-subhead-color)', margin: '0 0 20px' }}>
                 Permanently delete your account and all associated data.
             </p>
 
-            {/* Warning box */}
-            <div style={{
-                background: '#FEF2F2', border: '1.5px solid #FCA5A5',
-                borderRadius: '8px', padding: '16px', marginBottom: '24px',
-            }}>
-                <p style={{ margin: '0 0 8px', fontFamily: 'DM Sans Light, sans-serif', fontSize: '14px', color: '#991B1B', fontWeight: '600' }}>
-                    This action cannot be undone.
-                </p>
+            {/* Warning box — red background to signal irreversible action */}
+            <div style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5', borderRadius: '8px', padding: '16px', marginBottom: '24px' }}>
+                <p style={{ margin: '0 0 8px', fontFamily: 'DM Sans Light, sans-serif', fontSize: '14px', color: '#991B1B', fontWeight: '600' }}>This action cannot be undone.</p>
                 <p style={{ margin: 0, fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: '#B91C1C' }}>
                     Your account will be permanently deleted. You will lose access to all your data including sessions, feedback, and performance records.
                 </p>
             </div>
 
+            {/* Step 1 — Show delete button. Step 2 — Show confirmation input */}
             {!confirm ? (
+                // Initial delete button — clicking reveals the confirmation step
                 <button onClick={() => setConfirm(true)}
-                    style={{ padding: '12px 28px', background: '#DC2626', color: '#fff', border: 'none', borderRadius: '8px', fontFamily: 'Bebas, sans-serif', fontSize: '18px', letterSpacing: '2px', cursor: 'pointer' }}>
+                    style={{ width: isMobile ? '100%' : 'auto', padding: '12px 28px', background: '#DC2626', color: '#fff', border: 'none', borderRadius: '8px', fontFamily: 'Bebas, sans-serif', fontSize: '18px', letterSpacing: '2px', cursor: 'pointer' }}>
                     DELETE ACCOUNT
                 </button>
             ) : (
+                // Confirmation step — user must type DELETE to proceed
                 <div>
                     <p style={{ fontFamily: 'DM Sans Light, sans-serif', fontSize: '14px', color: 'var(--content-head-color)', marginBottom: '12px' }}>
                         Type <strong>DELETE</strong> below to confirm:
                     </p>
-                    <input
-                        type="text" value={typed}
-                        onChange={(e) => setTyped(e.target.value)}
-                        placeholder="DELETE"
-                        style={{
-                            width: '100%', padding: '10px 12px', fontSize: '14px',
-                            fontFamily: 'DM Mono Light, sans-serif',
-                            border: '2px solid #FCA5A5', borderRadius: '8px',
-                            outline: 'none', boxSizing: 'border-box',
-                            color: '#000', background: '#fff', marginBottom: '12px',
-                        }}
-                    />
+
+                    {/* Confirmation text input — styled with red border to reinforce danger */}
+                    <input type="text" value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="DELETE"
+                        style={{ width: '100%', padding: '10px 12px', fontSize: isMobile ? '16px' : '14px', fontFamily: 'DM Mono Light, sans-serif', border: '2px solid #FCA5A5', borderRadius: '8px', outline: 'none', boxSizing: 'border-box', color: '#000', background: '#fff', marginBottom: '12px' }} />
+
+                    {/* Error message if typed text is wrong or delete fails */}
                     {error && <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#DC2626', fontFamily: 'DM Sans Light, sans-serif' }}>{error}</p>}
-                    <div style={{ display: 'flex', gap: '10px' }}>
+
+                    {/* Action buttons — stacked on mobile, side by side on desktop */}
+                    <div style={{ display: 'flex', gap: '10px', flexDirection: isMobile ? 'column' : 'row' }}>
                         <button onClick={handleDelete} disabled={deleting}
                             style={{ padding: '12px 28px', background: '#DC2626', color: '#fff', border: 'none', borderRadius: '8px', fontFamily: 'Bebas, sans-serif', fontSize: '18px', letterSpacing: '2px', cursor: 'pointer', opacity: deleting ? 0.7 : 1 }}>
                             {deleting ? 'DELETING...' : 'CONFIRM DELETE'}
                         </button>
+                        {/* Cancel resets all confirmation state */}
                         <button onClick={() => { setConfirm(false); setTyped(''); setError(''); }}
                             style={{ padding: '12px 28px', background: 'transparent', color: 'var(--content-subhead-color)', border: '2px solid var(--content-input-border-color)', borderRadius: '8px', fontFamily: 'Bebas, sans-serif', fontSize: '18px', letterSpacing: '2px', cursor: 'pointer' }}>
                             CANCEL
@@ -275,13 +278,15 @@ function DeleteAccount() {
     );
 }
 
-// ── MAIN ACCOUNT SETTINGS PAGE ────────────────────────────────────────────────
-// Main account settings page
+// Renders a settings sidebar on desktop and a dropdown picker on mobile.
+// Each nav item maps to a section component rendered in the content area.
 export default function AccountSettings() {
-    // Tracks which settings section is currently selected
-    const [activeSection, setActiveSection] = useState('details');
+    const [activeSection, setActiveSection] = useState('details'); // Which section is currently shown
+    const [sidebarOpen, setSidebarOpen] = useState(false);         // Mobile dropdown open state
+    const width = useWindowWidth();
+    const isMobile = width < 768;
 
-    // Sidebar options for switching between settings sections
+    // Each item has an id matching a section component, a label, and an SVG icon
     const navItems = [
         { id: 'details', label: 'Change Details', icon: (
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -295,10 +300,43 @@ export default function AccountSettings() {
         )},
     ];
 
-    // Renders the full account settings layout
+    // Label of the currently active section (used in mobile dropdown trigger)
+    const activeName = navItems.find(i => i.id === activeSection)?.label;
+
+    // Rendered in both the desktop sidebar and mobile dropdown
+    const sidebarContent = (
+        <>
+            {navItems.map((item, i) => (
+                <div key={item.id}
+                    // On click: set active section and close mobile dropdown
+                    onClick={() => { setActiveSection(item.id); setSidebarOpen(false); }}
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '12px 16px', cursor: 'pointer',
+                        fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px',
+                        // Divider between items except last
+                        borderBottom: i < navItems.length - 1 ? '1px solid var(--content-input-border-color)' : 'none',
+                        // Highlight active item; delete is always red regardless
+                        background: activeSection === item.id ? 'var(--topbar-accent-color)' : 'transparent',
+                        color: activeSection === item.id
+                            ? (item.id === 'delete' ? '#DC2626' : 'var(--accent-color)')
+                            : (item.id === 'delete' ? '#DC2626' : 'var(--content-head-color)'),
+                        fontWeight: activeSection === item.id ? '600' : '400',
+                        transition: 'background 0.15s',
+                    }}
+                    onMouseEnter={(e) => { if (activeSection !== item.id) e.currentTarget.style.background = 'var(--topbar-accent-color)'; }}
+                    onMouseLeave={(e) => { if (activeSection !== item.id) e.currentTarget.style.background = 'transparent'; }}
+                >
+                    {item.icon}
+                    {item.label}
+                </div>
+            ))}
+        </>
+    );
+
     return (
         <div className="dashboardPage">
-            {/* Header */}
+            {/* Page header */}
             <div className="dashboardHeader" style={{ marginBottom: '24px' }}>
                 <div>
                     <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>Account Settings</h2>
@@ -308,50 +346,52 @@ export default function AccountSettings() {
                 </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+            {/* Mobile — collapsible dropdown replaces sidebar */}
+            {isMobile && (
+                <div style={{ marginBottom: '16px' }}>
+                    {/* Dropdown trigger — shows current section name with arrow */}
+                    <div
+                        onClick={() => setSidebarOpen(!sidebarOpen)}
+                        style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '12px 16px', background: 'var(--content-bg-color)',
+                            border: '1px solid var(--content-input-border-color)',
+                            // Round bottom corners only when closed
+                            borderRadius: sidebarOpen ? '10px 10px 0 0' : '10px',
+                            cursor: 'pointer', fontFamily: 'DM Sans Light, sans-serif',
+                            fontSize: '13px', color: 'var(--content-head-color)',
+                        }}
+                    >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            {navItems.find(i => i.id === activeSection)?.icon}
+                            {activeName}
+                        </span>
+                        {/* Arrow indicator */}
+                        <span style={{ fontSize: '12px', color: 'var(--content-subhead-color)' }}>{sidebarOpen ? '▲' : '▼'}</span>
+                    </div>
 
-                {/* Settings sidebar */}
-                <div style={{
-                    width: '200px', flexShrink: 0,
-                    background: 'var(--content-box-bg)',
-                    border: '1px solid var(--content-input-border-color)',
-                    borderRadius: '10px', overflow: 'hidden',
-                }}>
-                    {navItems.map((item, i) => (
-                        <div key={item.id}
-                            onClick={() => setActiveSection(item.id)}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '10px',
-                                padding: '12px 16px', cursor: 'pointer',
-                                fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px',
-                                borderBottom: i < navItems.length - 1 ? '1px solid var(--content-input-border-color)' : 'none',
-                                background: activeSection === item.id ? 'var(--topbar-accent-color)' : 'transparent',
-                                color: activeSection === item.id
-                                    ? (item.id === 'delete' ? '#DC2626' : 'var(--accent-color)')
-                                    : (item.id === 'delete' ? '#DC2626' : 'var(--content-head-color)'),
-                                fontWeight: activeSection === item.id ? '600' : '400',
-                                transition: 'background 0.15s',
-                            }}
-                            onMouseEnter={(e) => { if (activeSection !== item.id) e.currentTarget.style.background = 'var(--topbar-accent-color)'; }}
-                            onMouseLeave={(e) => { if (activeSection !== item.id) e.currentTarget.style.background = 'transparent'; }}
-                        >
-                            {item.icon}
-                            {item.label}
+                    {/* Dropdown menu — shown when open */}
+                    {sidebarOpen && (
+                        <div style={{ background: 'var(--content-bg-color)', border: '1px solid var(--content-input-border-color)', borderTop: 'none', borderRadius: '0 0 10px 10px', overflow: 'hidden' }}>
+                            {sidebarContent}
                         </div>
-                    ))}
+                    )}
                 </div>
+            )}
 
-                {/* Content area */}
-                <div style={{
-                    flex: 1,
-                    background: 'var(--content-box-bg)',
-                    border: '1px solid var(--content-input-border-color)',
-                    borderRadius: '10px', padding: '24px',
-                }}>
+            <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                {/* Desktop — fixed width sidebar on the left */}
+                {!isMobile && (
+                    <div style={{ width: '200px', flexShrink: 0, background: 'var(--content-bg-color)', border: '1px solid var(--content-input-border-color)', borderRadius: '10px', overflow: 'hidden' }}>
+                        {sidebarContent}
+                    </div>
+                )}
+
+                {/* Content area — renders the active section component */}
+                <div style={{ flex: 1, background: 'var(--content-bg-color)', border: '1px solid var(--content-input-border-color)', borderRadius: '10px', padding: isMobile ? '16px' : '24px' }}>
                     {activeSection === 'details' && <ChangeDetails />}
                     {activeSection === 'delete'  && <DeleteAccount />}
                 </div>
-
             </div>
         </div>
     );
