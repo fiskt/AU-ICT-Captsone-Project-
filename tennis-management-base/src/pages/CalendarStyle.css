@@ -52,7 +52,7 @@
 /* CURRENT DAY HIGHLIGHT */
 
 .fc .fc-day-today {
-    background-color: color-mix(in srgb, var(--accent-color), transparent 20%) !important;
+    background-color: color-mix(in srgb, var(--accent-color), transparent 40%) !important;
 }
 
 /* HEADER TOOLBAR */
@@ -116,9 +116,18 @@
 
 /* EVENT*/
 
+.fc-timegrid-event {
+    box-shadow: none !important;
+}
+
+.fc-v-event {
+    background-color: var(--accent-dark);
+}
+
 .fc-event {
     padding: 0 3px 0 3px;
     border: 2px solid white;
+    overflow: hidden;
 }
 
 .fc-event:hover {
@@ -129,14 +138,21 @@
 .fc-event-title {
     font-family: 'DM Sans Light', sans-serif;
     color: var(--content-body-color);
-    font-size: 80%;
+    font-size: 12px !important;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;       
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap
 }
 
 .fc-event-time {
     border-bottom: 1px solid black;
     font-family: 'DM Sans Light', sans-serif;
     color: black;
-    font-size: 64% !important;
+    font-size: 10px !important;
 }
 
 .short-event .fc-event-time {

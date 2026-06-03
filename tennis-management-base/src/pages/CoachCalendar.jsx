@@ -644,6 +644,13 @@ export default function CoachCalendar() {
     }, [editedSessionCoaches, editedSessionPlayers, editedSessionDrills]);
 
     async function saveSessionChanges() {
+        if (
+            tempSession.name.length === 0 || 
+            tempSession.rpe <= 0 || 
+            tempSession.selectedCoaches.length === 0 ||
+            tempSession.selectedPlayers.length === 0
+        ) return;
+        
         setIsDataLoading(true);
 
         const sessionDate = DateTime.fromJSDate(selectedSession.start).toISODate();
@@ -654,15 +661,6 @@ export default function CoachCalendar() {
             ? DateTime.fromISO(`${sessionDate}T${tempSession.endTime}`)
             : DateTime.fromJSDate(selectedSession.end);
         const newDuration = newEnd.diff(newStart).toFormat('hh:mm:ss');
-
-        if (
-            tempSession.name.length === 0 || 
-            tempSession.rpe <= 0 || 
-            (tempSession.selectedCoaches.length === 0 && tempSession.selectedPlayers.length === 0)
-        ) {
-            setIsDataLoading(false);
-            return;
-        }
         
         const { error } = await supabase
             .from('sessions')
@@ -819,6 +817,7 @@ export default function CoachCalendar() {
                     setShowMobileSessionCreator={setShowMobileSessionCreator}
                     currentCalendarView={currentCalendarView} setCurrentCalendarView={setCurrentCalendarView}
                     setShowSendEmail={setShowSendEmail} fetchUnsentSessions={fetchUnsentSessions}
+                    unsentSessions={unsentSessions}
 
                     ref={calendarRef}
                 />

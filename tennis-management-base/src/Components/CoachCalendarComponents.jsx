@@ -304,7 +304,8 @@ export const CALENDAR = forwardRef(({
     isMobile, 
     setShowMobileSessionCreator,
     currentCalendarView, setCurrentCalendarView,
-    setShowSendEmail, fetchUnsentSessions
+    setShowSendEmail, fetchUnsentSessions,
+    unsentSessions = []
     }, ref) => {
 
     const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
@@ -482,7 +483,6 @@ export const CALENDAR = forwardRef(({
                             onDateChange(info.start, info.end);
                         }, 10);
                     }}
-                    displayEventTime={!isMobile}
                     displayEventEnd={false}
                     editable={true}
                     eventReceive = {(info) => {    
@@ -508,6 +508,32 @@ export const CALENDAR = forwardRef(({
                             console.log("update session times ran");
                             updateSessionTimes(info.event);
                         }
+                    }}
+                    eventContent={(arg) => {
+                        const isUnsent = unsentSessions.includes(arg.event.id);
+                        const timeText = arg.timeText;
+                        const title = arg.event.title;
+
+                        return (
+                            <div className='fc-event-main'>
+                                <div className='fc-event-main-frame'>
+                                    {!isMobile && (
+                                        <div className='fc-event-time'>{timeText}</div>
+                                    )}
+                                    <div className='fc-event-title-container fc-sticky'>
+                                        <div className='fc-event-title'>
+                                            {isUnsent && (
+                                                <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" 
+                                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" 
+                                                    />
+                                                </svg>
+                                            )} {title}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
                     }}
                 />
             </div>
