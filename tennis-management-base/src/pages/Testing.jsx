@@ -801,11 +801,8 @@ export default function Testing() {
         metrics.forEach(metric => {
             const value = test[metric];
             if (value === null || value === undefined || value === "") return;
-
             const rating = getRating(value, metric, test.gender, test.phv_stage);
-
             if (rating === "excellent" || rating === "good") {strengths.push(metricLabels[metric]);}
-
             if (rating === "average" || rating === "poor") {weaknesses.push(metricLabels[metric]);}
         });
 
@@ -840,8 +837,8 @@ export default function Testing() {
 
         const { error: detailsError } = await supabase.from("player_details").upsert({
                 id: data.player_id,
-                strengths: strengths.join(", "),
-                weaknesses: weaknesses.join(", "),
+                strengths: strengths,
+                weaknesses: weaknesses,
             });
 
         if (detailsError) {

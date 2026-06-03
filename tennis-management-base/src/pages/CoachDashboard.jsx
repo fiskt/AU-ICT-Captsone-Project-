@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
-import { COACH_SIDEBAR, LOADING_OVERLAY } from '../Components/SharedComponents';
+import { LOADING_OVERLAY } from '../Components/SharedComponents';
 
 import '../App.css';
 import './Dashboard.css';
@@ -243,8 +243,6 @@ export default function Dashboard() {
             {/* Loading overlay */}
             {isLoading && <LOADING_OVERLAY caption={"coach dashboard"} />}
 
-            <COACH_SIDEBAR />
-
             <div id="main-content-wrapper">
                 <div id="main-content">
                     <div className="dashboardPage coachDashboardPage">
@@ -312,6 +310,7 @@ export default function Dashboard() {
                         <div className="dashboardGrid">
                             {/* LEFT */}
                             <div className="leftColumn coachDashboardPage">
+
                                 {/* RPE GRAPH */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
@@ -321,33 +320,21 @@ export default function Dashboard() {
                                         <h3>Planned vs Actual Training Load</h3>
                                     </div>
 
+                                    {/* WEEK NAVIGATION BUTTON */}
                                     <div className="weekControls">
-                                        <button className="weekButton" onClick={() => setWeekOffset(weekOffset - 1)}>
-                                            Previous Week
-                                        </button>
-
-                                        <button className={`weekButton ${weekOffset === 0 ? "active" : ""}`} onClick={() => setWeekOffset(0)}>
-                                            This Week
-                                        </button>
-
-                                        <button className="weekButton" onClick={() => setWeekOffset(weekOffset + 1)}>
-                                            Next Week
-                                        </button>
+                                        <button className="weekButton" onClick={() => setWeekOffset(weekOffset - 1)}> Previous Week </button>
+                                        <button className={`weekButton ${weekOffset === 0 ? "active" : ""}`} onClick={() => setWeekOffset(0)}> This Week </button>
+                                        <button className="weekButton" onClick={() => setWeekOffset(weekOffset + 1)}> Next Week </button>
                                     </div>
 
-                                    <p className="dashboardLabel">
-                                        {startOfSelectedWeek.toLocaleDateString("en-AU")} - {endOfSelectedWeek.toLocaleDateString("en-AU")}
-                                    </p>
+                                    {/* WEEK DATE LABEL */}
+                                    <p className="dashboardLabel"> {startOfSelectedWeek.toLocaleDateString("en-AU")} - {endOfSelectedWeek.toLocaleDateString("en-AU")} </p>
 
+                                    {/* LINE CHART */}
                                     <ResponsiveContainer width="100%" height={340}>
                                         <LineChart
                                             data={weeklyGraphData}
-                                            margin={{
-                                                top: 10,
-                                                right: 10,
-                                                left: -20,
-                                                bottom: 0,
-                                            }}
+                                            margin={{ top: 10, right: 10, left: -20, bottom: 0, }}
                                         >
                                             <CartesianGrid
                                                 strokeDasharray="3 3"
@@ -362,12 +349,8 @@ export default function Dashboard() {
 
                                                     return (
                                                         <g transform={`translate(${x},${y})`}>
-                                                            <text x={0} y={0} dy={12} textAnchor="middle" fill="#6b7280" fontSize={12}>
-                                                                {date}
-                                                            </text>
-                                                            <text x={0} y={16} dy={12} textAnchor="middle" fill="#9ca3af" fontSize={10}>
-                                                                {sessionName}
-                                                            </text>
+                                                            <text x={0} y={0} dy={12} textAnchor="middle" fill="#6b7280" fontSize={12}> {date} </text>
+                                                            <text x={0} y={16} dy={12} textAnchor="middle" fill="#9ca3af" fontSize={10}> {sessionName} </text>
                                                         </g>
                                                     );
                                                 }}
@@ -390,11 +373,7 @@ export default function Dashboard() {
                                                 dataKey="plannedLoad"
                                                 stroke="#f59e0b"
                                                 strokeWidth={3}
-                                                dot={{
-                                                    r: 4,
-                                                    strokeWidth: 2,
-                                                    fill: "#fff",
-                                                }}
+                                                dot={{ r: 4, strokeWidth: 2, fill: "#fff"}}
                                                 activeDot={{ r: 7 }}
                                                 name="Planned Load"
                                             />

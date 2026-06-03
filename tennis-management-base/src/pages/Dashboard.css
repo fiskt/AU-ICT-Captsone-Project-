@@ -34,12 +34,9 @@
     border: 2px solid var(--content-input-border-color);
     background-color: white;
     border-radius: 8px;
-
     padding: 10px 14px;
-
     font-family: 'DM Sans Light', sans-serif;
     color: var(--content-body-color);
-
     outline: none;
 }
 
@@ -55,41 +52,6 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-}
-
-/* RESPONSIVE - MOBILE LAYOUT */
-
-/* Mobile */
-@media (max-width: 768px) {
-    .dashboardGrid {
-        width: 100%;
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-
-    .leftColumn,
-    .rightColumn {
-        width: 100%;
-        min-width: 0;
-        gap: 10px;
-        align-items: center;
-    }
-
-    .coachDashboardPage .rightColumn {
-    order: 1;
-    }
-
-    .coachDashboardPage .leftColumn {
-        order: 2;
-    }
-
-    .chartBox {
-        width: 100%;
-        max-width: 100%;
-        gap: 10px;
-        padding: 15px;
-    }
 }
 
 /* CONTENT BOX */
@@ -108,9 +70,7 @@
 .sectionHeader h3 {
     font-family: 'Bebas', sans-serif;
     font-size: 28px;
-
     color: var(--content-head-color);
-
     margin: 0;
     letter-spacing: 1px;
 }
@@ -161,7 +121,6 @@
     margin-top: 4px 0 0 0;
 }
 
-/* SESSION RIGHT */
 .sessionInfo {
     display: flex;
     flex-direction: column;
@@ -172,19 +131,59 @@
     color: var(--content-subhead-color);
 }
 
+.sessionTime {
+    min-width: 70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 2px solid var(--topbar-accent-color);
+    padding-right: 16px;
+}
+
+.sessionDetailCard {
+    display: flex;
+    gap: 20px;
+    padding: 18px;
+    border-radius: 12px;
+    border: 2px solid var(--topbar-accent-color);
+    background: var(--main-bg-color);
+}
+
+.timeMain {
+    font-family: 'Bebas', sans-serif;
+    font-size: 55px;
+    line-height: 1;
+}
+
+.sessionContent {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.sessionContent h3 {
+    margin: 0 0 10px 0;
+    font-family: 'Bebas', sans-serif;
+    font-size: 31px;
+}
+
+.sessionContent p {
+    margin: 2px 0;
+    font-family: 'DM Mono Light', sans-serif;
+    color: var(--content-subhead-color);
+    font-size: 14px;
+}
+
+
 /* BUTTON */
 .dashboardBtn {
     background-color: var(--accent-color);
     border: 2px solid var(--accent-color);
-
     color: white;
-
     padding: 10px 16px;
-
     border-radius: 8px;
-
     font-family: 'DM Mono Light', sans-serif;
-
     cursor: pointer;
 }
 
@@ -334,7 +333,7 @@
     background: white;
     border-radius: 12px;
     padding: 12px 14px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     font-family: 'DM Sans Light', sans-serif;
     font-size: 13px;
     color: var(--content-body-color);
@@ -373,4 +372,44 @@
     border-color: var(--accent-color);
     background: var(--accent-color);
     color: white;
+}
+
+/* RESPONSIVE - MOBILE LAYOUT */
+
+/* Mobile */
+@media (max-width: 768px) {
+    .dashboardGrid {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .leftColumn,
+    .rightColumn {
+        width: 100%;
+        min-width: 0;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .coachDashboardPage .rightColumn {
+        order: 1;
+    }
+
+    .coachDashboardPage .leftColumn {
+        order: 2;
+    }
+
+    .chartBox {
+        width: 100%;
+        max-width: 100%;
+        gap: 10px;
+        padding: 15px;
+    }
+
+    .sessionDetailCard {
+        grid-template-columns: 1fr 1fr;
+    }
+
 }

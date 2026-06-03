@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import { LOADING_OVERLAY } from '../Components/SharedComponents';
 
 import '../App.css';
 import "./Dashboard.css";
@@ -41,7 +42,22 @@ export default function PlayerDashboard() {
     // State for updates
     const [coachUpdates, setCoachUpdates] = useState([]);
 
+    // LOADING STATE
+    const [isLoading, setIsLoading] = useState(true);
+
+    // WEEKLY NAVIGATION
+    const today = new Date();
+
+    const startOfSelectedWeek = new Date(today);
+    startOfSelectedWeek.setDate(today.getDate() - today.getDay() + 1);
+    startOfSelectedWeek.setHours(0, 0, 0, 0);
+
+    const endOfSelectedWeek = new Date(startOfSelectedWeek);
+    endOfSelectedWeek.setDate(startOfSelectedWeek.getDate() + 6);
+    endOfSelectedWeek.setHours(23, 59, 59, 999);
+
     async function fetchData() {
+        setIsLoading(true);
         let userId;
 
         if (isCoachPreview && previewPlayerId) {
@@ -103,7 +119,7 @@ export default function PlayerDashboard() {
 
         const latest = [...feedbackData].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
         const latestSession = sessionData.find(s => s.id === latest?.session_id);
-        setLatestFeedback(latest? {...latest, session_name: latestSession?.name || "Unknown session"}: null);
+        setLatestFeedback(latest ? { ...latest, session_name: latestSession?.name || "Unknown session" } : null);
 
         const ratedSessionIDs = feedbackData.map(f => f.session_id);
         const unrated = sessionData.find(s => new Date(s.end_datetime) < now && !ratedSessionIDs.includes(s.id));
@@ -123,6 +139,7 @@ export default function PlayerDashboard() {
             setStrengths(playerProfile.strengths || []);
             setWeaknesses(playerProfile.weaknesses || []);
         }
+        setIsLoading(false);
     }
 
     useEffect(() => {
@@ -160,223 +177,246 @@ export default function PlayerDashboard() {
     // Helper function for Focus area
     function getFocusArea(weaknesses) {
 
-        if (!weaknesses || weaknesses.length === 0) {return "Balanced Training";}
-        if (weaknesses.includes("5m Sprint") || weaknesses.includes("10m Sprint") || weaknesses.includes("505 Agility Left") || weaknesses.includes("505 Agility Right")) {return "Court Movement";}
-        if (weaknesses.includes("Vertical Jump")) {return "Explosive Power";}
-        if (weaknesses.includes("Front Plank")) {return "Core Strength";}
-        if (weaknesses.includes("Beep Test") || weaknesses.includes("Yo-Yo Test")) {return "Endurance";}
+        if (!weaknesses || weaknesses.length === 0) { return "Balanced Training"; }
+        if (weaknesses.includes("5m Sprint") || weaknesses.includes("10m Sprint") || weaknesses.includes("505 Agility Left") || weaknesses.includes("505 Agility Right")) { return "Court Movement"; }
+        if (weaknesses.includes("Vertical Jump")) { return "Explosive Power"; }
+        if (weaknesses.includes("Front Plank")) { return "Core Strength"; }
+        if (weaknesses.includes("Beep Test") || weaknesses.includes("Yo-Yo Test")) { return "Endurance"; }
 
         return "General Development";
     }
 
     return (
-        <div className="dashboardPage">
+        <div id="layout">
+            {/* Loading overlay */}
+            {isLoading && <LOADING_OVERLAY caption={"athlete dashboard"} />}
 
-            {/* PREVIEW BANNER */}
-            {isCoachPreview && (
-                <div style={{
-                    backgroundColor: '#FFF3EB',
-                    border: '2px solid #EC7842',
-                    borderRadius: '8px',
-                    padding: '10px 16px',
-                    marginBottom: '16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    fontFamily: 'DM Sans Light, sans-serif',
-                    flexWrap: 'wrap',
-                    gap: '8px',
-                }}>
-                    <span style={{ fontSize: '14px', color: '#7C3A1A' }}>
-                        Previewing <strong>{previewPlayer}</strong>'s dashboard <em style={{ fontSize: '12px' }}></em>
-                    </span>
-                    <button
-                        onClick={() => navigate('/CoachDashboard')}
-                        style={{
-                            backgroundColor: '#EC7842', color: '#fff', border: 'none',
-                            borderRadius: '6px', padding: '6px 14px', fontSize: '13px',
-                            fontFamily: 'DM Mono Light, sans-serif', cursor: 'pointer',
-                        }}
-                    >
-                        ✕ Exit Preview
-                    </button>
-                </div>
-            )}
+            <div id="main-content-wrapper">
+                <div id="main-content">
+                    <div className="dashboardPage">
 
-            {/* HEADER */}
-            <div className="dashboardHeader">
-                <div>
-                    <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>
-                        {isCoachPreview ? `${previewPlayer}'s Dashboard` : 'Player Dashboard'}
-                    </h2>
-                    <p style={{
-                        fontFamily: "'DM Sans Light', sans-serif",
-                        fontSize: '13px',
-                        color: 'var(--content-subhead-color)'
-                    }}>
-                        Overview of your performance.
-                    </p>
-                </div>
-            </div>
-
-            {/* STATS */}
-            <div id="drill-stats-row">
-
-                <div className="drill-stat-card">
-                    <p className="drill-stat-label">THIS WEEK</p>
-                    <h2 className="drill-stat-value accent">{weeklySessions.length}</h2>
-                </div>
-
-                <div className="drill-stat-card">
-                    <p className="drill-stat-label">NEXT SESSION</p>
-                    <h2 className="drill-stat-value">
-                        {nextSessionData
-                            ? new Date(nextSessionData.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })
-                            : "—"}
-                    </h2>
-                    <p className="drill-stat-sub">{nextSessionData ? nextSessionData.name : "No upcoming session"}</p>
-                </div>
-
-                <div className="drill-stat-card">
-                    <p className="drill-stat-label">LAST RATING</p>
-                    <h2 className="drill-stat-value">{latestFeedback ? `${latestFeedback.intensity}/10` : "—"}</h2>
-                    <p className="drill-stat-sub">{latestFeedback ? latestFeedback.session_name : "No feedback yet"}</p>
-                </div>
-
-                <div className="drill-stat-card">
-                    <p className="drill-stat-label">FOCUS AREA</p>
-                   <h2 className="drill-stat-value">{focusArea}</h2>
-                </div>
-            </div>
-
-            {/* MAIN GRID */}
-            <div className="dashboardGrid">
-                {/* LEFT COLUMN */}
-                <div className="leftColumn">
-                    <div className="chartBox">
-                        <div className="sectionHeader">
-                            <p className="dashboardLabel">NEXT SESSION</p>
-                            <h3>{nextSessionData?.name || "No upcoming session"}</h3>
-                        </div>
-                        {nextSessionData ? (
-                            <div className="playerSessionHighlight">
-                                <p><strong>Date:</strong> {new Date(nextSessionData.start_datetime).toLocaleDateString("en-AU")}</p>
-                                <p><strong>Time:</strong> {new Date(nextSessionData.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</p>
-                                <p><strong>Duration:</strong> {nextSessionData.duration}</p>
-                                <p><strong>Notes:</strong> {nextSessionData.notes || "No notes"}</p>
+                        {/* PREVIEW BANNER */}
+                        {isCoachPreview && (
+                            <div style={{
+                                backgroundColor: '#FFF3EB',
+                                border: '2px solid #EC7842',
+                                borderRadius: '8px',
+                                padding: '10px 16px',
+                                marginBottom: '16px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                fontFamily: 'DM Sans Light, sans-serif',
+                                flexWrap: 'wrap',
+                                gap: '8px',
+                            }}>
+                                <span style={{ fontSize: '14px', color: '#7C3A1A' }}>
+                                    Previewing <strong>{previewPlayer}</strong>'s dashboard <em style={{ fontSize: '12px' }}></em>
+                                </span>
+                                <button
+                                    onClick={() => navigate('/CoachDashboard')}
+                                    style={{
+                                        backgroundColor: '#EC7842', color: '#fff', border: 'none',
+                                        borderRadius: '6px', padding: '6px 14px', fontSize: '13px',
+                                        fontFamily: 'DM Mono Light, sans-serif', cursor: 'pointer',
+                                    }}
+                                >
+                                    ✕ Exit Preview
+                                </button>
                             </div>
-                        ) : (
-                            <p>No upcoming session found.</p>
                         )}
-                    </div>
 
-                    <div className="chartBox">
-                        <div className="sectionHeader">
-                            <p className="dashboardLabel">THIS WEEK</p>
-                            <h3>Weekly Activity</h3>
-                        </div>
-                        <div className="sessionList">
-                            {weeklySessions.length > 0 ? 
-                            weeklySessions.map((session) => (
-                                <div key={session.id} className="sessionItem"
-                                onClick={() => navigate("/PlayerCalendar", { state: { selectedSession: session.id } })}
-                                                    style={{ cursor: "pointer" }} >
-                                    <div className="sessionMain">
-                                        <p className="sessionClient">{session.name}</p>
-                                        <p className="sessionName">{new Date(session.end_datetime) < new Date() ? "Completed" : "Upcoming"}</p>
-                                    </div>
-                                    <div className="sessionInfo">
-                                        <span>{new Date(session.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</span>
-                                        <span>{new Date(session.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</span>
-                                    </div>
-                                </div>
-                            )) : <p>No sessions this week.</p>}
-                        </div>
-                    </div>
-
-                    {/* Hide feedback form in preview mode */}
-                    {!isCoachPreview && (
-                        <div className="chartBox">
-                            <div className="sectionHeader">
-                                <p className="dashboardLabel">Rate of Perceived Exertion (RPE)</p>
-                                <h3>Session Feedback</h3>
+                        {/* HEADER */}
+                        <div className="dashboardHeader">
+                            <div>
+                                <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>
+                                    {isCoachPreview ? `${previewPlayer}'s Dashboard` : 'Player Dashboard'}
+                                </h2>
+                                <p style={{
+                                    fontFamily: "'DM Sans Light', sans-serif",
+                                    fontSize: '13px',
+                                    color: 'var(--content-subhead-color)'
+                                }}>
+                                    Overview of your performance.
+                                </p>
                             </div>
-                            {!pendingSession ? <p>No pending feedback.</p> : (
-                                <div className="feedbackForm">
-                                    <p><strong>{pendingSession.name}</strong></p>
-                                    <p>{new Date(pendingSession.start_datetime).toLocaleString("en-AU")}</p>
-                                    <label>Session Intensity</label>
-                                    <select value={intensity} onChange={(e) => setIntensity(e.target.value)}>
-                                        <option value="">Select intensity</option>
-                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n}>{n}</option>)}
-                                    </select>
-                                    <label>Actual Duration (minutes)</label>
-                                    <input type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} />
-                                    <label>Comment</label>
-                                    <textarea placeholder="How was the session?" value={notes} onChange={(e) => setNotes(e.target.value)} />
-                                    <button className="dashboardBtn" onClick={handleSave}>Submit Feedback</button>
-                                </div>
-                            )}
                         </div>
-                    )}
 
-                </div>
+                        {/* STATS */}
+                        <div id="drill-stats-row">
 
-                {/* RIGHT COLUMN */}
-                <div className="rightColumn">
-                    <div className="chartBox">
-                        <div className="sectionHeader">
-                            <p className="dashboardLabel">PERFORMANCE</p>
-                            <h3>Current Strengths</h3>
-                        </div>
-                        <div className="tagList">
-                            {/* EMPTY MESAGGES */}
-                            {strengths.length > 0 ? (
-                                strengths.map((item, i) => <span className="positiveTag" key={i}>{item}</span>)
-                            ) : (
-                                <p>No strengths added yet.</p>
-                            )}
-                        </div>
-                    </div>
+                            <div className="drill-stat-card">
+                                <p className="drill-stat-label">Weekly Total Sessions</p>
+                                <h2 className="drill-stat-value accent">{weeklySessions.length}</h2>
+                                <p className="drill-stat-sub"> {startOfSelectedWeek.toLocaleDateString("en-AU")} - {endOfSelectedWeek.toLocaleDateString("en-AU")} </p>
+                            </div>
 
-                    <div className="chartBox">
-                        <div className="sectionHeader">
-                            <p className="dashboardLabel">FOCUS AREA</p>
-                            <h3>Current Weaknesses</h3>
-                        </div>
-                        <div className="tagList">
-                            {/* EMPTY MESAGGES */}
-                            {weaknesses.length > 0 ? (
-                                weaknesses.map((item, i) => <span className="warningTag" key={i}>{item}</span>)
-                            ) : (
-                                <p>No focus area added yet.</p>
-                            )}
-                        </div>
-                    </div>
+                            <div className="drill-stat-card">
+                                <p className="drill-stat-label">NEXT SESSION</p>
+                                <h2 className="drill-stat-value">
+                                    {nextSessionData
+                                        ? new Date(nextSessionData.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })
+                                        : "—"}
+                                </h2>
+                                <p className="drill-stat-sub">{nextSessionData ? nextSessionData.name : "No upcoming session"}</p>
+                            </div>
 
-                    <div className="chartBox">
-                        <div className="sectionHeader">
-                            <p className="dashboardLabel">LATEST ACTIVITY</p>
-                            <h3>Coach Update Board</h3>
+                            <div className="drill-stat-card">
+                                <p className="drill-stat-label">LAST RATING</p>
+                                <h2 className="drill-stat-value">{latestFeedback ? `${latestFeedback.intensity}/10` : "—"}</h2>
+                                <p className="drill-stat-sub">{latestFeedback ? latestFeedback.session_name : "No feedback yet"}</p>
+                            </div>
+
+                            <div className="drill-stat-card">
+                                <p className="drill-stat-label">FOCUS AREA</p>
+                                <h2 className="drill-stat-value">{focusArea}</h2>
+                            </div>
                         </div>
-                        <div className="updateBoard">
-                            {coachUpdates.length > 0 ? (
-                                coachUpdates.map((update) => (
-                                    <div className="updateItem" key={update.id}>
-                                        <p className="updateType">{update.type}</p>
-                                        <p className="updateMessage">{update.message}</p>
-                                        <span className="updateTime">
-                                            {new Date(update.created_at).toLocaleDateString("en-AU")}
-                                        </span>
+
+                        {/* MAIN GRID */}
+                        <div className="dashboardGrid">
+
+                            {/* LEFT COLUMN */}
+                            <div className="leftColumn">
+                                <div className="chartBox">
+                                    <div className="sectionHeader">
+                                        <h3>UPCOMING SESSION</h3>
                                     </div>
-                                ))
-                            ) : (
-                                <p>No coach updates this week.</p>
-                            )}
+                                    {nextSessionData ? (
+                                        <div key={nextSessionData.id} className="sessionDetailCard"
+                                            onClick={() => {
+                                                if (!isCoachPreview) {
+                                                    navigate("/PlayerCalendar", { state: { selectedSession: nextSessionData.id } });
+                                                }}}
+                                            style={{ cursor: isCoachPreview ? "default" : "pointer" }}>
+                                            <div className="sessionTime">
+                                                <span className="timeMain" >{new Date(nextSessionData.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</span>
+                                            </div>
+
+                                            <div className="sessionContent">
+                                                <h3>{nextSessionData?.name || "No upcoming session"}</h3>
+                                                <p>{new Date(nextSessionData.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</p>
+                                                <p>Duration: {nextSessionData.duration}</p>
+                                                <p>Notes: {nextSessionData.notes || "No notes"}</p>
+                                            </div>
+                                        </div>
+                                    ) : (<p>No upcoming session found.</p>)
+                                    }
+                                </div>
+
+                                <div className="chartBox">
+                                    <div className="sectionHeader">
+                                        <p className="dashboardLabel">THIS WEEK</p>
+                                        <h3>Weekly Activity</h3>
+                                    </div>
+                                    <div className="sessionList">
+                                        {weeklySessions.length > 0 ?
+                                            weeklySessions.map((session) => (
+                                                <div key={session.id} className="sessionItem" onClick={() => {
+                                                    if (!isCoachPreview) {
+                                                        navigate("/PlayerCalendar", { state: { selectedSession: session.id } });
+                                                    }
+                                                }}
+                                                    style={{ cursor: isCoachPreview ? "default" : "pointer" }}
+                                                >
+                                                    <div className="sessionMain">
+                                                        <p className="sessionClient">{session.name}</p>
+                                                        <p className="sessionName">{new Date(session.end_datetime) < new Date() ? "Completed" : "Upcoming"}</p>
+                                                    </div>
+                                                    <div className="sessionInfo">
+                                                        <span>{new Date(session.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</span>
+                                                        <span>{new Date(session.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</span>
+                                                    </div>
+                                                </div>
+                                            )) : <p>No sessions this week.</p>}
+                                    </div>
+                                </div>
+
+                                {/* Hide feedback form in preview mode */}
+                                {!isCoachPreview && (
+                                    <div className="chartBox">
+                                        <div className="sectionHeader">
+                                            <p className="dashboardLabel">Rate of Perceived Exertion (RPE)</p>
+                                            <h3>Session Feedback</h3>
+                                        </div>
+                                        {!pendingSession ? <p>No pending feedback.</p> : (
+                                            <div className="feedbackForm">
+                                                <p><strong>{pendingSession.name}</strong></p>
+                                                <p>{new Date(pendingSession.start_datetime).toLocaleString("en-AU")}</p>
+                                                <label>Session Intensity</label>
+                                                <select value={intensity} onChange={(e) => setIntensity(e.target.value)}>
+                                                    <option value="">Select intensity</option>
+                                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n}>{n}</option>)}
+                                                </select>
+                                                <label>Actual Duration (minutes)</label>
+                                                <input type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} />
+                                                <label>Comment</label>
+                                                <textarea placeholder="How was the session?" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                                                <button className="dashboardBtn" onClick={handleSave}>Submit Feedback</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                            </div>
+
+                            {/* RIGHT COLUMN */}
+                            <div className="rightColumn">
+                                <div className="chartBox">
+                                    <div className="sectionHeader">
+                                        <p className="dashboardLabel">PERFORMANCE</p>
+                                        <h3>Current Strengths</h3>
+                                    </div>
+                                    <div className="tagList">
+                                        {/* EMPTY MESAGGES */}
+                                        {strengths.length > 0 ? (
+                                            strengths.map((item, i) => <span className="positiveTag" key={i}>{item}</span>)
+                                        ) : (
+                                            <p>No strengths added yet.</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="chartBox">
+                                    <div className="sectionHeader">
+                                        <p className="dashboardLabel">FOCUS AREA</p>
+                                        <h3>Current Weaknesses</h3>
+                                    </div>
+                                    <div className="tagList">
+                                        {/* EMPTY MESAGGES */}
+                                        {weaknesses.length > 0 ? (
+                                            weaknesses.map((item, i) => <span className="warningTag" key={i}>{item}</span>)
+                                        ) : (
+                                            <p>No focus area added yet.</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="chartBox">
+                                    <div className="sectionHeader">
+                                        <p className="dashboardLabel">LATEST ACTIVITY</p>
+                                        <h3>Coach Update Board</h3>
+                                    </div>
+                                    <div className="updateBoard">
+                                        {coachUpdates.length > 0 ? (
+                                            coachUpdates.map((update) => (
+                                                <div className="updateItem" key={update.id}>
+                                                    <p className="updateType">{update.type}</p>
+                                                    <p className="updateMessage">{update.message}</p>
+                                                    <span className="updateTime">
+                                                        {new Date(update.created_at).toLocaleDateString("en-AU")}
+                                                    </span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p>No coach updates this week.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     );
