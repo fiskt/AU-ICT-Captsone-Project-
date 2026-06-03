@@ -261,7 +261,7 @@ export default function PlayerDashboard() {
                             <div className="drill-stat-card">
                                 <p className="drill-stat-label"> Week Total Sessions</p>
                                 <h2 className="drill-stat-value accent">{weeklySessions.length}</h2>
-                                <p className="drill-stat-sub"> {startOfSelectedWeek.toLocaleDateString("en-AU")} - {endOfSelectedWeek.toLocaleDateString("en-AU")} </p>
+                                <p className="drill-stat-sub"> Sessions logged </p>
                             </div>
 
                             <div className="drill-stat-card">
@@ -326,8 +326,8 @@ export default function PlayerDashboard() {
 
                                 <div className="chartBox">
                                     <div className="sectionHeader">
-                                        <p className="dashboardLabel">THIS WEEK</p>
-                                        <h3>Weekly Activity</h3>
+                                        <p className="dashboardLabel">WEEKLY ACTIVIY</p>
+                                        <h3>This Week</h3>
                                     </div>
                                     <div className="sessionList">
                                         {sortedWeeklySessions.length > 0 ? (

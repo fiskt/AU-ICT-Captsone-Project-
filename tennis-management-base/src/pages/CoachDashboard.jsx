@@ -48,6 +48,17 @@ export default function Dashboard() {
     // WEEK OFFSET STATE
     const [weekOffset, setWeekOffset] = useState(0);
 
+    // WEEKLY NAVIGATION
+    const today = new Date();
+
+    const startOfSelectedWeek = new Date(today);
+    startOfSelectedWeek.setDate(today.getDate() - today.getDay() + 1 + weekOffset * 7);
+    startOfSelectedWeek.setHours(0, 0, 0, 0);
+
+    const endOfSelectedWeek = new Date(startOfSelectedWeek);
+    endOfSelectedWeek.setDate(startOfSelectedWeek.getDate() + 6);
+    endOfSelectedWeek.setHours(23, 59, 59, 999);
+
     // FETCH SESSIONS DATA, INCL RPE VALUES
     async function fetchSessions() {
         setIsLoading(true);
@@ -181,26 +192,17 @@ export default function Dashboard() {
             ? sessions
             : sessions.filter(session =>
                 session.session_people?.some(
-                    p =>
-                        p.signin_details.role === "player" &&
-                        `${p.signin_details.first_name} ${p.signin_details.last_name}` === selectedPlayer
-                )
+                    p => p.signin_details.role === "player" && `${p.signin_details.first_name} ${p.signin_details.last_name}` === selectedPlayer)
             );
 
-    const filteredUpcomingSessions = filteredSessions.filter(session =>
-        new Date(session.end_datetime) >= new Date()
-    );
+    const filteredUpcomingSessions = filteredSessions.filter(session => {
+        const sessionDate = new Date(session.start_datetime);
 
-    // WEEKLY NAVIGATION
-    const today = new Date();
-
-    const startOfSelectedWeek = new Date(today);
-    startOfSelectedWeek.setDate(today.getDate() - today.getDay() + 1 + weekOffset * 7);
-    startOfSelectedWeek.setHours(0, 0, 0, 0);
-
-    const endOfSelectedWeek = new Date(startOfSelectedWeek);
-    endOfSelectedWeek.setDate(startOfSelectedWeek.getDate() + 6);
-    endOfSelectedWeek.setHours(23, 59, 59, 999);
+        return (
+            sessionDate >= startOfSelectedWeek &&
+            sessionDate <= endOfSelectedWeek
+        );
+    });
 
     // WEEKLY NAVIGATION: RESPONSE TO GRAPH DATA
     const weeklyGraphData = filteredData.filter(item => {
@@ -284,8 +286,8 @@ export default function Dashboard() {
                         <div id="drill-stats-row">
 
                             <div className="drill-stat-card">
-                                <span className="drill-stat-label">Total Sessions</span>
-                                <span className="drill-stat-value accent">{sessions.length}</span>
+                                <span className="drill-stat-label">Week Total Sessions</span>
+                                <span className="drill-stat-value accent">{filteredUpcomingSessions.length}</span>
                                 <span className="drill-stat-sub">Sessions logged</span>
                             </div>
 
@@ -315,9 +317,7 @@ export default function Dashboard() {
                                 {/* RPE GRAPH */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
-                                        <p className="dashboardLabel">
-                                            SESSIONS RPE
-                                        </p>
+                                        <p className="dashboardLabel"> SESSIONS RPE </p>
                                         <h3>Planned vs Actual Training Load</h3>
                                     </div>
 
@@ -374,7 +374,7 @@ export default function Dashboard() {
                                                 dataKey="plannedLoad"
                                                 stroke="#f59e0b"
                                                 strokeWidth={3}
-                                                dot={{ r: 4, strokeWidth: 2, fill: "#fff"}}
+                                                dot={{ r: 4, strokeWidth: 2, fill: "#fff" }}
                                                 activeDot={{ r: 7 }}
                                                 name="Planned Load"
                                             />
@@ -459,10 +459,8 @@ export default function Dashboard() {
 
                                 <div className="chartBox">
                                     <div className="sectionHeader">
-                                        <p className="dashboardLabel">
-                                            SESSION DETAILS
-                                        </p>
-                                        <h3>Upcoming Sessions</h3>
+                                        <p className="dashboardLabel"> WEEKLY ACTIVITY </p>
+                                        <h3>This Week</h3>
                                     </div>
 
                                     <div className="sessionList">
@@ -472,14 +470,14 @@ export default function Dashboard() {
                                                     onClick={() => navigate("/CoachCalendar", { state: { openSessionId: s.id } })}
                                                     style={{ cursor: "pointer" }}>
                                                     <div className="sessionMain">
-                                                        <p className="sessionClient">
+                                                        <p className="sessionClient" >{s.name}</p>
+
+                                                        <p className="sessionName upcoming">
                                                             {s.session_people
                                                                 ?.filter(p => p.signin_details.role === "player")
                                                                 .map(p => `${p.signin_details.first_name} ${p.signin_details.last_name}`)
                                                                 .join(", ") || "No player"}
                                                         </p>
-
-                                                        <p className="sessionName">{s.name}</p>
                                                     </div>
 
                                                     <div className="sessionInfo">

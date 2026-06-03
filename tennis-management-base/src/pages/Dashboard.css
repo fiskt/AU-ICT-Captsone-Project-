@@ -116,7 +116,7 @@
 }
 
 .sessionName {
-    font-family: 'DM Sans Light', sans-serif;
+    font-family: 'DM Mono Light', sans-serif;
     font-size: 13px;
     color: var(--content-subhead-color);
     margin-top: 4px 0 0 0;
