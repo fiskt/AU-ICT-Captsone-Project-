@@ -155,6 +155,7 @@ export default function PlayerDashboard() {
         fetchData();
     }, [previewPlayerId]);
 
+    // Save handler for session feedback
     async function handleSave() {
         const { data: { user } } = await supabase.auth.getUser();
         const intensityNum = Number(intensity);
@@ -185,6 +186,18 @@ export default function PlayerDashboard() {
 
         return "General Development";
     }
+
+    // To filter out completed and uncomplete session in WeeklySessions.
+    const sortedWeeklySessions = [...weeklySessions].sort((a, b) => {
+        const aCompleted = new Date(a.end_datetime) < new Date();
+        const bCompleted = new Date(b.end_datetime) < new Date();
+
+        if (aCompleted !== bCompleted) {
+            return aCompleted ? 1 : -1;
+        }
+
+        return new Date(a.start_datetime) - new Date(b.start_datetime);
+    });
 
     return (
         <div id="layout">
@@ -230,7 +243,7 @@ export default function PlayerDashboard() {
                         <div className="dashboardHeader">
                             <div>
                                 <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>
-                                    {isCoachPreview ? `${previewPlayer}'s Dashboard` : 'Player Dashboard'}
+                                    {isCoachPreview ? `${previewPlayer}'s Dashboard` : 'Athlete Dashboard'}
                                 </h2>
                                 <p style={{
                                     fontFamily: "'DM Sans Light', sans-serif",
@@ -246,7 +259,7 @@ export default function PlayerDashboard() {
                         <div id="drill-stats-row">
 
                             <div className="drill-stat-card">
-                                <p className="drill-stat-label">Weekly Total Sessions</p>
+                                <p className="drill-stat-label"> Week Total Sessions</p>
                                 <h2 className="drill-stat-value accent">{weeklySessions.length}</h2>
                                 <p className="drill-stat-sub"> {startOfSelectedWeek.toLocaleDateString("en-AU")} - {endOfSelectedWeek.toLocaleDateString("en-AU")} </p>
                             </div>
@@ -287,7 +300,8 @@ export default function PlayerDashboard() {
                                             onClick={() => {
                                                 if (!isCoachPreview) {
                                                     navigate("/PlayerCalendar", { state: { selectedSession: nextSessionData.id } });
-                                                }}}
+                                                }
+                                            }}
                                             style={{ cursor: isCoachPreview ? "default" : "pointer" }}>
                                             <div className="sessionTime">
                                                 <span className="timeMain" >{new Date(nextSessionData.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</span>
@@ -310,25 +324,33 @@ export default function PlayerDashboard() {
                                         <h3>Weekly Activity</h3>
                                     </div>
                                     <div className="sessionList">
-                                        {weeklySessions.length > 0 ?
-                                            weeklySessions.map((session) => (
-                                                <div key={session.id} className="sessionItem" onClick={() => {
-                                                    if (!isCoachPreview) {
-                                                        navigate("/PlayerCalendar", { state: { selectedSession: session.id } });
-                                                    }
-                                                }}
-                                                    style={{ cursor: isCoachPreview ? "default" : "pointer" }}
-                                                >
-                                                    <div className="sessionMain">
-                                                        <p className="sessionClient">{session.name}</p>
-                                                        <p className="sessionName">{new Date(session.end_datetime) < new Date() ? "Completed" : "Upcoming"}</p>
+                                        {sortedWeeklySessions.length > 0 ? (
+                                            sortedWeeklySessions.map((session) => {
+                                                const isCompleted = new Date(session.end_datetime) < new Date();
+
+                                                return (
+                                                    <div key={session.id} className="sessionItem" onClick={() => {
+                                                        if (!isCoachPreview) {
+                                                            navigate("/PlayerCalendar", { state: { selectedSession: session.id } });
+                                                        }
+                                                    }}
+                                                        style={{ cursor: isCoachPreview ? "default" : "pointer" }}
+                                                    >
+                                                        <div className="sessionMain">
+                                                            <p className="sessionClient">{session.name}</p>
+                                                            <p className={`sessionName ${isCompleted ? "completed" : "upcoming"}`}>
+                                                                {isCompleted ? "Completed" : "Upcoming"}</p>
+                                                        </div>
+                                                        <div className="sessionInfo">
+                                                            <span>{new Date(session.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</span>
+                                                            <span>{new Date(session.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</span>
+                                                            <span>{session.duration}</span>
+                                                        </div>
                                                     </div>
-                                                    <div className="sessionInfo">
-                                                        <span>{new Date(session.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</span>
-                                                        <span>{new Date(session.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</span>
-                                                    </div>
-                                                </div>
-                                            )) : <p>No sessions this week.</p>}
+                                                );
+                                            })
+                                        ) : (<p>No sessions this week.</p>
+                                        )}
                                     </div>
                                 </div>
 
@@ -336,23 +358,28 @@ export default function PlayerDashboard() {
                                 {!isCoachPreview && (
                                     <div className="chartBox">
                                         <div className="sectionHeader">
-                                            <p className="dashboardLabel">Rate of Perceived Exertion (RPE)</p>
+                                            <p className="dashboardLabel">RATE OF PERCEIVED EXERTION (RPE)</p>
                                             <h3>Session Feedback</h3>
                                         </div>
                                         {!pendingSession ? <p>No pending feedback.</p> : (
-                                            <div className="feedbackForm">
-                                                <p><strong>{pendingSession.name}</strong></p>
-                                                <p>{new Date(pendingSession.start_datetime).toLocaleString("en-AU")}</p>
-                                                <label>Session Intensity</label>
-                                                <select value={intensity} onChange={(e) => setIntensity(e.target.value)}>
-                                                    <option value="">Select intensity</option>
-                                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n}>{n}</option>)}
-                                                </select>
-                                                <label>Actual Duration (minutes)</label>
-                                                <input type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} />
-                                                <label>Comment</label>
-                                                <textarea placeholder="How was the session?" value={notes} onChange={(e) => setNotes(e.target.value)} />
-                                                <button className="dashboardBtn" onClick={handleSave}>Submit Feedback</button>
+                                            <div className="sessionList">
+                                                <div className="drill-form-group">
+                                                    <p className="drill-modal-title">{pendingSession.name} - {new Date(pendingSession.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</p>
+
+                                                    <label className="drill-form-label">Session Intensity</label>
+                                                    <select className="drill-form-select" value={intensity} onChange={(e) => setIntensity(e.target.value)}>
+                                                        <option value="">Select intensity</option>
+                                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n}>{n}</option>)}
+                                                    </select>
+
+                                                    <label className="drill-form-label">Actual Duration (minutes)</label>
+                                                    <input className="drill-form-input" type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} />
+
+                                                    <label className="drill-form-label">Comment</label>
+                                                    <textarea className="drill-form-textarea" placeholder="How was the session?" value={notes} onChange={(e) => setNotes(e.target.value)} />
+
+                                                    <button className="weekButton active" onClick={handleSave}>Submit Feedback</button>
+                                                </div>
                                             </div>
                                         )}
                                     </div>

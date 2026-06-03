@@ -121,6 +121,16 @@
     margin-top: 4px 0 0 0;
 }
 
+.sessionName.completed {
+    color: #15803d;
+    font-style: italic;
+}
+
+.sessionName.upcoming {
+    color: var(--accent-color);
+    font-style: italic;
+}
+
 .sessionInfo {
     display: flex;
     flex-direction: column;
@@ -132,7 +142,7 @@
 }
 
 .sessionTime {
-    min-width: 70px;
+    min-width: 50px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -141,19 +151,20 @@
     padding-right: 16px;
 }
 
+.timeMain {
+    font-family: 'Bebas', sans-serif;
+    color: var(--content-subhead-color);
+    font-size: 45px;
+    line-height: 1;
+}
+
 .sessionDetailCard {
     display: flex;
     gap: 20px;
-    padding: 18px;
-    border-radius: 12px;
+    padding: 10px;
+    border-radius: 8px;
     border: 2px solid var(--topbar-accent-color);
     background: var(--main-bg-color);
-}
-
-.timeMain {
-    font-family: 'Bebas', sans-serif;
-    font-size: 55px;
-    line-height: 1;
 }
 
 .sessionContent {
@@ -165,31 +176,15 @@
 .sessionContent h3 {
     margin: 0 0 10px 0;
     font-family: 'Bebas', sans-serif;
-    font-size: 31px;
+    color: var(--content-subhead-color);
+    font-size: 25px;
 }
 
 .sessionContent p {
-    margin: 2px 0;
+    margin: 1px 0;
     font-family: 'DM Mono Light', sans-serif;
     color: var(--content-subhead-color);
-    font-size: 14px;
-}
-
-
-/* BUTTON */
-.dashboardBtn {
-    background-color: var(--accent-color);
-    border: 2px solid var(--accent-color);
-    color: white;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-family: 'DM Mono Light', sans-serif;
-    cursor: pointer;
-}
-
-.dashboardBtn:hover {
-    background-color: #d4622e;
-    border-color: #d4622e;
+    font-size: 13px;
 }
 
 .playerSessionHighlight {
@@ -197,32 +192,6 @@
     font-size: 14px;
     color: var(--content-body-color);
     line-height: 1.8;
-}
-
-.feedbackForm {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.feedbackForm label {
-    font-family: 'DM Mono Light', sans-serif;
-    font-size: 12px;
-    color: var(--content-subhead-color);
-}
-
-.feedbackForm select,
-.feedbackForm textarea {
-    padding: 9px 12px;
-    border: 2px solid var(--content-input-border-color);
-    border-radius: 8px;
-    font-family: 'DM Sans Light', sans-serif;
-    font-size: 13px;
-    color: var(--content-body-color);
-    background-color: var(--content-bg-color);
-    outline: none;
-    transition: border-color 0.15s ease;
-    width: 100%;
 }
 
 .tagList {
