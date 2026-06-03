@@ -4,13 +4,17 @@ import { supabase } from '../supabaseClient';
 import '../App.css';
 
 // CHANGE DETAILS SECTION
+// Component for editing the user's profile details
 function ChangeDetails() {
+    // Allows the page to redirect the user when needed
     const navigate = useNavigate();
+    // Tracks loading, saving, success, and error states
     const [loading, setLoading] = useState(true);
     const [saving, setSaving]   = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError]     = useState('');
 
+    // Stores the profile fields shown in the form
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName]   = useState('');
     const [email, setEmail]         = useState('');
@@ -18,52 +22,72 @@ function ChangeDetails() {
     const [gender, setGender]       = useState('');
     const [role, setRole]           = useState('');
 
+    // Loads the current user's saved profile details when the page opens
     useEffect(() => {
+        // Defines the function that retrieves the user profile
         const load = async () => {
+            // Gets the currently logged in user
             const { data: { user } } = await supabase.auth.getUser();
+            // Sends the user to login when no active session exists
             if (!user) { navigate('/Login'); return; }
+            // Fills the form using account metadata first
             setEmail(user.email || '');
             setFirstName(user.user_metadata?.first_name || '');
             setLastName(user.user_metadata?.last_name   || '');
             setRole(user.user_metadata?.role            || '');
 
+            // Reads extra profile details from the signin_details table
             const { data } = await supabase
                 .from('signin_details')
                 .select('dob, gender, first_name, last_name')
                 .eq('id', user.id)
                 .single();
 
+            // Uses database values when they exist
             if (data) {
                 setDob(data.dob || '');
                 setGender(data.gender || '');
                 if (data.first_name) setFirstName(data.first_name);
                 if (data.last_name)  setLastName(data.last_name);
             }
+            // Stops the loading spinner after the data check finishes
             setLoading(false);
         };
+        // Runs the profile loading function
         load();
     }, []);
 
+    // Handles the save button for profile updates
     const handleSave = async (e) => {
+        // Stops the form from refreshing the page
         e.preventDefault();
+        // Clears old messages before saving again
         setError(''); setSuccess(false);
+        // Requires both first name and last name before saving
         if (!firstName || !lastName) { setError('First and last name are required.'); return; }
+        // Shows the saving state while the update is running
         setSaving(true);
 
+        // Gets the current user before updating saved details
         const { data: { user } } = await supabase.auth.getUser();
+        // Updates the profile details stored in the database
         const { error: dbError } = await supabase
             .from('signin_details')
             .update({ first_name: firstName, last_name: lastName, dob: dob || null, gender: gender || null })
             .eq('id', user.id);
 
+        // Stops saving and shows the database error if the update fails
         if (dbError) { setError(dbError.message); setSaving(false); return; }
+        // Updates the user's authentication metadata with the new name
         await supabase.auth.updateUser({ data: { first_name: firstName, last_name: lastName } });
 
+        // Shows a temporary success message after saving
         setSaving(false);
         setSuccess(true);
         setTimeout(() => setSuccess(false), 3000);
     };
 
+    // Shared style for the form inputs
     const inputStyle = {
         width: '100%', padding: '10px 12px', fontSize: '14px',
         fontFamily: 'DM Sans Light, sans-serif',
@@ -71,18 +95,22 @@ function ChangeDetails() {
         borderRadius: '8px', outline: 'none',
         boxSizing: 'border-box', color: '#000', background: '#fff',
     };
+    // Shared style for form labels
     const labelStyle = {
         fontFamily: 'DM Mono Light, sans-serif', fontSize: '12px',
         color: 'var(--content-subhead-color)', marginBottom: '6px', display: 'block',
     };
+    // Shared layout style for each form field
     const fieldStyle = { display: 'flex', flexDirection: 'column', marginBottom: '16px' };
 
+    // Shows a spinner while profile details are loading
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
             <div style={{ width: '32px', height: '32px', border: '3px solid #DDDBD6', borderTop: '3px solid #C8714E', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
         </div>
     );
 
+    // Renders the change details form
     return (
         <div>
             <h2 style={{ fontFamily: 'Bebas, sans-serif', fontSize: '22px', letterSpacing: '1px', margin: '0 0 4px', color: 'var(--content-head-color)' }}>Change Details</h2>
@@ -148,32 +176,46 @@ function ChangeDetails() {
 }
 
 // ── DELETE ACCOUNT SECTION ────────────────────────────────────────────────────
+// Component for permanently deleting the user's account
 function DeleteAccount() {
+    // Allows redirecting the user after account deletion
     const navigate = useNavigate();
+    // Tracks delete confirmation, progress, errors, and typed text
     const [confirm, setConfirm]   = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [error, setError]       = useState('');
     const [typed, setTyped]       = useState('');
 
+    // Handles the final account deletion action
     const handleDelete = async () => {
+        // Clears any previous delete error message
         setError('');
+        // Requires the user to type DELETE before continuing
         if (typed !== 'DELETE') { setError('Please type DELETE to confirm.'); return; }
+        // Shows the deleting state while the request is running
         setDeleting(true);
 
+        // Gets the logged in user before deleting the account
         const { data: { user } } = await supabase.auth.getUser();
+        // Sends the user to login when no active session exists
         if (!user) { navigate('/Login'); return; }
 
         // Hard delete via Edge Function — removes from auth.users and signin_details
+        // Calls the Edge Function that performs the hard delete
         const { error } = await supabase.functions.invoke('hyper-responder', {
             body: { userId: user.id }
         });
 
+        // Stops deleting and shows a message if the delete request fails
         if (error) { setError('Failed to delete account. Please try again.'); setDeleting(false); return; }
 
+        // Signs the user out after the account is deleted
         await supabase.auth.signOut();
+        // Redirects the user back to the login page
         navigate('/Login');
     };
 
+    // Renders the delete account section
     return (
         <div>
             <h2 style={{ fontFamily: 'Bebas, sans-serif', fontSize: '22px', letterSpacing: '1px', margin: '0 0 4px', color: 'var(--content-head-color)' }}>Delete Account</h2>
@@ -234,9 +276,12 @@ function DeleteAccount() {
 }
 
 // ── MAIN ACCOUNT SETTINGS PAGE ────────────────────────────────────────────────
+// Main account settings page
 export default function AccountSettings() {
+    // Tracks which settings section is currently selected
     const [activeSection, setActiveSection] = useState('details');
 
+    // Sidebar options for switching between settings sections
     const navItems = [
         { id: 'details', label: 'Change Details', icon: (
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,6 +295,7 @@ export default function AccountSettings() {
         )},
     ];
 
+    // Renders the full account settings layout
     return (
         <div className="dashboardPage">
             {/* Header */}

@@ -5,6 +5,7 @@ import logo from '/logo.png';
 import background from '../assets/background.webp';
 import emailIcon from '../assets/email.png';
 
+// Password requirement checks used to validate the password as the user types
 const checks = [
   { id: 'length',  label: 'At least 8 characters',          test: (p) => p.length >= 8 },
   { id: 'case',    label: 'Uppercase and lowercase letters', test: (p) => /[A-Z]/.test(p) && /[a-z]/.test(p) },
@@ -12,6 +13,7 @@ const checks = [
   { id: 'special', label: 'Special character (! @ # $ %)',   test: (p) => /[!@#$%^&*]/.test(p) },
 ];
 
+// Custom hook that tracks the current browser window width
 function useWindowWidth() {
   const [width, setWidth] = useState(window.innerWidth);
   useEffect(() => {
@@ -22,6 +24,7 @@ function useWindowWidth() {
   return width;
 }
 
+// Main register page component
 export default function Register() {
   const [role, setRole] = useState('coach');
   const [firstName, setFirstName] = useState('');
@@ -35,10 +38,12 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
 
+  // Get the current screen width so the layout can adjust for mobile and tablet screens
   const width = useWindowWidth();
   const isMobile = width < 480;
   const isTablet = width >= 480 && width < 768;
 
+  // Responsive sizing values used throughout the register page
   const cardWidth = isMobile ? '92vw' : isTablet ? '420px' : '430px';
   const cardPad   = isMobile ? '18px 16px 22px' : '28px 36px 32px';
   const titleSize = isMobile ? '26px' : '32px';
@@ -47,9 +52,11 @@ export default function Register() {
   const logoLeft  = isMobile ? '14px' : '24px';
   const inputSize = isMobile ? '16px' : '14px'; // 16px prevents iOS zoom
 
+  // Run each password rule against the current password
   const passChecks = checks.map((c) => ({ ...c, passed: c.test(password) }));
   const allChecksPassed = passChecks.every((c) => c.passed);
 
+  // Shared input styling reused across form fields
   const sharedInput = {
     width: '100%', padding: '10px 12px', fontSize: inputSize,
     fontFamily: 'DM Sans Light, sans-serif', border: '2px solid #DDDBD6',
@@ -57,6 +64,7 @@ export default function Register() {
     color: '#000', background: '#fff',
   };
 
+  // Handles the registration form submission
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
@@ -65,7 +73,9 @@ export default function Register() {
     if (!allChecksPassed) { setError('Password does not meet all requirements.'); return; }
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
 
+    // Start loading while the registration request is sent to Supabase
     setLoading(true);
+    // Create a new Supabase auth account and send the confirmation email
     const { data, error: authError } = await supabase.auth.signUp({
       email, password,
       options: {
@@ -85,21 +95,27 @@ export default function Register() {
     // data.user can be null when confirmation pending — still show success screen
     if (!data.user) { setLoading(false); setRegistered(true); return; }
 
+    // Store the user's extra profile details in the signin_details table
     await supabase.from('signin_details').insert({ id: data.user.id, first_name: firstName, last_name: lastName, email, role });
     setLoading(false);
     setRegistered(true);
   };
 
   // ── Check your email screen ──
+  // Show the email confirmation screen after a successful registration attempt
   if (registered) {
     return (
       <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', textAlign: 'left' }}>
+        // Background image for the register page
         <img src={background} alt="" style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+        // Logo displayed in the top-left corner
         <img src={logo} alt="Logo" style={{ position: 'fixed', top: logoTop, left: logoLeft, width: logoSize, height: logoSize, objectFit: 'contain', zIndex: 2 }} />
         <div style={{ position: 'relative', zIndex: 2, width: cardWidth, borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.25)' }}>
+          // Header section for the card
           <div style={{ backgroundColor: '#C8714E', padding: '20px', textAlign: 'center' }}>
             <h1 style={{ margin: 0, fontFamily: 'Bebas, sans-serif', fontSize: titleSize, color: '#fff', letterSpacing: '2px' }}>CHECK YOUR EMAIL</h1>
           </div>
+          // Main white card body
           <div style={{ backgroundColor: '#fff', padding: cardPad }}>
             <img src={emailIcon} alt="Email" style={{ width: '64px', height: '64px', objectFit: 'contain', display: 'block', margin: '0 auto 16px' }} />
             <p style={{ fontSize: '14px', fontFamily: 'DM Sans Light, sans-serif', color: '#000', textAlign: 'center', marginBottom: '12px' }}>
@@ -124,14 +140,18 @@ export default function Register() {
   // ── Registration form ──
   return (
     <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'center', overflowY: 'auto', textAlign: 'left', padding: isMobile ? '70px 0 30px' : '20px 0' }}>
+        // Background image for the register page
       <img src={background} alt="" style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+        // Logo displayed in the top-left corner
       <img src={logo} alt="Logo" style={{ position: 'fixed', top: logoTop, left: logoLeft, width: logoSize, height: logoSize, objectFit: 'contain', zIndex: 2 }} />
 
       <div style={{ position: 'relative', zIndex: 2, width: cardWidth, borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.25)', margin: 'auto' }}>
+          // Header section for the card
         <div style={{ backgroundColor: '#C8714E', padding: '20px', textAlign: 'center' }}>
           <h1 style={{ margin: 0, fontFamily: 'Bebas, sans-serif', fontSize: titleSize, color: '#fff', letterSpacing: '2px' }}>REGISTER</h1>
         </div>
 
+          // Main white card body
         <div style={{ backgroundColor: '#fff', padding: cardPad }}>
           {/* Role toggle */}
           <div style={{ display: 'flex', borderRadius: '8px', border: '2px solid #DDDBD6', overflow: 'hidden', marginBottom: '18px' }}>
@@ -145,6 +165,7 @@ export default function Register() {
             ))}
           </div>
 
+          // Registration form starts here
           <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
             {/* Name row — stacks on mobile */}
@@ -201,8 +222,10 @@ export default function Register() {
               </div>
             </div>
 
+            // Error message shown when validation or registration fails
             {error && <p style={{ margin: 0, fontSize: '13px', color: '#DC2626', fontFamily: 'DM Sans Light, sans-serif' }}>{error}</p>}
 
+            // Register button, disabled while loading
             <button type="submit" disabled={loading}
               style={{ marginTop: '4px', width: '100%', padding: isMobile ? '12px' : '14px', background: '#C8714E', color: '#fff', border: 'none', borderRadius: '8px', fontFamily: 'Bebas, sans-serif', fontSize: isMobile ? '18px' : '20px', letterSpacing: '2px', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}>
               {loading ? 'REGISTERING...' : 'REGISTER'}

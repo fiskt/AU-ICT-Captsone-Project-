@@ -1,10 +1,15 @@
+// Import React hooks for state and lifecycle behaviour
 import { useState, useEffect } from 'react';
+// Import navigation helper for redirecting after password reset
 import { useNavigate } from 'react-router-dom';
+// Import Supabase client for authentication actions
 import { supabase } from '../supabaseClient';
+// Import logo and visual assets used on the reset password screen
 import logo from '/logo.png';
 import checkmarkIcon from '../assets/checkmark.png';
 import background from '../assets/background.webp';
 
+// Password requirement rules used to validate the new password
 const checks = [
   { id: 'length',  label: 'At least 8 characters',          test: (p) => p.length >= 8 },
   { id: 'case',    label: 'Uppercase and lowercase letters', test: (p) => /[A-Z]/.test(p) && /[a-z]/.test(p) },
@@ -12,8 +17,11 @@ const checks = [
   { id: 'special', label: 'Special character (! @ # $ %)',   test: (p) => /[!@#$%^&*]/.test(p) },
 ];
 
+// Custom hook that tracks the current browser window width
 function useWindowWidth() {
+  // Store the current window width in state
   const [width, setWidth] = useState(window.innerWidth);
+  // Update the stored width whenever the browser window is resized
   useEffect(() => {
     const handle = () => setWidth(window.innerWidth);
     window.addEventListener('resize', handle);
@@ -22,19 +30,31 @@ function useWindowWidth() {
   return width;
 }
 
+// Main reset password page component
 export default function ResetPassword() {
+  // Store the new password entered by the user
   const [password, setPassword] = useState('');
+  // Store the confirmation password entered by the user
   const [confirmPassword, setConfirmPassword] = useState('');
+  // Control whether the new password field is visible
   const [showPass, setShowPass] = useState(false);
+  // Control whether the confirm password field is visible
   const [showConfirm, setShowConfirm] = useState(false);
+  // Track whether the password update request is currently running
   const [loading, setLoading] = useState(false);
+  // Store any validation or Supabase error message
   const [error, setError] = useState('');
+  // Track whether the password has been updated successfully
   const [done, setDone] = useState(false);
+  // Navigation function used to redirect the user back to login
   const navigate = useNavigate();
 
+  // Get the current screen width for responsive styling
   const width = useWindowWidth();
+  // Responsive layout checks for mobile and tablet screen sizes
   const isMobile = width < 480;
   const isTablet = width >= 480 && width < 768;
+  // Responsive sizing values used throughout the page
   const cardWidth = isMobile ? '92vw' : isTablet ? '420px' : '430px';
   const cardPad   = isMobile ? '20px 18px 24px' : '28px 36px 32px';
   const titleSize = isMobile ? '26px' : '32px';
@@ -42,9 +62,12 @@ export default function ResetPassword() {
   const logoTop   = isMobile ? '14px' : '24px';
   const logoLeft  = isMobile ? '14px' : '24px';
 
+  // Run each password requirement against the current password
   const passChecks = checks.map((c) => ({ ...c, passed: c.test(password) }));
+  // Confirm whether all password requirements have passed
   const allChecksPassed = passChecks.every((c) => c.passed);
 
+  // Shared input styling used for both password fields
   const sharedInput = {
     width: '100%', padding: '10px 12px',
     fontSize: isMobile ? '16px' : '14px',
@@ -55,18 +78,30 @@ export default function ResetPassword() {
   };
 
   // Supabase sets the session automatically via the URL hash when user clicks reset link
+  // Handles the reset password form submission
   const handleReset = async (e) => {
+    // Stop the browser from refreshing the page on form submit
     e.preventDefault();
+    // Clear any previous error before validating again
     setError('');
+    // Make sure both password fields are filled in
     if (!password || !confirmPassword) { setError('Please fill in all fields.'); return; }
+    // Make sure the password meets all listed requirements
     if (!allChecksPassed) { setError('Password does not meet all requirements.'); return; }
+    // Make sure both password entries match
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
 
+    // Show the loading state while Supabase updates the password
     setLoading(true);
+    // Send the new password to Supabase for the currently authenticated reset session
     const { error: updateError } = await supabase.auth.updateUser({ password });
+    // Display any Supabase update error and stop loading
     if (updateError) { setError(updateError.message); setLoading(false); return; }
+    // Stop loading after a successful password update
     setLoading(false);
+    // Show the success message screen
     setDone(true);
+    // Redirect back to the login page after a short delay
     setTimeout(() => navigate('/Login'), 2000);
   };
 
