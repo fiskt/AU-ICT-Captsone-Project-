@@ -1,27 +1,47 @@
+// Imports React hooks used for state and screen-size updates
 import { useState, useEffect } from 'react';
+// Imports navigation tools for redirecting and linking between pages
 import { useNavigate, Link } from 'react-router-dom';
+// Imports the Supabase client used for authentication
 import { supabase } from '../supabaseClient';
+// Imports images used on the login page
 import logo from '/logo.png';
 import background from '../assets/background.webp';
 
+// Custom hook used to track the current browser window width
 function useWindowWidth() {
+  // Stores the current window width
   const [width, setWidth] = useState(window.innerWidth);
+  // Adds a resize listener when the component loads
   useEffect(() => {
+    // Updates the stored width whenever the browser is resized
     const handle = () => setWidth(window.innerWidth);
+    // Starts listening for window resize events
     window.addEventListener('resize', handle);
+    // Removes the resize listener when the component is no longer used
     return () => window.removeEventListener('resize', handle);
   }, []);
+  // Sends the current width back to the component using this hook
   return width;
 }
 
+// Main login page component
 export default function Login() {
+  // Stores whether the user is logging in as a coach or player
   const [role, setRole] = useState('coach');
+  // Stores the email typed into the login form
   const [email, setEmail] = useState('');
+  // Stores the password typed into the login form
   const [password, setPassword] = useState('');
+  // Controls whether the password is visible or hidden
   const [showPass, setShowPass] = useState(false);
+  // Stores any error message shown to the user
   const [error, setError] = useState('');
+  // Tracks whether the login request is currently running
   const [loading, setLoading] = useState(false);
+  // Allows the user to be redirected after logging in
   const navigate = useNavigate();
+  // Gets the current screen width for responsive styling
   const width = useWindowWidth();
 
   // Breakpoints
@@ -29,6 +49,7 @@ export default function Login() {
   const isTablet  = width >= 480 && width < 768;
   const isDesktop = width >= 768;
 
+  // Sets responsive sizes for the card, padding, title, and logo
   const cardWidth  = isMobile ? '92vw' : isTablet ? '420px' : '430px';
   const cardPad    = isMobile ? '20px 18px 24px' : '28px 36px 32px';
   const titleSize  = isMobile ? '26px' : '32px';
@@ -36,26 +57,40 @@ export default function Login() {
   const logoTop    = isMobile ? '14px' : '24px';
   const logoLeft   = isMobile ? '14px' : '24px';
 
+  // Handles the login form submission
   const handleLogin = async (e) => {
+    // Stops the page from refreshing when the form is submitted
     e.preventDefault();
+    // Clears any previous error before checking the new login attempt
     setError('');
+    // Checks that both email and password have been entered
     if (!email || !password) { setError('Please fill in all fields.'); return; }
+    // Restricts coach logins to authorised tennis.com.au email addresses
     if (role === 'coach' && !email.endsWith('@tennis.com.au')) {
       setError('This email is not authorised to log in as a coach.'); return;
     }
+    // Shows the loading state while Supabase checks the login details
     setLoading(true);
+    // Attempts to sign in using Supabase email and password authentication
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    // Displays the Supabase authentication error if login fails
     if (authError) { setError(authError.message); setLoading(false); return; }
+    // Reads the saved role from the logged-in user's metadata
     const userRole = data.user.user_metadata?.role;
+    // Prevents users from logging into the wrong role dashboard
     if (userRole !== role) {
       setError(`This account is registered as a ${userRole}, not a ${role}.`);
+      // Signs the user back out if their selected role does not match their account role
       await supabase.auth.signOut(); setLoading(false); return;
     }
 
+    // Stops the loading state after successful login
     setLoading(false);
+    // Redirects the user to the correct dashboard based on their selected role
     navigate(role === 'coach' ? '/CoachDashboard' : '/PlayerDashboard');
   };
 
+  // Renders the login page interface
   return (
     <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: isMobile ? 'auto' : 'hidden', textAlign: 'left', padding: isMobile ? '60px 0 20px' : 0 }}>
       <img src={background} alt="" style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
