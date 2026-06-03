@@ -220,7 +220,7 @@ export default function PlayerDashboard() {
             </div>
 
             {/* STATS */}
-            <div className="drill-stats-row">
+            <div id="drill-stats-row">
 
                 <div className="drill-stat-card">
                     <p className="drill-stat-label">THIS WEEK</p>
