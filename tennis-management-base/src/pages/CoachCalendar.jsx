@@ -6,8 +6,8 @@ import { useCurrentUser } from '../hooks/useCurrentUser.jsx';
 import { useLocation } from "react-router-dom";
 
 import { DateTime, Duration } from 'luxon';
-import { createClient } from '@supabase/supabase-js';
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+
+import { supabase } from '../supabaseClient'
 
 export default function CoachCalendar() {
     /* CURRENT USER ------------------------------------------------------------------------ */ 
@@ -650,7 +650,7 @@ export default function CoachCalendar() {
             tempSession.selectedCoaches.length === 0 ||
             tempSession.selectedPlayers.length === 0
         ) return;
-        
+
         setIsDataLoading(true);
 
         const sessionDate = DateTime.fromJSDate(selectedSession.start).toISODate();

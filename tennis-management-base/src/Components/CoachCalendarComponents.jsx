@@ -13,8 +13,7 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import { Draggable } from '@fullcalendar/interaction'
 import interactionPlugin from '@fullcalendar/interaction'
 
-import { createClient } from '@supabase/supabase-js';
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+import { supabase } from '../supabaseClient'
 
 function Stars({ level, size = '' }) {
     const levelMap = { Beginner: 1, Intermediate: 2, Advanced: 3, Elite: 5 };

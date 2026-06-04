@@ -6,10 +6,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useCurrentUser } from '../hooks/useCurrentUser.jsx';
 import { useLocation } from "react-router-dom";
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../supabaseClient'
+
 import { DateTime, Duration } from 'luxon';
 import { PLAYER_CALENDAR } from '../Components/PlayerCalendarComponents.jsx';
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
 export default function CoachCalendar() {
     const { userId: currentUserID, isLoading: authLoading } = useCurrentUser();

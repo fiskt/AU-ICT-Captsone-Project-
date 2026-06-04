@@ -3,9 +3,8 @@ import { CALENDAR, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/Coac
 import { USERS_LIST, OTHER_CALENDARS, SESSION_DETAILS_DRILLS } from '../Components/OtherUsersComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
-import { createClient } from '@supabase/supabase-js';
 import { DateTime, Duration } from 'luxon';
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
+import { supabase } from '../supabaseClient'
 
 export default function CoachCalendar() {
     const sessionDetailsRef = useRef(null);
