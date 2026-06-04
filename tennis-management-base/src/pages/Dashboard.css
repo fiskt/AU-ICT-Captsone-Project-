@@ -112,14 +112,15 @@
     font-family: 'Bebas', sans-serif;
     font-size: 24px;
     color: var(--content-head-color);
-    margin: 0;
+    margin: 0 0 10px 0;
 }
 
 .sessionName {
     font-family: 'DM Mono Light', sans-serif;
-    font-size: 13px;
+    font-size: 11px;
     color: var(--content-subhead-color);
-    margin-top: 4px 0 0 0;
+    margin: 0;
+    line-height: 1.5;
 }
 
 .sessionName.completed {
@@ -136,20 +137,20 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 4px;
+    gap: 2px;
     font-family: 'DM Mono Light', sans-serif;
     font-size: 11px;
     color: var(--content-subhead-color);
 }
 
 .sessionTime {
-    min-width: 50px;
+    min-width: 45px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     border-right: 2px solid var(--topbar-accent-color);
-    padding-right: 16px;
+    padding-right: 12px;
 }
 
 .timeMain {
@@ -189,10 +190,16 @@
 }
 
 .sessionContent p {
-    margin: 1px 0;
+    margin: 0;
+    line-height: 1.5;
     font-family: 'DM Mono Light', sans-serif;
     color: var(--content-subhead-color);
-    font-size: 13px;
+    font-size: 12px;
+}
+
+.sessionNotes {
+    text-align: left;
+    width: 100%;
 }
 
 .playerSessionHighlight {
@@ -217,13 +224,15 @@
 }
 
 .positiveTag {
-    background-color: #dcfce7;
-    color: #166534;
+    background-color: var(--main-bg-color);
+    border: 1px solid #15803d;
+    color: #15803d;
 }
 
 .warningTag {
-    background-color: #ffedd5;
-    color: #9a3412;
+    background-color: var(--main-bg-color);
+    border: 1px solid var(--accent-color);
+    color: var(--accent-color);
 }
 
 .updateBoard {
@@ -349,6 +358,21 @@
     border-color: var(--accent-color);
     background: var(--accent-color);
     color: white;
+}
+
+.targetInputBox {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.targetInputBox input {
+    width: 120px;
+    padding: 6px 10px;
+    border: 2px solid var(--content-input-border-color);
+    border-radius: 100px;
+    text-align: center;
 }
 
 /* RESPONSIVE - MOBILE LAYOUT */

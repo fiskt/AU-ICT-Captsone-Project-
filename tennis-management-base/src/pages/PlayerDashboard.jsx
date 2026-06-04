@@ -271,7 +271,11 @@ export default function PlayerDashboard() {
                                         ? new Date(nextSessionData.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })
                                         : "—"}
                                 </h2>
-                                <p className="drill-stat-sub">{nextSessionData ? nextSessionData.name : "No upcoming session"}</p>
+                                <p className="drill-stat-sub">
+                                    {nextSessionData
+                                        ? `${new Date(nextSessionData.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} • ${nextSessionData.name}` 
+                                        : "No upcoming session"}
+                                </p>
                             </div>
 
                             <div className="drill-stat-card"
@@ -297,6 +301,8 @@ export default function PlayerDashboard() {
 
                             {/* LEFT COLUMN */}
                             <div className="leftColumn">
+
+                                {/* UPCOMING SESSION */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <h3>UPCOMING SESSION</h3>
@@ -320,10 +326,11 @@ export default function PlayerDashboard() {
                                                 <p>Notes: {nextSessionData.notes || "No notes"}</p>
                                             </div>
                                         </div>
-                                    ) : (<p>No upcoming session found.</p>)
+                                    ) : (<p>No upcoming session.</p>)
                                     }
                                 </div>
-
+                                
+                                {/* WEEKLY ACTIVITY */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">WEEKLY ACTIVIY</p>
@@ -360,7 +367,8 @@ export default function PlayerDashboard() {
                                     </div>
                                 </div>
 
-                                {/* Hide feedback form in preview mode */}
+                                {/* LATEST SESSION FEEDBACK FORM */}
+                                {/* HIDES FEEDBACK FORM IN PREVIEW MODE */}
                                 {!isCoachPreview && (
                                     <div className="chartBox">
                                         <div className="sectionHeader">
@@ -395,6 +403,8 @@ export default function PlayerDashboard() {
 
                             {/* RIGHT COLUMN */}
                             <div className="rightColumn">
+
+                                {/* STRENGTH */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">PERFORMANCE</p>
@@ -405,11 +415,12 @@ export default function PlayerDashboard() {
                                         {strengths.length > 0 ? (
                                             strengths.map((item, i) => <span className="positiveTag" key={i}>{item}</span>)
                                         ) : (
-                                            <p>No strengths added yet.</p>
+                                            <p>No strengths added.</p>
                                         )}
                                     </div>
                                 </div>
-
+                                
+                                {/* WEAKNESSES */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">FOCUS AREA</p>
@@ -420,11 +431,12 @@ export default function PlayerDashboard() {
                                         {weaknesses.length > 0 ? (
                                             weaknesses.map((item, i) => <span className="warningTag" key={i}>{item}</span>)
                                         ) : (
-                                            <p>No focus area added yet.</p>
+                                            <p>No focus area added.</p>
                                         )}
                                     </div>
                                 </div>
-
+                                
+                                {/* UPDATE BOARD */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">LATEST ACTIVITY</p>
