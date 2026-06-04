@@ -80,19 +80,30 @@ export default async function handler(req, res) {
                     "
                 >
                     <h1
-                        style="font-size: 24px; font-weight: 600; margin: 0 0 16px; color: #1a1a1a;"
+                        style="
+                            font-size: 24px; 
+                            font-weight: 600; 
+                            margin: 0 0 16px; 
+                            color: #1a1a1a;
+                        "
                     >
                         Hi ${r.first_name}, you've been added to a session.
                     </h1>
                     <p
-                        style="font-size: 16px; margin: 0 0 16px;"
+                        style="
+                            font-size: 16px; 
+                            margin: 0 0 16px;
+                        "
                     >
                         ${dateStr}, ${startStr} - ${endStr}
                     </p>
                     <h2>${session.name}</h2>
                     ${session.notes 
                         ? `<p
-                                style="font-size: 16px; margin: 0 0 16px;"
+                                style="
+                                    font-size: 16px; 
+                                    margin: 0 0 16px;
+                                "
                             >${session.notes}</p>` 
                         : ''
                     }
