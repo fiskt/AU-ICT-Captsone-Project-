@@ -555,12 +555,32 @@ export default function CoachCalendar() {
     
 
 
-    /* DELETE SESSION ------------------------------------------------------------------------ */ 
+    /* DELETE SESSION ------------------------------------------------------------------------ */
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
     async function deleteSession() {
         setIsDeleting(true);
+        await supabase
+            .from("coach_updates")
+            .delete()
+            .eq("session_id", selectedSession.id);
+
+        await supabase
+            .from("session_drills")
+            .delete()
+            .eq("session_id", selectedSession.id);
+
+        await supabase
+            .from("session_feedback")
+            .delete()
+            .eq("session_id", selectedSession.id);
+
+        await supabase
+            .from("session_people")
+            .delete()
+            .eq("session_id", selectedSession.id);
+
         const { error } = await supabase
             .from('sessions')
             .delete()
@@ -572,10 +592,10 @@ export default function CoachCalendar() {
             setShowDeleteConfirmation(false);
         } else {
             selectedSession.remove();           // remove session from calendar
-            setIsDeleting(false);               
+            setIsDeleting(false);
             setShowDeleteConfirmation(false);   // close delete confirm popup
             setShowSessionEditor(false);        // close session editor for current session
-            setSelectedSession(null);     
+            setSelectedSession(null);
             fetchCalendarData();                // re-fetch calendar data
         }
     }
