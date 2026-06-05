@@ -48,6 +48,9 @@ export default function PlayerDashboard() {
     // LOADING STATE
     const [isLoading, setIsLoading] = useState(true);
 
+    // SESSION COACH STATE
+    const [nextSessionCoaches, setNextSessionCoaches] = useState([]);
+
     // WEEKLY NAVIGATION
     const today = new Date();
 
@@ -74,7 +77,14 @@ export default function PlayerDashboard() {
 
         const { data: sessionData, error } = await supabase
             .from("sessions")
-            .select(`*, session_people!inner(user_id)`)
+            .select(`*, session_people!inner(
+                user_id,
+                signin_details(
+                id,
+                first_name,
+                last_name,
+                role
+            ))`)
             .eq("session_people.user_id", userId)
             .order("start_datetime", { ascending: true });
 
@@ -82,7 +92,39 @@ export default function PlayerDashboard() {
 
         setSessions(sessionData);
 
+        // fetching full session_people, to get access to coach name
         const now = new Date();
+
+        const next = sessionData.find(s => new Date(s.end_datetime) >= now) || null;
+        setNextSessionData(next);
+
+        if (next) {
+            const { data: peopleData, error: peopleError } = await supabase
+                .from("session_people")
+                .select(`
+            user_id,
+            signin_details(
+                id,
+                first_name,
+                last_name,
+                role
+            )
+        `)
+                .eq("session_id", next.id);
+
+            if (peopleError) {
+                console.log("Error fetching next session people:", peopleError.message);
+                setNextSessionCoaches([]);
+            } else {
+                const coaches = (peopleData || []).filter(
+                    p => p.signin_details?.role === "coach"
+                );
+                setNextSessionCoaches(coaches);
+            }
+        } else {
+            setNextSessionCoaches([]);
+        }
+
         setNextSessionData(sessionData.find(s => new Date(s.end_datetime) >= now) || null);
 
         setWeeklySessions(sessionData.filter(s => {
@@ -281,8 +323,19 @@ export default function PlayerDashboard() {
                                         : "—"}
                                 </h2>
                                 <p className="drill-stat-sub">
-                                    {nextSessionData
-                                        ? `${new Date(nextSessionData.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} • ${nextSessionData.name}`
+                                    {nextSessionData ? (
+                                        <>
+                                            {nextSessionData.name} •{" "}
+                                            {new Date(nextSessionData.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} {" • "}
+                                            <span style={{ color: "var(--accent-color)" }}>
+                                                {nextSessionCoaches.length > 0
+                                                    ? nextSessionCoaches
+                                                        .map(p => `${p.signin_details.first_name} ${p.signin_details.last_name}`)
+                                                        .join(", ")
+                                                    : "No Coach"}
+                                            </span>
+                                        </>
+                                    )
                                         : "No upcoming session"}
                                 </p>
                             </div>
@@ -332,6 +385,11 @@ export default function PlayerDashboard() {
 
                                             <div className="sessionContent">
                                                 <h3>{nextSessionData?.name || "No upcoming session"}</h3>
+                                                <p className="sessionName upcoming">Coach: {nextSessionCoaches.length > 0
+                                                    ? nextSessionCoaches
+                                                        .map(p => `${p.signin_details.first_name} ${p.signin_details.last_name}`)
+                                                        .join(", ")
+                                                    : "No Coach"}</p>
                                                 <p>{new Date(nextSessionData.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</p>
                                                 <p>Duration: {nextSessionData.duration}</p>
                                                 <p>Notes: {nextSessionData.notes || "No notes"}</p>
@@ -343,7 +401,7 @@ export default function PlayerDashboard() {
 
                                 {/* LATEST SESSION FEEDBACK FORM */}
                                 {/* HIDES FEEDBACK FORM IN COACH PREVIEW MODE */}
-                                {!isCoachPreview && pendingSession &&(
+                                {!isCoachPreview && pendingSession && (
                                     <div className="chartBox">
                                         <div className="sectionHeader">
                                             <p className="dashboardLabel">RATE OF PERCEIVED EXERTION (RPE)</p>

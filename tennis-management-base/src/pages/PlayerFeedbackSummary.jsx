@@ -46,6 +46,11 @@ export default function FeedbackSummary() {
         return sessionDate >= startOfSelectedWeek && sessionDate <= endOfSelectedWeek;
     });
 
+    // CALCULATE TOTAL RPE, DEPENDING FILTERED FEEDBACK
+    const totalRPE = filteredFeedback.reduce((total, item) => {
+        return total + Number(item.rpe_load || 0);
+    }, 0);
+
     // HELPER FUNCTION TO CHANGE DURATION (00:00:00) TO MINUTES
     function durationToMinutes(duration) {
         if (!duration) return 0;
@@ -56,11 +61,11 @@ export default function FeedbackSummary() {
     async function fetchPlayers() {
         const { data, error } = await supabase
             .from("signin_details")
-            .select("*")
+            .select("id, first_name, last_name, role")
             .eq("role", "player");
 
         if (error) {
-            console.log("Error fetching players:", error.message);
+            console.log("Error fetching Athletes:", error.message);
             setPlayers([]);
         } else {
             setPlayers(data || []);
@@ -69,6 +74,36 @@ export default function FeedbackSummary() {
 
     async function fetchPlayerFeedback(playerId = "") {
         setLoading(true);
+
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            console.log("No user logged in");
+            setFeedback([]);
+            setLoading(false);
+            return;
+        }
+
+        // Get only sessions assigned to specific coach
+        const { data: assignedRows, error: assignedError } = await supabase
+            .from("session_people")
+            .select("session_id")
+            .eq("user_id", user.id);
+
+        if (assignedError) {
+            console.log("Error fetching assigned sessions:", assignedError.message);
+            setFeedback([]);
+            setLoading(false);
+            return;
+        }
+
+        const sessionIds = assignedRows.map(row => row.session_id);
+
+        if (sessionIds.length === 0) {
+            setFeedback([]);
+            setLoading(false);
+            return;
+        }
 
         let query = supabase
             .from("session_feedback")
@@ -85,6 +120,7 @@ export default function FeedbackSummary() {
                 last_name
             )
         `)
+            .in("session_id", sessionIds)
             .order("created_at", { ascending: false });
 
         if (playerId) {
@@ -129,7 +165,8 @@ export default function FeedbackSummary() {
     }, [players, selectedPlayerFromDashboard]);
 
     useEffect(() => {
-        fetchPlayerFeedback(selectedPlayerId);}, [selectedPlayerId]);
+        fetchPlayerFeedback(selectedPlayerId);
+    }, [selectedPlayerId]);
 
     return (
         <div id="drill-modal-overlay">
@@ -156,9 +193,7 @@ export default function FeedbackSummary() {
                     <button className={`weekButton ${selectedZone === "medium" ? "active" : ""}`} onClick={() => setSelectedZone("medium")}>Medium</button>
                     <button className={`weekButton ${selectedZone === "hard" ? "active" : ""}`} onClick={() => setSelectedZone("hard")}>Hard</button>
                 </div>
-                {selectedZone && (
-                    <p className="feedbackLabel">Showing {selectedZone.toUpperCase()} feedback</p>
-                )}
+                <p className="feedbackLabel">Showing {selectedZone ? selectedZone.toUpperCase() : "ALL"} feedback</p>
                 {/* WEEK NAVIGATION BUTTON */}
                 <div className="feedbackLabel">
                     <button className="weekButton" onClick={() => setWeekOffset(weekOffset - 1)}> Previous Week </button>
@@ -167,7 +202,8 @@ export default function FeedbackSummary() {
                 </div>
 
                 {/* WEEK DATE LABEL */}
-                <p class="feedbackLabel"> {startOfSelectedWeek.toLocaleDateString("en-AU")} - {endOfSelectedWeek.toLocaleDateString("en-AU")} </p>
+                <p className="feedbackLabel"> {startOfSelectedWeek.toLocaleDateString("en-AU")} - {endOfSelectedWeek.toLocaleDateString("en-AU")} </p>
+                <p className="feedbackLabel" style={{ color: 'var(--accent-color)' }}>RPE Load: {totalRPE}</p>
 
                 <div className="drill-modal-body">
                     <div className="feedback-summary-grid">
@@ -186,13 +222,12 @@ export default function FeedbackSummary() {
                                         })
                                     }>
                                     <div className="feedback-summary-top">
-                                        <h3>{item.sessions?.name || "Unnamed Session"}</h3>
+                                        <h3>{item.sessions?.name || "Unnamed Session"} • {item.sessions?.start_datetime ? new Date(item.sessions.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) : "No date"} </h3>
                                     </div>
 
                                     <div className="feedback-summary-content">
                                         <span>{item.signin_details?.first_name} {item.signin_details?.last_name}</span>
                                         <span className={`feedback-status ${item.intensity_zone}`}>{item.intensity}/10</span>
-                                        <p>{item.sessions?.start_datetime ? new Date(item.sessions.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) : "No date"}</p>
                                         <p>Planned Duration: {durationToMinutes(item.sessions?.duration)}  mins</p>
                                         <p>Actual Duration: {item.duration_minutes} mins</p>
                                         <p>RPE Load: {item.rpe_load}</p>

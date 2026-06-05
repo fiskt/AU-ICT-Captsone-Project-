@@ -127,7 +127,7 @@ export default function Dashboard() {
             return;
         }
 
-        // GET SESSION ASSIGNED TO LOGGED IN COACH
+        // GET SESSION ASSIGNED TO LOGGED IN COACH ONLY
         const { data: assignedRows, error: assignedError } = await supabase
             .from("session_people")
             .select("session_id")
@@ -506,8 +506,18 @@ export default function Dashboard() {
                                         : "—"}
                                 </h2>
                                 <p className="drill-stat-sub">
-                                    {nextSessionData
-                                        ? `${new Date(nextSessionData.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} • ${nextSessionData.name}`
+                                    {nextSessionData ? (
+                                        <>
+                                            {nextSessionData.name} •{" "}
+                                            {new Date(nextSessionData.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} {" • "}
+                                            <span style={{ color: "var(--accent-color)" }}>
+                                                {nextSessionData.session_people
+                                                    ?.filter(p => p.signin_details.role === "player")
+                                                    .map(p => `${p.signin_details.first_name} ${p.signin_details.last_name}`)
+                                                    .join(", ") || "No Altlete"}
+                                            </span>
+                                        </>
+                                    )
                                         : "No upcoming session"}
                                 </p>
                             </div>
