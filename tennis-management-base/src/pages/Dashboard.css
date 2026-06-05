@@ -380,12 +380,18 @@
 }
 
 .injuryBadge {
-    padding: 10px 14px;
-    border: 2px solid var(--topbar-accent-color);
-    border-radius: 8px;
-    background: var(--content-bg-color);
-
-    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-family: 'DM Mono Light', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background-color: var(--topbar-accent-color);
+    color: var(--content-subhead-color);
+    border: 1px solid var(--content-input-border-color);
     cursor: pointer;
 }
 
@@ -395,8 +401,9 @@
 }
 
 .injuryBadge.injured {
-    background: #fef2f2;
+    background: rgba(236, 120, 66, 0.12);
     color:var(--accent-color);
+    border-color: rgba(236, 120, 66, 0.3);
 }
 
 /* RESPONSIVE - MOBILE LAYOUT */
