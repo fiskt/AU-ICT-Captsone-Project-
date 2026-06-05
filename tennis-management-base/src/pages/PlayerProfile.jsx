@@ -1,4 +1,3 @@
-import { DRILL_TYPE_GRAPH, EXERTION_GRAPH, NUM_DRILLS_GRAPH } from "../Components/LoadTrackingComponents";
 import { supabase } from '../supabaseClient';
 import { LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents';
 import { useEffect, useRef, useState } from "react";
