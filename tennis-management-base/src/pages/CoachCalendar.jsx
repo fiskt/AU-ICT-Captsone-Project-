@@ -22,6 +22,11 @@ export default function CoachCalendar() {
 
 
 
+    /* SESSION CREATOR STATE ------------------------------------------------------------------------ */ 
+    const [showSessionCreator, setShowSessionCreator] = useState(false);
+
+
+
     /* CALENDAR ------------------------------------------------------------------------ */ 
     const [calendarEvents, setCalendarEvents] = useState([]);   // array of events for the calendar
 
@@ -823,95 +828,116 @@ export default function CoachCalendar() {
                 />
             </div>
             
+            {/* Show/hide session creator*/}
+            {!showSessionCreator && (
+                <button
+                    id="show-session-creator"
+                    onClick={() => setShowSessionCreator(true)}
+                >
+                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                    </svg>
+                </button>
+            )}
+
             {/* Session creator */}
-            <div id="session-creator">
-                <div id="session-creator-top">
-                    <h2 class="content-header">Session Creator</h2>
-                </div>
+            {showSessionCreator && (
+                <div id="session-creator">
+                    <div id="session-creator-top">
+                        <h2 class="content-header">Session Creator</h2>
+                        <button
+                            className='drill-btn drill-btn-primary'
+                            onClick={() => setShowSessionCreator(false)}
+                        >
+                            Less
+                        </button>
+                    </div>
 
-                <div id="session-creator-middle-left-top">
-                    <TYPING_INPUT 
-                        label="NAME *" 
-                        num_rows="1" 
-                        input_id="session-name-creator" 
-                        box_w="100%" box_h="30px" 
-                        sample_txt="Name..."
-                        value={sessionSettings.sessionName}
-                        onChange={(val) => {
-                            updateSessionField('sessionName', val);
-                        }}
-                        maxLength={20}
-                        isNumber={false}
-                    />
+                    <div id="session-creator-middle-left-top">
+                        <TYPING_INPUT 
+                            label="NAME *" 
+                            num_rows="1" 
+                            input_id="session-name-creator" 
+                            box_w="100%" box_h="30px" 
+                            sample_txt="Name..."
+                            value={sessionSettings.sessionName}
+                            onChange={(val) => {
+                                updateSessionField('sessionName', val);
+                            }}
+                            maxLength={20}
+                            isNumber={false}
+                        />
 
-                    <TYPING_INPUT 
-                        label="RPE *" 
-                        num_rows="1" 
-                        input_id="session-rpe-creator" 
-                        box_w="100%" box_h="30px" 
-                        sample_txt="200..."
-                        value={sessionSettings.sessionRPE}
-                        onChange={(val) => {
-                            updateSessionField('sessionRPE', val);
-                        }}
-                        maxLength={10}
-                        isNumber={true}
-                    />
-                </div>  
+                        <TYPING_INPUT 
+                            label="RPE *" 
+                            num_rows="1" 
+                            input_id="session-rpe-creator" 
+                            box_w="100%" box_h="30px" 
+                            sample_txt="200..."
+                            value={sessionSettings.sessionRPE}
+                            onChange={(val) => {
+                                updateSessionField('sessionRPE', val);
+                            }}
+                            maxLength={5}
+                            isNumber={true}
+                        />
+                    </div>  
 
-                <div id="session-creator-middle-right-top">
-                    <TYPING_INPUT 
-                        label="NOTES" 
-                        num_rows="6" 
-                        input_id="session-notes-creator" 
-                        box_w="100%" box_h="80%" 
-                        sample_txt="Notes..." 
-                        value={sessionSettings.sessionNotes}
-                        onChange={(val) => updateSessionField('sessionNotes', val)}
-                        maxLength={200}
-                        isNumber={false}
-                    />  
-                </div>
+                    <div id="session-creator-middle-right-top">
+                        <TYPING_INPUT 
+                            label="NOTES" 
+                            num_rows="6" 
+                            input_id="session-notes-creator" 
+                            box_w="100%" box_h="80%" 
+                            sample_txt="Notes..." 
+                            value={sessionSettings.sessionNotes}
+                            onChange={(val) => updateSessionField('sessionNotes', val)}
+                            maxLength={200}
+                            isNumber={false}
+                        />  
+                    </div>
 
-                <div id="session-creator-middle-left-bottom">
-                    <div class="input-container" id="session-creator-people-container">
-                        <span class="input-container-label">PEOPLE *</span>
-                        <div id="session-creator-people">
-                            <PEOPLE_SELECTOR role="Coaches" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
-                            <PEOPLE_SELECTOR role="Players" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
+                    <div id="session-creator-middle-left-bottom">
+                        <div class="input-container" id="session-creator-people-container">
+                            <span class="input-container-label">PEOPLE *</span>
+                            <div id="session-creator-people">
+                                <PEOPLE_SELECTOR role="Coaches" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
+                                <PEOPLE_SELECTOR role="Players" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div id="session-creator-middle-right-bottom">
-                    <div class="input-container" id="session-creator-drills-container">
-                        <span class="input-container-label">DRILLS</span>
-                        <div id="session-creator-drills">
-                            <SESSION_CREATOR_DRILLS
-                                selectedDrills={selectedDrills}
-                                removeDrillFromSession={removeDrillFromSession}
-                            />
-                            <button 
-                                class='drill-btn'
-                                onClick={() => setShowAddDrill(true)}
-                            >
-                                <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
-                                </svg>
-                                Add Drill
-                            </button>
+                    <div id="session-creator-middle-right-bottom">
+                        <div class="input-container" id="session-creator-drills-container">
+                            <span class="input-container-label">DRILLS</span>
+                            <div id="session-creator-drills">
+                                <SESSION_CREATOR_DRILLS
+                                    selectedDrills={selectedDrills}
+                                    removeDrillFromSession={removeDrillFromSession}
+                                />
+                                <button 
+                                    class='drill-btn'
+                                    onClick={() => setShowAddDrill(true)}
+                                >
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Add Drill
+                                </button>
+                            </div>
                         </div>
                     </div>
+                    <div id="session-creator-bottom">
+                        <DRAGGABLE_SESSION 
+                            sessionSettings={sessionSettings}
+                            sessionCoaches={selectedCoaches}
+                            sessionPlayers={selectedPlayers}
+                            currentCalendarView={currentCalendarView}
+                        />
+                    </div>
                 </div>
-                <div id="session-creator-bottom">
-                    <DRAGGABLE_SESSION 
-                        sessionSettings={sessionSettings}
-                        sessionCoaches={selectedCoaches}
-                        sessionPlayers={selectedPlayers}
-                        currentCalendarView={currentCalendarView}
-                    />
-                </div>
-            </div>
+            )}
+            
 
             {/* Mobile session creator */}
             {isMobile && showMobileSessionCreator && (
@@ -1190,11 +1216,11 @@ export default function CoachCalendar() {
                                     input_id="session-rpe-creator" 
                                     box_w="100%" box_h="30px" 
                                     sample_txt="200..."
-                                    value={tempSession?.rpe || 0}
+                                    value={tempSession?.rpe}
                                     onChange={(val) => {
                                         setTempSession({ ...tempSession, rpe: val});
                                     }}
-                                    maxLength={10}
+                                    maxLength={5}
                                     isNumber={true}
                                 />
                                 <TYPING_INPUT 
@@ -1311,7 +1337,7 @@ export default function CoachCalendar() {
                             input_id="session-rpe-creator" 
                             box_w="100%" box_h="30px" 
                             sample_txt="200..."
-                            value={tempSession?.rpe || 0}
+                            value={tempSession?.rpe}
                             onChange={(val) => {
                                 setTempSession({ ...tempSession, rpe: val});
                             }}

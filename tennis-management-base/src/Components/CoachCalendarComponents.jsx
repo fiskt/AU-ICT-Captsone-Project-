@@ -443,6 +443,8 @@ export const CALENDAR = forwardRef(({
                     plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
                     ref={ref}
                     events={events}
+                    slotDuration="00:10:00"
+                    snapDuration="00:10:00"
                     allDaySlot={false}
                     eventOverlap={false}
                     selectOverlap={false}
@@ -460,7 +462,7 @@ export const CALENDAR = forwardRef(({
                         const classes = [];
 
                         const duration = arg.event.end - arg.event.start;
-                        if (duration === 1800000) {
+                        if (duration === 600000) {
                             classes.push('short-event');
                         }
 
