@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { LOADING_OVERLAY } from "../Components/SharedComponents";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import "./SessionFeedback.css";
 
@@ -33,20 +33,36 @@ export default function SessionFeedback() {
     const location = useLocation();
     const selectedSessionId = location.state?.selectedSessionId;
 
+    // REACTIVE/NAVIGATE STATE
+    const navigate = useNavigate();
+
+    // COACH EDIT DURATION
+    const isCoachPreview = location.state?.isCoachPreview ?? false;
+
+    const selectedFeedbackId = location.state?.selectedFeedbackId;
+
     // FETCH SESSIONS DATA
     async function fetchMySessions() {
         setIsLoading(true);
+
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) { console.log("No user logged in"); return; }
 
-        const { data, error } = await supabase
+        let query = supabase
             .from("sessions")
             .select(`
                 *,
-                session_people!inner(user_id)
-            `)
-            .eq("session_people.user_id", user.id);
+                session_people(user_id)
+            `);
+
+        if (isCoachPreview && selectedSessionId) {
+            query = query.eq("id", selectedSessionId);
+        } else {
+            query = query.eq("session_people.user_id", user.id);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.log("Error fetching sessions:", error.message);
@@ -60,12 +76,22 @@ export default function SessionFeedback() {
     // FETCH SESSION FEEDBACKS
     async function fetchFeedback() {
         setIsLoading(true);
+
         const { data: { user } } = await supabase.auth.getUser();
 
-        const { data, error } = await supabase
+        if (!user) { console.log("No user logged in"); return; }
+
+        let query = supabase
             .from("session_feedback")
-            .select("*")
-            .eq("player_id", user.id);
+            .select("*");
+
+        if (isCoachPreview && selectedFeedbackId) {
+            query = query.eq("id", selectedFeedbackId);
+        } else {
+            query = query.eq("player_id", user.id);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             console.log("Error fetching feedback:", error.message);
@@ -90,9 +116,9 @@ export default function SessionFeedback() {
 
         if (!session) return;
 
-        const existingFeedback = feedback.find(
-            f => f.session_id === session.id
-        );
+        const existingFeedback = selectedFeedbackId
+            ? feedback.find(f => f.id === selectedFeedbackId)
+            : feedback.find(f => f.session_id === session.id);
 
         setSelectedSession(session);
         setSelectedFeedback(existingFeedback || null);
@@ -104,6 +130,7 @@ export default function SessionFeedback() {
         }
     }, [selectedSessionId, sessions, feedback]);
 
+    // HELPER FUNCTION TO CHANGE DURATION (00:00:00) TO MINUTES
     function durationToMinutes(duration) {
         if (!duration) return 0;
         const [hours, minutes, seconds] = duration.split(":").map(Number);
@@ -140,15 +167,20 @@ export default function SessionFeedback() {
         const intensityNum = Number(intensity);
         const durationMins = Number(durationMinutes);
 
-        const payload = {
-            session_id: selectedSession.id,
-            player_id: user.id,
-            intensity: intensityNum,
-            duration_minutes: durationMins,
-            rpe_load: intensityNum * durationMins,
-            intensity_zone: getIntensityZone(intensityNum),
-            feedback_notes: notes
-        };
+        const payload = isCoachPreview
+            ? {
+                duration_minutes: durationMins,
+                rpe_load: Number(intensity) * durationMins,
+            }
+            : {
+                session_id: selectedSession.id,
+                player_id: user.id,
+                intensity: intensityNum,
+                duration_minutes: durationMins,
+                rpe_load: intensityNum * durationMins,
+                intensity_zone: getIntensityZone(intensityNum),
+                feedback_notes: notes
+            };
 
         let error;
 
@@ -174,6 +206,10 @@ export default function SessionFeedback() {
         }
         else {
             alert(selectedFeedback ? "Feedback updated!" : "Feedback saved!");
+            if (isCoachPreview) {
+                navigate(-1);
+                return;
+            }
             setSelectedSession(null);
             setSelectedFeedback(null);
             setIntensity("");
@@ -194,7 +230,7 @@ export default function SessionFeedback() {
         return (
             <div
                 key={session.id}
-                className={`sf-card ${isRated ? "rated" : "not-rated"}`}
+                className={`sf-summary-card ${isRated ? "rated" : "not-rated"}`}
                 onClick={() => {
                     if (!isCompleted) return;
 
@@ -211,13 +247,22 @@ export default function SessionFeedback() {
                         setNotes("");
                     }
                 }}>
+                <div className="sf-summary-top">
+                    <h3>{session.name || "Unnamed Session"}</h3>
+                </div>
 
-                <div className="sf-card-content">
-                    <h3>{session.name}</h3>
-                    <p> {new Date(session.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} </p>
-                    <p> Duration: {session.duration} </p>
-                    <span className={`sf-status ${isRated ? "rated" : "not-rated"}`}> {isRated ? "Rated" : "Not Rated"}</span>
+                <span className={`sf-status ${isRated ? "rated" : "not-rated"}`}> {isRated ? `${existingFeedback.intensity}/10` : "Not Rated"}</span>
 
+                <div className="sf-summary-content">
+                    <p>{session.start_datetime ? new Date(session.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) : "No date"}</p>
+                    <p>Planned Duration: {durationToMinutes(session.duration)} mins</p>
+                    {existingFeedback && (
+                        <div className="sf-summary-content">
+                            <p>Actual Duration: {existingFeedback.duration_minutes} mins</p>
+                            <p>RPE Load: {existingFeedback.rpe_load}</p>
+                            <p className="sf-note">{existingFeedback.feedback_notes || "No notes submitted"}</p>
+                        </div>
+                    )}
                 </div>
             </div>
         );
@@ -231,26 +276,29 @@ export default function SessionFeedback() {
             <div id="main-content-wrapper">
                 <div id="main-content">
                     <div id="sf-page">
-                        <div className="sf-header">
-                            <div>
-                                <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>Session Feedback</h2>
-                                <p className="sf-subtitle">
-                                    Rate your completed sessions and track your training load.
-                                </p>
-                            </div>
-                        </div>
+                        {!isCoachPreview && (
+                            <>
+                                <div className="sf-header">
+                                    <div>
+                                        <h2 className="content-header" style={{ padding: 0, marginBottom: '4px' }}>Session Feedback</h2>
+                                        <p className="sf-subtitle">
+                                            Rate your completed sessions and track your training load.
+                                        </p>
+                                    </div>
+                                </div>
 
-                        {/* Sessions Grid */}
-                        <div id="sf-main-panel">
-                            <div className="sf-panel-header"> <h3> RATED SESSIONS </h3> </div>
-                            <div className="sf-grid"> {recentRatedSessions.map(renderSessionCard)} </div>
-                        </div>
+                                {/* Sessions Grid */}
+                                <div id="sf-main-panel">
+                                    <div className="sf-panel-header"> <h3> RATED SESSIONS </h3> </div>
+                                    <div className="sf-grid"> {recentRatedSessions.map(renderSessionCard)} </div>
+                                </div>
 
-                        <div id="sf-main-panel">
-                            <div className="sf-panel-header"> <h3> SESSIONS TO BE RATED </h3> </div>
-                            <div className="sf-grid"> {unratedSessions.map(renderSessionCard)} </div>
-                        </div>
-
+                                <div id="sf-main-panel">
+                                    <div className="sf-panel-header"> <h3> SESSIONS TO BE RATED </h3> </div>
+                                    <div className="sf-grid"> {unratedSessions.map(renderSessionCard)} </div>
+                                </div>
+                            </>
+                        )}
                         {selectedSession && (
                             <div id="drill-modal-overlay">
                                 <div className="drill-modal" style={{ maxWidth: '620px' }}>
@@ -261,10 +309,17 @@ export default function SessionFeedback() {
                                     <div className="drill-modal-body">
                                         <div className="drill-form-group">
                                             <p className="drill-modal-title" style={{ color: "var(--accent-color)" }} >{selectedSession.name} - {new Date(selectedSession.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</p>
-                                            <p className="drill-form-label"> Planned Duration: {durationToMinutes(selectedSession.duration) + " minutes"} </p>
+                                            <p className="drill-form-label" style={{ fontSize: 13 }}> Planned Duration: {durationToMinutes(selectedSession.duration) + " minutes"} </p>
 
                                             <label className="drill-form-label">Session Intensity</label>
-                                            <select className="drill-form-select" value={intensity} onChange={(e) => setIntensity(e.target.value)}>
+                                            {isCoachPreview && (
+                                                <p className="drill-form-label" style={{ color: "var(--accent-color)" }}>Coach edit mode: only actual duration can be updated.</p>
+                                            )}
+                                            <select className="drill-form-select" value={intensity}
+                                                onChange={(e) =>
+                                                    setIntensity(e.target.value)}
+                                                disabled={isCoachPreview}>
+
                                                 <option value="">Select intensity</option>
                                                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n}>{n}</option>)}
                                             </select>
@@ -273,10 +328,21 @@ export default function SessionFeedback() {
                                             <input className="drill-form-input" type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} />
 
                                             <label className="drill-form-label">Comment</label>
-                                            <textarea className="drill-form-textarea" placeholder="How was the session?" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                                            {isCoachPreview && (
+                                                <p className="drill-form-label" style={{ color: "var(--accent-color)" }}>Coach edit mode: only actual duration can be updated.</p>
+                                            )}
+                                            <textarea className="drill-form-textarea" placeholder="How was the session?" value={notes}
+                                                onChange={(e) =>
+                                                    setNotes(e.target.value)}
+                                                disabled={isCoachPreview} />
 
                                             <div className="sf-form-actions">
-                                                <button className="sf-btn sf-btn-ghost" onClick={() => setSelectedSession(null)}> Cancel </button>
+                                                <button className="sf-btn sf-btn-ghost"
+                                                    onClick={() => {
+                                                        if (isCoachPreview) { navigate(-1); }
+                                                        else { setSelectedSession(null); }
+                                                    }}>
+                                                    Cancel </button>
                                                 <button className="sf-btn active" onClick={handleSave}> Save Feedback </button>
                                             </div>
                                         </div>
@@ -286,7 +352,7 @@ export default function SessionFeedback() {
                         )}
                     </div>
                 </div>
-            </div >
+            </div>
         </div >
     );
 }

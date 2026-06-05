@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { useLocation } from "react-router-dom";
+
+import { useLocation, useNavigate } from "react-router-dom";
 
 import "./PlayerFeedbackSummary.css";
 
 export default function FeedbackSummary() {
+    // ROUTER STATE
     const location = useLocation();
+    const navigate = useNavigate();
 
-    const selectedZone = location.state?.zone || "";
+    const [selectedZone, setSelectedZone] = useState(location.state?.zone || "");
 
     const [players, setPlayers] = useState([]);
     const [selectedPlayerId, setSelectedPlayerId] = useState("");
@@ -42,6 +45,13 @@ export default function FeedbackSummary() {
 
         return sessionDate >= startOfSelectedWeek && sessionDate <= endOfSelectedWeek;
     });
+
+    // HELPER FUNCTION TO CHANGE DURATION (00:00:00) TO MINUTES
+    function durationToMinutes(duration) {
+        if (!duration) return 0;
+        const [hours, minutes, seconds] = duration.split(":").map(Number);
+        return hours * 60 + minutes + Math.round(seconds / 60);
+    }
 
     async function fetchPlayers() {
         const { data, error } = await supabase
@@ -122,6 +132,12 @@ export default function FeedbackSummary() {
                         </option>
                     ))}
                 </select>
+                <div className="feedbackLabel">
+                    <button className={`weekButton ${selectedZone === "" ? "active" : ""}`} onClick={() => setSelectedZone("")}>All</button>
+                    <button className={`weekButton ${selectedZone === "easy" ? "active" : ""}`} onClick={() => setSelectedZone("easy")}>Easy</button>
+                    <button className={`weekButton ${selectedZone === "medium" ? "active" : ""}`} onClick={() => setSelectedZone("medium")}>Medium</button>
+                    <button className={`weekButton ${selectedZone === "hard" ? "active" : ""}`} onClick={() => setSelectedZone("hard")}>Hard</button>
+                </div>
                 {selectedZone && (
                     <p className="feedbackLabel">Showing {selectedZone.toUpperCase()} feedback</p>
                 )}
@@ -141,17 +157,26 @@ export default function FeedbackSummary() {
                             <p>Loading feedback...</p>
                         ) : filteredFeedback.length > 0 ? (
                             filteredFeedback.map((item) => (
-                                <div className="feedback-summary-card" key={item.id}>
+                                <div className="feedback-summary-card" key={item.id}
+                                    onClick={() =>
+                                        navigate("/SessionFeedback", {
+                                            state: {
+                                                selectedSessionId: item.session_id,
+                                                selectedFeedbackId: item.id,
+                                                isCoachPreview: true,
+                                            },
+                                        })
+                                    }>
                                     <div className="feedback-summary-top">
                                         <h3>{item.sessions?.name || "Unnamed Session"}</h3>
                                     </div>
 
-                                    <span className={`feedback-status ${item.intensity_zone}`}>{item.intensity}/10</span>
-
                                     <div className="feedback-summary-content">
                                         <span>{item.signin_details?.first_name} {item.signin_details?.last_name}</span>
+                                        <span className={`feedback-status ${item.intensity_zone}`}>{item.intensity}/10</span>
                                         <p>{item.sessions?.start_datetime ? new Date(item.sessions.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) : "No date"}</p>
-                                        <p>Duration: {item.duration_minutes} mins</p>
+                                        <p>Planned Duration: {item.duration_minutes} mins</p>
+                                        <p>Actual Duration: {durationToMinutes(item.sessions?.duration)} mins</p>
                                         <p>RPE Load: {item.rpe_load}</p>
 
                                         <p className="feedback-note">{item.feedback_notes || "No notes submitted"}</p>
@@ -160,7 +185,7 @@ export default function FeedbackSummary() {
                                 </div>
                             ))
                         ) : (
-                            <p>No feedback found.</p>
+                            <p className="feedbackLabel" style={{ gridColumn: "1 / -1", justifySelf: "center"}}>No feedback found.</p>
                         )}
                     </div>
                 </div>
