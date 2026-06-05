@@ -35,47 +35,46 @@ export default function Dashboard() {
     const [sessions, setSessions] = useState([]);
     const [nextSessionData, setNextSessionData] = useState(null);
 
-    // ACTIVE ATHLETES STATE
-    const activeAthletes = new Set(
-        sessions.flatMap(session =>
-            session.session_people
-                ?.filter(p => p.signin_details.role === "player")
-                .map(p => p.signin_details.id)
-        )
-    ).size;
-
     // LOADING STATE
     const [isLoading, setIsLoading] = useState(true);
 
     // WEEK OFFSET STATE
     const [weekOffset, setWeekOffset] = useState(0);
 
+    // WEEKLY TARGET RPE STATE
+    const [weeklyTargetRPE, setWeeklyTargetRPE] = useState("");
+    const [targetInput, setTargetInput] = useState("");
+
+    // INJURY STATE
+    const [activeInjuryCount, setActiveInjuryCount] = useState(0);
+
     // WEEKLY NAVIGATION
     const today = new Date();
 
     const startOfSelectedWeek = new Date(today);
-    startOfSelectedWeek.setDate(today.getDate() - today.getDay() + 1 + weekOffset * 7);
+    startOfSelectedWeek.setDate(today.getDate() - today.getDay() + weekOffset * 7);
     startOfSelectedWeek.setHours(0, 0, 0, 0);
 
     const endOfSelectedWeek = new Date(startOfSelectedWeek);
     endOfSelectedWeek.setDate(startOfSelectedWeek.getDate() + 6);
     endOfSelectedWeek.setHours(23, 59, 59, 999);
 
-    // WEEKLY TARGET RPE STATE
-    const [weeklyTargetRPE, setWeeklyTargetRPE] = useState("");
-    const [targetInput, setTargetInput] = useState("");
-
     // HELPER CLASS FOR DATE AND TIME USING LUXON
     function formatDateForDB(dateValue) {
         return DateTime.fromISO(dateValue).toFormat("yyyy-MM-dd");
     }
-
     function formatJSDateForDB(dateValue) {
         return DateTime.fromJSDate(dateValue).toFormat("yyyy-MM-dd");
     }
 
     // FETCH TARGET FOR SELECTED WEEK/ATHELE
     async function fetchWeeklyTarget() {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            alert("No user logged in");
+            return;
+        }
 
         if (selectedPlayer === "All Athletes") {
             setWeeklyTargetRPE("");
@@ -92,13 +91,17 @@ export default function Dashboard() {
         const { data, error } = await supabase
             .from("weekly_target_rpe")
             .select("*")
+            .eq("coach_id", user.id)
             .eq("player_id", selectedAthlete.id)
             .eq("week_start", formatJSDateForDB(startOfSelectedWeek))
-            .single();
+            .maybeSingle();
 
         if (error) {
+            console.log(error);
+            alert(`Failed to save target: ${error.message}`);
             setWeeklyTargetRPE("");
             setTargetInput("");
+            return;
         } else if (data) {
             setWeeklyTargetRPE(data.target_rpe);
             setTargetInput(data.target_rpe);
@@ -238,8 +241,46 @@ export default function Dashboard() {
         fetchAthletes();
     }, []);
 
+    // FETCH INJURY STATE
+    async function fetchInjuryStatus() {
+        if (selectedPlayer === "All Athletes") {
+            setActiveInjuryCount(0);
+            return;
+        }
+
+        const selectedAthlete = Athletes.find(
+            athlete => `${athlete.first_name} ${athlete.last_name}` === selectedPlayer
+        );
+
+        if (!selectedAthlete) return;
+
+        const { data, error } = await supabase
+            .from("injuries")
+            .select("id")
+            .eq("player_id", selectedAthlete.id)
+            .eq("status", "active");
+
+        if (error) {
+            console.log("Error fetching injuries:", error.message);
+            setActiveInjuryCount(0);
+        } else {
+            setActiveInjuryCount(data?.length || 0);
+        }
+    }
+    useEffect(() => {
+        fetchInjuryStatus();
+    }, [selectedPlayer, Athletes]);
+
     // SAVE WEEKLY TARGET RPE
     async function saveWeeklyTarget() {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            console.log("No user logged in");
+            setIsLoading(false);
+            return;
+        }
+
         const selectedAthlete = Athletes.find(
             athlete => `${athlete.first_name} ${athlete.last_name}` === selectedPlayer
         );
@@ -252,12 +293,13 @@ export default function Dashboard() {
         const { error } = await supabase
             .from("weekly_target_rpe")
             .upsert({
+                coach_id: user.id,
                 player_id: selectedAthlete.id,
                 week_start: formatJSDateForDB(startOfSelectedWeek),
                 target_rpe: Number(targetInput),
                 updated_at: new Date().toISOString(),
             }, {
-                onConflict: "player_id,week_start"
+                onConflict: "coach_id,player_id,week_start"
             });
 
         if (error) {
@@ -409,23 +451,41 @@ export default function Dashboard() {
                                 </p>
                             </div>
 
-                            {/* PLAYER DROPDOWN SELECTER */}
-                            <select
-                                className="playerSelect"
-                                value={selectedPlayer}
-                                onChange={(e) => setSelectedPlayer(e.target.value)}
-                            >
-                                <option>All Athletes</option>
+                            <div className="dashboardControls">
+                                {/* INJURY STATUS*/}
+                                {selectedPlayer !== "All Athletes" && (
+                                    <button
+                                        className={`injuryBadge ${activeInjuryCount > 0 ? "injured" : "healthy"}`}
+                                        onClick={() => {
+                                            const selectedAthlete = Athletes.find(
+                                                athlete => `${athlete.first_name} ${athlete.last_name}` === selectedPlayer);
+                                            if (!selectedAthlete) return;
+                                            navigate("/PlayerProfile", {state: {playerId: selectedAthlete.id,openSection: "injuries",},
+                                            });
+                                        }}>
+                                            
+                                        {activeInjuryCount > 0
+                                            ? `${activeInjuryCount} Active ${activeInjuryCount === 1 ? "Injury" : "Injuries"}`
+                                            : "No Injuries"}
+                                    </button>
+                                )}
 
-                                {Athletes.map(player => (
-                                    <option
-                                        key={player.id}
-                                        value={`${player.first_name} ${player.last_name}`}
-                                    >
-                                        {player.first_name} {player.last_name}
-                                    </option>
-                                ))}
-                            </select>
+                                {/* PLAYER DROPDOWN SELECTER */}
+                                <select
+                                    className="playerSelect"
+                                    value={selectedPlayer}
+                                    onChange={(e) => setSelectedPlayer(e.target.value)}>
+                                    <option>All Athletes</option>
+
+                                    {Athletes.map(player => (
+                                        <option
+                                            key={player.id}
+                                            value={`${player.first_name} ${player.last_name}`}>
+                                            {player.first_name} {player.last_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
                         {/* STATS */}

@@ -2,6 +2,8 @@ import { DRILL_TYPE_GRAPH, EXERTION_GRAPH, NUM_DRILLS_GRAPH } from "../Component
 import { supabase } from '../supabaseClient';
 import { LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents';
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+
 import '../App.css';
 import './PlayerProfile.css';
 
@@ -104,27 +106,29 @@ function PLAYER_CARD({ player, setSelectedPlayer }) {
 // Coach can report new injuries on behalf of the player, manage existing ones,
 // add notes, set training restrictions and update status.
 function PLAYER_INJURIES({ player }) {
-    const [injuries, setInjuries]     = useState([]);
-    const [loading, setLoading]       = useState(true);
+    const injurySectionRef = useRef(null);
+    
+    const [injuries, setInjuries] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [expandedId, setExpandedId] = useState(null);
-    const [saving, setSaving]         = useState(false);
-    const [success, setSuccess]       = useState('');
+    const [saving, setSaving] = useState(false);
+    const [success, setSuccess] = useState('');
 
     // Manage existing injury fields
-    const [editStatus, setEditStatus]           = useState('');
-    const [editCoachNotes, setEditCoachNotes]   = useState('');
+    const [editStatus, setEditStatus] = useState('');
+    const [editCoachNotes, setEditCoachNotes] = useState('');
     const [editRestriction, setEditRestriction] = useState('');
-    const [editRecovered, setEditRecovered]     = useState('');
+    const [editRecovered, setEditRecovered] = useState('');
 
     // Report new injury fields (coach reporting on behalf of player)
     const [showReportForm, setShowReportForm] = useState(false);
-    const [reportSaving, setReportSaving]     = useState(false);
-    const [reportError, setReportError]       = useState('');
-    const [reportType, setReportType]         = useState('');
+    const [reportSaving, setReportSaving] = useState(false);
+    const [reportError, setReportError] = useState('');
+    const [reportType, setReportType] = useState('');
     const [reportBodyPart, setReportBodyPart] = useState('');
-    const [reportDesc, setReportDesc]         = useState('');
+    const [reportDesc, setReportDesc] = useState('');
     const [reportSeverity, setReportSeverity] = useState('mild');
-    const [reportDate, setReportDate]         = useState('');
+    const [reportDate, setReportDate] = useState('');
 
     useEffect(() => { fetchInjuries(); }, [player]);
 
@@ -219,13 +223,13 @@ function PLAYER_INJURIES({ player }) {
     };
 
     function severityStyle(sev) {
-        if (sev === 'severe')   return { background: '#FEE2E2', color: '#DC2626', border: '1px solid #FCA5A5' };
+        if (sev === 'severe') return { background: '#FEE2E2', color: '#DC2626', border: '1px solid #FCA5A5' };
         if (sev === 'moderate') return { background: '#FEF3C7', color: '#D97706', border: '1px solid #FCD34D' };
         return { background: '#DCFCE7', color: '#16A34A', border: '1px solid #86EFAC' };
     }
 
     function statusStyle(status) {
-        if (status === 'recovered')  return { background: '#DCFCE7', color: '#16A34A', border: '1px solid #86EFAC' };
+        if (status === 'recovered') return { background: '#DCFCE7', color: '#16A34A', border: '1px solid #86EFAC' };
         if (status === 'monitoring') return { background: '#FEF3C7', color: '#D97706', border: '1px solid #FCD34D' };
         return { background: '#FEE2E2', color: '#DC2626', border: '1px solid #FCA5A5' };
     }
@@ -319,105 +323,106 @@ function PLAYER_INJURIES({ player }) {
                     </form>
                 </div>
             )}
-
-            {/* Injury list */}
-            {loading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '30px 0' }}>
-                    <div style={{ width: '24px', height: '24px', border: '3px solid #DDDBD6', borderTop: '3px solid #C8714E', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                </div>
-            ) : injuries.length === 0 ? (
-                <p style={{ fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: 'var(--content-subhead-color)', padding: '20px 0' }}>
-                    No injuries reported for this player.
-                </p>
-            ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {injuries.map((injury) => (
-                        <div key={injury.id} style={{ border: '1.5px solid var(--content-input-border-color)', borderRadius: '10px', overflow: 'hidden' }}>
-                            {/* Injury summary row */}
-                            <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap', background: 'var(--content-bg-color)' }}>
-                                <div style={{ flex: 1 }}>
-                                    <p style={{ margin: '0 0 4px', fontFamily: 'DM Sans Light, sans-serif', fontSize: '14px', fontWeight: '600', color: 'var(--content-head-color)' }}>
-                                        {injury.injury_type} — {injury.body_part}
-                                    </p>
-                                    <p style={{ margin: '0 0 8px', fontFamily: 'DM Mono Light, sans-serif', fontSize: '11px', color: 'var(--content-subhead-color)' }}>
-                                        Reported: {new Date(injury.reported_at).toLocaleDateString('en-AU')} · Occurred: {new Date(injury.date_occurred).toLocaleDateString('en-AU')}
-                                    </p>
-                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                        <span style={{ ...badgeStyle, ...severityStyle(injury.severity) }}>{injury.severity}</span>
-                                        <span style={{ ...badgeStyle, ...statusStyle(injury.status) }}>{injury.status}</span>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => expandedId === injury.id ? setExpandedId(null) : openEdit(injury)}
-                                    style={{ padding: '6px 14px', background: expandedId === injury.id ? 'var(--topbar-accent-color)' : 'var(--accent-color)', color: expandedId === injury.id ? 'var(--content-subhead-color)' : '#fff', border: 'none', borderRadius: '6px', fontFamily: 'DM Mono Light, sans-serif', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                    {expandedId === injury.id ? 'Cancel' : 'Manage'}
-                                </button>
-                            </div>
-
-                            {/* Player description */}
-                            {injury.description && (
-                                <div style={{ padding: '0 16px 12px', background: 'var(--content-bg-color)' }}>
-                                    <p style={{ margin: 0, fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: 'var(--content-subhead-color)', lineHeight: '1.5' }}>{injury.description}</p>
-                                </div>
-                            )}
-
-                            {/* Existing coach notes / restriction preview */}
-                            {(injury.coach_notes || injury.training_restriction) && expandedId !== injury.id && (
-                                <div style={{ padding: '0 16px 12px', background: 'var(--content-bg-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    {injury.coach_notes && (
-                                        <div style={{ background: '#FFF3EB', border: '1.5px solid #EC7842', borderRadius: '6px', padding: '8px 12px' }}>
-                                            <p style={{ margin: '0 0 2px', fontFamily: 'DM Mono Light, sans-serif', fontSize: '10px', color: '#C8714E', letterSpacing: '1px', textTransform: 'uppercase' }}>Your Notes</p>
-                                            <p style={{ margin: 0, fontFamily: 'DM Sans Light, sans-serif', fontSize: '12px', color: '#7C3A1A' }}>{injury.coach_notes}</p>
-                                        </div>
-                                    )}
-                                    {injury.training_restriction && (
-                                        <div style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5', borderRadius: '6px', padding: '8px 12px' }}>
-                                            <p style={{ margin: '0 0 2px', fontFamily: 'DM Mono Light, sans-serif', fontSize: '10px', color: '#DC2626', letterSpacing: '1px', textTransform: 'uppercase' }}>Training Restriction</p>
-                                            <p style={{ margin: 0, fontFamily: 'DM Sans Light, sans-serif', fontSize: '12px', color: '#B91C1C' }}>{injury.training_restriction}</p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Coach management panel */}
-                            {expandedId === injury.id && (
-                                <div style={{ padding: '16px', background: 'var(--topbar-accent-color)', borderTop: '1.5px solid var(--content-input-border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                                        <div style={{ flex: 1, minWidth: '140px' }}>
-                                            <label style={labelStyle}>Status</label>
-                                            <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
-                                                <option value="active">Active</option>
-                                                <option value="monitoring">Monitoring</option>
-                                                <option value="recovered">Recovered</option>
-                                            </select>
-                                        </div>
-                                        <div style={{ flex: 1, minWidth: '140px' }}>
-                                            <label style={labelStyle}>Date Recovered</label>
-                                            <input type="date" value={editRecovered} onChange={(e) => setEditRecovered(e.target.value)} style={inputStyle} />
+            <div ref={injurySectionRef}>
+                {/* Injury list */}
+                {loading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '30px 0' }}>
+                        <div style={{ width: '24px', height: '24px', border: '3px solid #DDDBD6', borderTop: '3px solid #C8714E', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                    </div>
+                ) : injuries.length === 0 ? (
+                    <p style={{ fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: 'var(--content-subhead-color)', padding: '20px 0' }}>
+                        No injuries reported for this player.
+                    </p>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {injuries.map((injury) => (
+                            <div key={injury.id} style={{ border: '1.5px solid var(--content-input-border-color)', borderRadius: '10px', overflow: 'hidden' }}>
+                                {/* Injury summary row */}
+                                <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap', background: 'var(--content-bg-color)' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <p style={{ margin: '0 0 4px', fontFamily: 'DM Sans Light, sans-serif', fontSize: '14px', fontWeight: '600', color: 'var(--content-head-color)' }}>
+                                            {injury.injury_type} — {injury.body_part}
+                                        </p>
+                                        <p style={{ margin: '0 0 8px', fontFamily: 'DM Mono Light, sans-serif', fontSize: '11px', color: 'var(--content-subhead-color)' }}>
+                                            Reported: {new Date(injury.reported_at).toLocaleDateString('en-AU')} · Occurred: {new Date(injury.date_occurred).toLocaleDateString('en-AU')}
+                                        </p>
+                                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                            <span style={{ ...badgeStyle, ...severityStyle(injury.severity) }}>{injury.severity}</span>
+                                            <span style={{ ...badgeStyle, ...statusStyle(injury.status) }}>{injury.status}</span>
                                         </div>
                                     </div>
-                                    <div>
-                                        <label style={labelStyle}>Coach Notes</label>
-                                        <textarea value={editCoachNotes} onChange={(e) => setEditCoachNotes(e.target.value)}
-                                            placeholder="Add your assessment or comments..."
-                                            rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: '1.5' }} />
-                                    </div>
-                                    <div>
-                                        <label style={labelStyle}>Training Restriction</label>
-                                        <input type="text" value={editRestriction} onChange={(e) => setEditRestriction(e.target.value)}
-                                            placeholder="e.g. No sprint drills. Limited movement only."
-                                            style={inputStyle} />
-                                    </div>
-                                    <button onClick={() => handleSave(injury.id)} disabled={saving}
-                                        style={{ alignSelf: 'flex-start', padding: '8px 20px', background: 'var(--accent-color)', color: '#fff', border: 'none', borderRadius: '8px', fontFamily: 'Bebas, sans-serif', fontSize: '16px', letterSpacing: '2px', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
-                                        {saving ? 'SAVING...' : 'SAVE CHANGES'}
+                                    <button
+                                        onClick={() => expandedId === injury.id ? setExpandedId(null) : openEdit(injury)}
+                                        style={{ padding: '6px 14px', background: expandedId === injury.id ? 'var(--topbar-accent-color)' : 'var(--accent-color)', color: expandedId === injury.id ? 'var(--content-subhead-color)' : '#fff', border: 'none', borderRadius: '6px', fontFamily: 'DM Mono Light, sans-serif', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                        {expandedId === injury.id ? 'Cancel' : 'Manage'}
                                     </button>
                                 </div>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            )}
+
+                                {/* Player description */}
+                                {injury.description && (
+                                    <div style={{ padding: '0 16px 12px', background: 'var(--content-bg-color)' }}>
+                                        <p style={{ margin: 0, fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: 'var(--content-subhead-color)', lineHeight: '1.5' }}>{injury.description}</p>
+                                    </div>
+                                )}
+
+                                {/* Existing coach notes / restriction preview */}
+                                {(injury.coach_notes || injury.training_restriction) && expandedId !== injury.id && (
+                                    <div style={{ padding: '0 16px 12px', background: 'var(--content-bg-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                        {injury.coach_notes && (
+                                            <div style={{ background: '#FFF3EB', border: '1.5px solid #EC7842', borderRadius: '6px', padding: '8px 12px' }}>
+                                                <p style={{ margin: '0 0 2px', fontFamily: 'DM Mono Light, sans-serif', fontSize: '10px', color: '#C8714E', letterSpacing: '1px', textTransform: 'uppercase' }}>Your Notes</p>
+                                                <p style={{ margin: 0, fontFamily: 'DM Sans Light, sans-serif', fontSize: '12px', color: '#7C3A1A' }}>{injury.coach_notes}</p>
+                                            </div>
+                                        )}
+                                        {injury.training_restriction && (
+                                            <div style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5', borderRadius: '6px', padding: '8px 12px' }}>
+                                                <p style={{ margin: '0 0 2px', fontFamily: 'DM Mono Light, sans-serif', fontSize: '10px', color: '#DC2626', letterSpacing: '1px', textTransform: 'uppercase' }}>Training Restriction</p>
+                                                <p style={{ margin: 0, fontFamily: 'DM Sans Light, sans-serif', fontSize: '12px', color: '#B91C1C' }}>{injury.training_restriction}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Coach management panel */}
+                                {expandedId === injury.id && (
+                                    <div style={{ padding: '16px', background: 'var(--topbar-accent-color)', borderTop: '1.5px solid var(--content-input-border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                            <div style={{ flex: 1, minWidth: '140px' }}>
+                                                <label style={labelStyle}>Status</label>
+                                                <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+                                                    <option value="active">Active</option>
+                                                    <option value="monitoring">Monitoring</option>
+                                                    <option value="recovered">Recovered</option>
+                                                </select>
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: '140px' }}>
+                                                <label style={labelStyle}>Date Recovered</label>
+                                                <input type="date" value={editRecovered} onChange={(e) => setEditRecovered(e.target.value)} style={inputStyle} />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label style={labelStyle}>Coach Notes</label>
+                                            <textarea value={editCoachNotes} onChange={(e) => setEditCoachNotes(e.target.value)}
+                                                placeholder="Add your assessment or comments..."
+                                                rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: '1.5' }} />
+                                        </div>
+                                        <div>
+                                            <label style={labelStyle}>Training Restriction</label>
+                                            <input type="text" value={editRestriction} onChange={(e) => setEditRestriction(e.target.value)}
+                                                placeholder="e.g. No sprint drills. Limited movement only."
+                                                style={inputStyle} />
+                                        </div>
+                                        <button onClick={() => handleSave(injury.id)} disabled={saving}
+                                            style={{ alignSelf: 'flex-start', padding: '8px 20px', background: 'var(--accent-color)', color: '#fff', border: 'none', borderRadius: '8px', fontFamily: 'Bebas, sans-serif', fontSize: '16px', letterSpacing: '2px', cursor: 'pointer', opacity: saving ? 0.7 : 1 }}>
+                                            {saving ? 'SAVING...' : 'SAVE CHANGES'}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -525,7 +530,7 @@ function PLAYER_DETAILS({ player, playerDetails, setSelectedPlayer, setShowDelet
 
             {/* Injuries section */}
             <div style={{ marginTop: '24px', background: 'var(--content-bg-color)', border: '2px solid var(--topbar-accent-color)', borderRadius: '8px', padding: '16px' }}>
-                <PLAYER_INJURIES player={player} />
+                <PLAYER_INJURIES player={player}  />
             </div>
         </div>
     );
@@ -533,15 +538,20 @@ function PLAYER_DETAILS({ player, playerDetails, setSelectedPlayer, setShowDelet
 
 // ── MAIN PLAYER PROFILE PAGE ──────────────────────────────────────────────────
 export default function PlayerProfile() {
-    const [isDataLoading, setIsDataLoading]   = useState(false);
-    const [players, setPlayers]               = useState([]);
+    const location = useLocation();
+
+    const selectedPlayerId = location.state?.playerId;
+    const openSection = location.state?.openSection;
+
+    const [isDataLoading, setIsDataLoading] = useState(false);
+    const [players, setPlayers] = useState([]);
     const [selectedPlayer, setSelectedPlayer] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const deleteConfirmRef = useRef(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
-    const [addType, setAddType]           = useState("strength");
-    const [isSaving, setIsSaving]         = useState(false);
+    const [addType, setAddType] = useState("strength");
+    const [isSaving, setIsSaving] = useState(false);
     const addModalRef = useRef(null);
     const [playerDetails, setPlayerDetails] = useState(null);
 
@@ -588,6 +598,16 @@ export default function PlayerProfile() {
     }, [selectedPlayer]);
 
     useEffect(() => { fetchPlayers(); }, []);
+
+    useEffect(() => {
+        if (!selectedPlayerId || players.length === 0) return;
+
+        const chosenPlayer = players.find(p => p.id === selectedPlayerId);
+
+        if (chosenPlayer) {
+            setSelectedPlayer(chosenPlayer);
+        }
+    }, [selectedPlayerId, players]);
 
     return (
         <>

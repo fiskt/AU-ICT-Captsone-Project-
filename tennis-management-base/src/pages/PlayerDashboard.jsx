@@ -49,7 +49,7 @@ export default function PlayerDashboard() {
     const today = new Date();
 
     const startOfSelectedWeek = new Date(today);
-    startOfSelectedWeek.setDate(today.getDate() - today.getDay() + 1);
+    startOfSelectedWeek.setDate(today.getDate() - today.getDay());
     startOfSelectedWeek.setHours(0, 0, 0, 0);
 
     const endOfSelectedWeek = new Date(startOfSelectedWeek);
@@ -81,19 +81,9 @@ export default function PlayerDashboard() {
         const now = new Date();
         setNextSessionData(sessionData.find(s => new Date(s.end_datetime) >= now) || null);
 
-        const today = new Date();
-
-        const startOfWeek = new Date(today);
-        startOfWeek.setDate(today.getDate() - today.getDay() + 1);
-        startOfWeek.setHours(0, 0, 0, 0);
-
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        endOfWeek.setHours(23, 59, 59, 999);
-
         setWeeklySessions(sessionData.filter(s => {
             const d = new Date(s.start_datetime);
-            return d >= startOfWeek && d <= endOfWeek;
+            return d >= startOfSelectedWeek && d <= endOfSelectedWeek;
         }));
 
         // Fetch code: Coach Updates.
@@ -101,9 +91,8 @@ export default function PlayerDashboard() {
             .from("coach_updates")
             .select("*")
             .eq("player_id", userId)
-            .gte("created_at", startOfWeek.toISOString())
-            .lte("created_at", endOfWeek.toISOString())
-            .order("created_at", { ascending: false });
+            .order("created_at", { ascending: false })
+            .limit(5);
 
         if (updatesError) {
             console.log("Error fetching coach updates:", updatesError.message);
