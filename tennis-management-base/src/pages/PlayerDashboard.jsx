@@ -315,7 +315,7 @@ export default function PlayerDashboard() {
                                                 <p>Notes: {nextSessionData.notes || "No notes"}</p>
                                             </div>
                                         </div>
-                                    ) : (<p>No upcoming session.</p>)
+                                    ) : (<p className="dashboardLabel">No upcoming session.</p>)
                                     }
                                 </div>
                                 
@@ -351,7 +351,7 @@ export default function PlayerDashboard() {
                                                     </div>
                                                 );
                                             })
-                                        ) : (<p>No sessions this week.</p>
+                                        ) : (<p className="dashboardLabel">No sessions this week.</p>
                                         )}
                                     </div>
                                 </div>
@@ -364,7 +364,7 @@ export default function PlayerDashboard() {
                                             <p className="dashboardLabel">RATE OF PERCEIVED EXERTION (RPE)</p>
                                             <h3>Session Feedback</h3>
                                         </div>
-                                        {!pendingSession ? <p>No pending feedback.</p> : (
+                                        {!pendingSession ? <p className="dashboardLabel">No pending feedback.</p> : (
                                             <div className="sessionList">
                                                 <div className="drill-form-group">
                                                     <p className="drill-modal-title" style={{ color: "var(--accent-color)" }} >{pendingSession.name} - {new Date(pendingSession.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</p>
@@ -404,7 +404,7 @@ export default function PlayerDashboard() {
                                         {strengths.length > 0 ? (
                                             strengths.map((item, i) => <span className="positiveTag" key={i}>{item}</span>)
                                         ) : (
-                                            <p>No strengths added.</p>
+                                            <p className="dashboardLabel">No strengths added.</p>
                                         )}
                                     </div>
                                 </div>
@@ -420,7 +420,7 @@ export default function PlayerDashboard() {
                                         {weaknesses.length > 0 ? (
                                             weaknesses.map((item, i) => <span className="warningTag" key={i}>{item}</span>)
                                         ) : (
-                                            <p>No focus area added.</p>
+                                            <p className="dashboardLabel">No focus area added.</p>
                                         )}
                                     </div>
                                 </div>
@@ -443,7 +443,7 @@ export default function PlayerDashboard() {
                                                 </div>
                                             ))
                                         ) : (
-                                            <p>No coach updates this week.</p>
+                                            <p className="dashboardLabel">No coach updates this week.</p>
                                         )}
                                     </div>
                                 </div>

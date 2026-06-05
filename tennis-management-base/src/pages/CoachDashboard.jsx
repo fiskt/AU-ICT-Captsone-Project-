@@ -463,7 +463,7 @@ export default function Dashboard() {
                                             navigate("/PlayerProfile", {state: {playerId: selectedAthlete.id,openSection: "injuries",},
                                             });
                                         }}>
-                                            
+
                                         {activeInjuryCount > 0
                                             ? `${activeInjuryCount} Active ${activeInjuryCount === 1 ? "Injury" : "Injuries"}`
                                             : "No Injuries"}
@@ -574,7 +574,7 @@ export default function Dashboard() {
                                                 <p className="sessionNotes">Notes: {selectedWeekNextSession.notes || "No notes"}</p>
                                             </div>
                                         </div>
-                                    ) : (<p>No upcoming session.</p>)
+                                    ) : (<p className="dashboardLabel">No upcoming session.</p>)
                                     }
                                 </div>
 
@@ -763,7 +763,7 @@ export default function Dashboard() {
                                                 );
                                             })
                                         ) : (
-                                            <p>No upcoming sessions.</p>
+                                            <p className="dashboardLabel">No upcoming session.</p>
                                         )}
                                     </div>
                                 </div>
