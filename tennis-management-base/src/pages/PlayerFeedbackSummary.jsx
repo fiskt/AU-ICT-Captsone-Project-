@@ -106,12 +106,30 @@ export default function FeedbackSummary() {
 
     useEffect(() => {
         fetchPlayers();
-        fetchPlayerFeedback("");
     }, []);
 
+    // READ PASSED PLAYER NAME FROM NAVIGATE
+    const selectedPlayerFromDashboard = location.state?.player || "All Athletes";
+
     useEffect(() => {
-        fetchPlayerFeedback(selectedPlayerId);
-    }, [selectedPlayerId]);
+        if (!players.length) return;
+
+        if (
+            selectedPlayerFromDashboard &&
+            selectedPlayerFromDashboard !== "All Athletes"
+        ) {
+            const matchedPlayer = players.find(
+                p => `${p.first_name} ${p.last_name}` === selectedPlayerFromDashboard
+            );
+
+            if (matchedPlayer) {
+                setSelectedPlayerId(matchedPlayer.id);
+            }
+        }
+    }, [players, selectedPlayerFromDashboard]);
+
+    useEffect(() => {
+        fetchPlayerFeedback(selectedPlayerId);}, [selectedPlayerId]);
 
     return (
         <div id="drill-modal-overlay">
@@ -175,8 +193,8 @@ export default function FeedbackSummary() {
                                         <span>{item.signin_details?.first_name} {item.signin_details?.last_name}</span>
                                         <span className={`feedback-status ${item.intensity_zone}`}>{item.intensity}/10</span>
                                         <p>{item.sessions?.start_datetime ? new Date(item.sessions.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" }) : "No date"}</p>
-                                        <p>Planned Duration: {item.duration_minutes} mins</p>
-                                        <p>Actual Duration: {durationToMinutes(item.sessions?.duration)} mins</p>
+                                        <p>Planned Duration: {durationToMinutes(item.sessions?.duration)}  mins</p>
+                                        <p>Actual Duration: {item.duration_minutes} mins</p>
                                         <p>RPE Load: {item.rpe_load}</p>
 
                                         <p className="feedback-note">{item.feedback_notes || "No notes submitted"}</p>
@@ -185,7 +203,7 @@ export default function FeedbackSummary() {
                                 </div>
                             ))
                         ) : (
-                            <p className="feedbackLabel" style={{ gridColumn: "1 / -1", justifySelf: "center"}}>No feedback found.</p>
+                            <p className="feedbackLabel" style={{ gridColumn: "1 / -1", justifySelf: "center" }}>No feedback found.</p>
                         )}
                     </div>
                 </div>

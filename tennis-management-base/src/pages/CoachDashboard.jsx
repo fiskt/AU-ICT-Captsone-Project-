@@ -460,7 +460,8 @@ export default function Dashboard() {
                                             const selectedAthlete = Athletes.find(
                                                 athlete => `${athlete.first_name} ${athlete.last_name}` === selectedPlayer);
                                             if (!selectedAthlete) return;
-                                            navigate("/PlayerProfile", {state: {playerId: selectedAthlete.id,openSection: "injuries",},
+                                            navigate("/PlayerProfile", {
+                                                state: { playerId: selectedAthlete.id, openSection: "injuries", },
                                             });
                                         }}>
 
@@ -537,7 +538,16 @@ export default function Dashboard() {
                                 </span>
                             </div>
 
-                            <div className="drill-stat-card">
+                            <div className="drill-stat-card"
+                                onClick={() =>
+                                    navigate("/PlayerFeedbackSummary", {
+                                        state: {
+                                            zone: "",
+                                            player: selectedPlayer
+                                        }
+                                    })
+                                }
+                                style={{ cursor: "pointer" }}>
                                 <p className="drill-stat-label">WEEKLY ACTUAL LOAD</p>
                                 <h2 className="drill-stat-value">{totalRPE}</h2>
                                 <span className="drill-stat-sub"> {selectedPlayer === "All Athletes" ? "Selected week" : selectedPlayer}</span>
