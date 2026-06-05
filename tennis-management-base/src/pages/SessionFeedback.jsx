@@ -53,7 +53,7 @@ export default function SessionFeedback() {
             .from("sessions")
             .select(`
                 *,
-                session_people(user_id)
+                session_people!inner(user_id)
             `);
 
         if (isCoachPreview && selectedSessionId) {
@@ -62,7 +62,7 @@ export default function SessionFeedback() {
             query = query.eq("session_people.user_id", user.id);
         }
 
-        const { data, error } = await query;
+        const { data, error } = await query.order("start_datetime", { ascending: true });
 
         if (error) {
             console.log("Error fetching sessions:", error.message);
@@ -153,6 +153,9 @@ export default function SessionFeedback() {
     const unratedSessions = sessions.filter(session =>
         new Date(session.end_datetime) < now &&
         !feedback.some(f => f.session_id === session.id)
+    )
+        .sort((a, b) =>
+            new Date(a.end_datetime) - new Date(b.end_datetime)
     );
 
     // UPCOMING SESSIONS FILTER
