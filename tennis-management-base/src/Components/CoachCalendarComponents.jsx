@@ -48,7 +48,7 @@ function TICKBOX_SELECTOR({ people = [], selectedPeople = [], onToggle }) {
     return (
         <div>
             {people.map((person) => (
-                <div class="people-selector-tickbox" key={person.id}>
+                <div className="people-selector-tickbox" key={person.id}>
                         <input
                             className="people-tickbox"
                             type="checkbox"
@@ -73,8 +73,8 @@ export function PEOPLE_SELECTOR({ role, people = [], selectedPeople = [], setSel
     };
 
     return (
-        <div class="people-selector">
-            <span class="people-selector-title">{role}</span>
+        <div className="people-selector">
+            <span className="people-selector-title">{role}</span>
             <TICKBOX_SELECTOR 
                 people={people}
                 selectedPeople={selectedPeople}
@@ -138,10 +138,10 @@ export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlay
     }, [sessionSettings, sessionHasName, sessionHasPeople, sessionIsValid]);
 
     return (
-        <div class="input-container" id="draggable-session-container">
-            <span class={`input-container-label ${sessionIsValid ? '' : 'draggable-session-warning'}`}>{sessionWarningText}</span>
-            <div class="input-box-wrapper" id="draggable-session">
-                <div ref={sessionRef} class={`draggable-icon ${sessionIsValid ? 'session-icon' : 'invalid-session-icon'}`}>
+        <div className="input-container" id="draggable-session-container">
+            <span className={`input-container-label draggable-session-label ${sessionIsValid ? '' : 'draggable-session-warning'}`}>{sessionWarningText}</span>
+            <div className="input-box-wrapper" id="draggable-session">
+                <div ref={sessionRef} className={`draggable-icon ${sessionIsValid ? 'session-icon' : 'invalid-session-icon'}`}>
                     <span>NAME: {`${sessionHasName ? sessionSettings.sessionName : "_"}`}</span>
                     <span>RPE: {`${sessionHasRPE ? sessionSettings.sessionRPE : "_"}`}</span>
                 </div>
@@ -410,7 +410,7 @@ export const CALENDAR = forwardRef(({
     return (
         <div id="calendar-container">
             <div id="calendar-date-container" >
-                <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()}>
+                <h1 id="calendar-date" className="calendar-title-fade" key={activeStart?.toISODate()}>
                     {calendarTitle} 
                 </h1>
                 <div id="calendar-date-btn-group">
@@ -427,7 +427,7 @@ export const CALENDAR = forwardRef(({
                     </button>
                     {isMobile && currentCalendarView === 'timeGridDay' && (
                         <button
-                            class="drill-btn drill-btn-primary"
+                            className="drill-btn drill-btn-primary"
                             onClick={() => setShowMobileSessionCreator(true)}
                         >
                             <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -541,3 +541,62 @@ export const CALENDAR = forwardRef(({
         </div>
     );
 });
+
+export function MOBILE_DURATION_INPUT({ 
+    tempSession, 
+    setTempSession, 
+    mobileDurationHours, 
+    mobileDurationMinutes, 
+    getMaxDurationFromStart 
+}) {
+    const startParts = (tempSession?.startTime || "06:00:00").split(':');
+    const durParts = (tempSession?.duration || "01:00:00").split(':');
+    const [startHour, startMin] = startParts;
+    const [durHour, durMin] = durParts;
+
+    const maxMin = getMaxDurationFromStart(startHour, startMin);
+    const maxHours = Math.floor(maxMin / 60);
+    const maxMinAtHour = maxMin - (parseInt(durHour) * 60);
+
+    const validHours = mobileDurationHours.filter(h => parseInt(h.val) <= maxHours);
+    const validMins = mobileDurationMinutes.filter(m => parseInt(m.val) <= maxMinAtHour);
+
+    return (
+        <>
+            <div className="mobile-session-creator-times-container">
+                <p>Hours</p>
+                <select
+                    className='mobile-time-dropdown'
+                    value={durHour}
+                    onChange={(e) => {
+                        setTempSession({
+                            ...tempSession,
+                            duration: `${e.target.value}:${durMin}:00`
+                        });
+                    }}
+                >
+                    {validHours.map(h => (
+                        <option key={h.val} value={h.val}>{h.name}</option>
+                    ))}
+                </select>
+            </div>
+            <div className="mobile-session-creator-times-container">
+                <p>Minutes</p>
+                <select
+                    className='mobile-time-dropdown'
+                    value={durMin}
+                    onChange={(e) => {
+                        setTempSession({
+                            ...tempSession,
+                            duration: `${durHour}:${e.target.value}:00`
+                        });
+                    }}
+                >
+                    {validMins.map(m => (
+                        <option key={m.val} value={m.val}>{m.name}</option>
+                    ))}
+                </select>
+            </div>
+        </>
+    );
+}

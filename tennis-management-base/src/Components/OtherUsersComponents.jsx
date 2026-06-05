@@ -45,13 +45,13 @@ function TypeBadge({ type }) {
 
 export function USERS_LIST({ coaches = [], players = [], selectedUser, setSelectedUser }) {
     return (
-        <div class="input-container" id="users-list-container">
-            <div class="input-box-wrapper" id="users-list">
+        <div className="input-container" id="users-list-container">
+            <div className="input-box-wrapper" id="users-list">
                 {(coaches.length > 0) &&
                     <div>
                         <div className="users-role-title">Coaches</div>
                         {
-                            <ul class="user-list">
+                            <ul className="user-list">
                                 {coaches.map((coach) => {
                                     const isActive = selectedUser === coach;
 
@@ -76,7 +76,7 @@ export function USERS_LIST({ coaches = [], players = [], selectedUser, setSelect
                     <div>
                         <div className="users-role-title">Players</div>
                         {
-                            <ul class="user-list">
+                            <ul className="user-list">
                                 {players.map((player) => {
                                     const isActive = selectedUser === player;
 
@@ -180,7 +180,7 @@ export const OTHER_CALENDARS = forwardRef(({
     return (
         <div id="calendar-container">
             <div id="calendar-date-container">
-                <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()}>
+                <h1 id="calendar-date" className="calendar-title-fade" key={activeStart?.toISODate()}>
                     {calendarTitle} 
                 </h1>
                 {!isMobile && (<span>{currentViewText}</span>)}
@@ -190,6 +190,7 @@ export const OTHER_CALENDARS = forwardRef(({
                     plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
                     ref={ref}
                     events={events}
+                    slotDuration="00:10:00"
                     allDaySlot={false}
                     eventOverlap={false}
                     selectOverlap={false}

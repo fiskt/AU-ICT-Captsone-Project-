@@ -1,5 +1,5 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS, DELETE_CONFIRM, SEND_CONFIRM } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, DRAGGABLE_SESSION, PEOPLE_SELECTOR, SIMPLE_DRILL_CARD, SESSION_CREATOR_DRILLS, DELETE_CONFIRM, SEND_CONFIRM, MOBILE_DURATION_INPUT } from '../Components/CoachCalendarComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
 import { useCurrentUser } from '../hooks/useCurrentUser.jsx';
@@ -292,73 +292,124 @@ export default function CoachCalendar() {
     /* MOBILE SESSION CREATOR/EDITOR ------------------------------------------------------------------------ */ 
     const [showMobileSessionCreator, setShowMobileSessionCreator] = useState(false);
 
-    const mobileSessionCreatorTimes = [
-        { name: "05:00", val: "05:00:00" },
-        { name: "05:30", val: "05:30:00" },
-        { name: "06:00", val: "06:00:00" },
-        { name: "06:30", val: "06:30:00" },
-        { name: "07:00", val: "07:00:00" },
-        { name: "07:30", val: "07:30:00" },
-        { name: "08:00", val: "08:00:00" },
-        { name: "08:30", val: "08:30:00" },
-        { name: "09:00", val: "09:00:00" },
-        { name: "09:30", val: "09:30:00" },
-        { name: "10:00", val: "10:00:00" },
-        { name: "10:30", val: "10:30:00" },
-        { name: "11:00", val: "11:00:00" },
-        { name: "11:30", val: "11:30:00" },
-        { name: "12:00", val: "12:00:00" },
-        { name: "12:30", val: "12:30:00" },
-        { name: "13:00", val: "13:00:00" },
-        { name: "13:30", val: "13:30:00" },
-        { name: "14:00", val: "14:00:00" },
-        { name: "14:30", val: "14:30:00" },
-        { name: "15:00", val: "15:00:00" },
-        { name: "15:30", val: "15:30:00" },
-        { name: "16:00", val: "16:00:00" },
-        { name: "16:30", val: "16:30:00" },
-        { name: "17:00", val: "17:00:00" },
-        { name: "17:30", val: "17:30:00" },
-        { name: "18:00", val: "18:00:00" },
-        { name: "18:30", val: "18:30:00" },
-        { name: "19:00", val: "19:00:00" },
-        { name: "19:30", val: "19:30:00" },
-        { name: "20:00", val: "20:00:00" },
-        { name: "20:30", val: "20:30:00" },
-        { name: "21:00", val: "21:00:00" },
+    const mobileHours = [
+        { name: "05", val: "05" },
+        { name: "06", val: "06" },
+        { name: "07", val: "07" },
+        { name: "08", val: "08" },
+        { name: "09", val: "09" },
+        { name: "10", val: "10" },
+        { name: "11", val: "11" },
+        { name: "12", val: "12" },
+        { name: "13", val: "13" },
+        { name: "14", val: "14" },
+        { name: "15", val: "15" },
+        { name: "16", val: "16" },
+        { name: "17", val: "17" },
+        { name: "18", val: "18" },
+        { name: "19", val: "19" },
+        { name: "20", val: "20" },
+        { name: "21", val: "21" },
     ];
 
-    const [mobileSessionStart, setMobileSessionStart] = useState("05:00:00");
-    const [mobileSessionEnd, setMobileSessionEnd] = useState("06:00:00");
+    const mobileMinutes = [
+        { name: "00", val: "00" },
+        { name: "10", val: "10" },
+        { name: "20", val: "20" },
+        { name: "30", val: "30" },
+        { name: "40", val: "40" },
+        { name: "50", val: "50" },
+    ];
 
-    const mobileSessionStartIndex = 
-        mobileSessionCreatorTimes
-        .findIndex(time => time.val === mobileSessionStart);
+    const mobileDurationHours = [
+        { name: "0h", val: "00" },
+        { name: "1h", val: "01" },
+        { name: "2h", val: "02" },
+        { name: "3h", val: "03" },
+        { name: "4h", val: "04" },
+        { name: "5h", val: "05" },
+        { name: "6h", val: "06" },
+        { name: "7h", val: "07" },
+        { name: "8h", val: "08" },
+        { name: "9h", val: "09" },
+        { name: "10h", val: "10" },
+        { name: "11h", val: "11" },
+        { name: "12h", val: "12" },
+        { name: "13h", val: "13" },
+        { name: "14h", val: "14" },
+        { name: "15h", val: "15" },
+        { name: "16h", val: "16" },
+    ];
 
-    const validEndTimes = 
-        mobileSessionCreatorTimes
-        .slice(mobileSessionStartIndex + 1);
+    const mobileDurationMinutes = [
+        { name: "00m", val: "00" },
+        { name: "10m", val: "10" },
+        { name: "20m", val: "20" },
+        { name: "30m", val: "30" },
+        { name: "40m", val: "40" },
+        { name: "50m", val: "50" },
+    ];
+
+    const CALENDAR_END_HOUR = 22;
+
+    function getMaxDurationFromStart(startHour, startMin) {
+        const startTotalMin = parseInt(startHour) * 60 + parseInt(startMin);
+        const endTotalMin = CALENDAR_END_HOUR * 60;
+        const remainingMin = endTotalMin - startTotalMin;
+        return remainingMin;  // max duration in minutes
+    }
+
+    const [mobileStartHour, setMobileStartHour] = useState("06");
+    const [mobileStartMin, setMobileStartMin] = useState("00");
+
+    const [mobileDurationHour, setMobileDurationHour] = useState("01");
+    const [mobileDurationMin, setMobileDurationMin] = useState("00");
+
+    const maxDurationMin = getMaxDurationFromStart(mobileStartHour, mobileStartMin);
+    const maxHours = Math.floor(maxDurationMin / 60);
+    const maxMinAtCurrentHour = maxDurationMin - (parseInt(mobileDurationHour) * 60);
+
+    const validDurationHours = mobileDurationHours.filter(h => parseInt(h.val) <= maxHours);
+    const validDurationMinutes = mobileDurationMinutes.filter(m => parseInt(m.val) <= maxMinAtCurrentHour);
 
     useEffect(() => {
-        // update the end time to make sure its always after the start time
-        if (
-            validEndTimes.length > 0 && 
-            !validEndTimes.find(t => t.val === mobileSessionEnd)
-        ) {
-            setMobileSessionEnd(validEndTimes[0].val);
-            updateSessionField('sessionEnd', validEndTimes[0].val);
+        const maxMin = getMaxDurationFromStart(mobileStartHour, mobileStartMin);
+        const currentDurationMin = parseInt(mobileDurationHour) * 60 + parseInt(mobileDurationMin);
+        
+        if (currentDurationMin > maxMin) {
+            // Snap to max valid duration
+            const newHour = Math.floor(maxMin / 60).toString().padStart(2, '0');
+            const newMin = (maxMin % 60).toString().padStart(2, '0');
+            setMobileDurationHour(newHour);
+            setMobileDurationMin(newMin);
+        } else {
+            // Within the hour boundary, just check the minutes
+            const maxMinAtHour = maxMin - (parseInt(mobileDurationHour) * 60);
+            if (parseInt(mobileDurationMin) > maxMinAtHour) {
+                setMobileDurationMin(maxMinAtHour.toString().padStart(2, '0'));
+            }
         }
-    }, [mobileSessionStart]);
+    }, [mobileStartHour, mobileStartMin, mobileDurationHour]);
 
-    async function mobilePushSession({ currentDay, sessionSettings, startTimeStr, endTimeStr }) {
-        if (!sessionSettings) return;   
+
+    async function mobilePushSession({ currentDay, sessionSettings, startHour, startMin, durationStr }) {
+        if (
+            !sessionSettings ||
+            sessionSettings.name.length === 0 || 
+            sessionSettings.rpe <= 0 || 
+            sessionSettings.selectedCoaches.length === 0 ||
+            sessionSettings.selectedPlayers.length === 0
+        ) return;
 
         // combine the currently displayed day and the selected times 
-        const start = DateTime.fromISO(`${currentDay.toISODate()}T${startTimeStr}`);
-        const end = DateTime.fromISO(`${currentDay.toISODate()}T${endTimeStr}`);
-
-        // calculate the duration with the diff between start and end times
-        const durationStr = end.diff(start).toFormat('hh:mm:ss');
+        const start = DateTime.fromISO(`${currentDay.toISODate()}T${startHour}:${startMin}:00`);
+        const durationParts = durationStr.split(':');
+        const durationObj = Duration.fromObject({
+            hours: parseInt(durationParts[0]),
+            minutes: parseInt(durationParts[1]),
+            seconds: parseInt(durationParts[2])
+        });
+        const end = start.plus(durationObj);
 
         const { data, error } = await supabase
             .from('sessions')
@@ -419,7 +470,6 @@ export default function CoachCalendar() {
             console.log(error);
         }
     }
-
 
 
     /* DRILLS ------------------------------------------------------------------------ */ 
@@ -631,26 +681,28 @@ export default function CoachCalendar() {
                 setEditedSessionPlayers(sessionPlayers);
                 setEditedSessionDrills(sessionDrills);
 
+                const startDT = DateTime.fromJSDate(selectedSession.start);
+                const endDT = DateTime.fromJSDate(selectedSession.end);
+                const sessionDuration = endDT.diff(startDT).toFormat('hh:mm:ss');
+
+
                 setTempSession({
                     id: selectedSession.id,
                     name: selectedSession.title,
                     notes: selectedSession.extendedProps.notes,
-                    startTime: DateTime.fromJSDate(selectedSession.start).toFormat('HH:mm:ss'),
-                    endTime: DateTime.fromJSDate(selectedSession.end).toFormat('HH:mm:ss'),  
+                    startTime: startDT.toFormat('HH:mm:ss'),
+                    endTime: endDT.toFormat('HH:mm:ss'),
+                    duration: sessionDuration,
                     selectedCoaches: sessionCoaches, 
                     selectedPlayers: sessionPlayers,
                     selectedDrills: sessionDrills,
                     rpe: selectedSession.extendedProps.rpe
                 });
-                setMobileSessionStart(DateTime.fromJSDate(selectedSession.start).toFormat('HH:mm:ss'));
-                setMobileSessionEnd(DateTime.fromJSDate(selectedSession.end).toFormat('HH:mm:ss'));
             } else {
                 setTempSession(null);
                 setEditedSessionCoaches([]);
                 setEditedSessionPlayers([]);
                 setEditedSessionDrills([]);
-                setMobileSessionStart("05:00:00");
-                setMobileSessionEnd("06:00:00");
             }
             setIsDataLoading(false);
         };
@@ -682,10 +734,18 @@ export default function CoachCalendar() {
         const newStart = tempSession.startTime
             ? DateTime.fromISO(`${sessionDate}T${tempSession.startTime}`)
             : DateTime.fromJSDate(selectedSession.start);
-        const newEnd = tempSession.endTime
-            ? DateTime.fromISO(`${sessionDate}T${tempSession.endTime}`)
-            : DateTime.fromJSDate(selectedSession.end);
-        const newDuration = newEnd.diff(newStart).toFormat('hh:mm:ss');
+        
+        let newEnd;
+        let newDuration;
+        if (tempSession.duration) {
+            const [h, m, s] = tempSession.duration.split(':').map(Number);
+            const durationObj = Duration.fromObject({ hours: h, minutes: m, seconds: s });
+            newEnd = newStart.plus(durationObj);
+            newDuration = tempSession.duration;
+        } else {
+            newEnd = DateTime.fromJSDate(selectedSession.end);
+            newDuration = newEnd.diff(newStart).toFormat('hh:mm:ss');
+        }
         
         const { error } = await supabase
             .from('sessions')
@@ -798,6 +858,23 @@ export default function CoachCalendar() {
         if (currentUserID) fetchCalendarData();
     }, [currentUserID]);
 
+
+    /* OTHERS -------------------------------------------------------------------------- */
+    useEffect(() => {
+        if (!tempSession?.startTime || !tempSession?.duration) return;
+        
+        const [startHour, startMin] = tempSession.startTime.split(':');
+        const [durHour, durMin] = tempSession.duration.split(':');
+        const maxMin = getMaxDurationFromStart(startHour, startMin);
+        const currentDurMin = parseInt(durHour) * 60 + parseInt(durMin);
+        
+        if (currentDurMin > maxMin) {
+            const newH = Math.floor(maxMin / 60).toString().padStart(2, '0');
+            const newM = (maxMin % 60).toString().padStart(2, '0');
+            setTempSession(prev => ({ ...prev, duration: `${newH}:${newM}:00` }));
+        }
+    }, [tempSession?.startTime]);
+
     return (
         <>
             {/* Loading overlay */}
@@ -826,7 +903,7 @@ export default function CoachCalendar() {
             )}
 
             {/* Calendar */}
-            <div class="content-box" id="calendar-box">
+            <div className="content-box" id="calendar-box">
                 <CALENDAR 
                     events={calendarEvents}
                     activeStart={weekStart} activeEnd={weekEnd}
@@ -849,7 +926,7 @@ export default function CoachCalendar() {
             </div>
             
             {/* Show/hide session creator*/}
-            {!showSessionCreator && (
+            {!showSessionCreator && !isMobile && (
                 <button
                     id="show-session-creator"
                     onClick={() => setShowSessionCreator(true)}
@@ -861,10 +938,10 @@ export default function CoachCalendar() {
             )}
 
             {/* Session creator */}
-            {showSessionCreator && (
+            {showSessionCreator && !isMobile && (
                 <div id="session-creator">
                     <div id="session-creator-top">
-                        <h2 class="content-header">Session Creator</h2>
+                        <h2 className="content-header">Session Creator</h2>
                         <button
                             className='drill-btn drill-btn-primary'
                             onClick={() => setShowSessionCreator(false)}
@@ -918,8 +995,8 @@ export default function CoachCalendar() {
                     </div>
 
                     <div id="session-creator-middle-left-bottom">
-                        <div class="input-container" id="session-creator-people-container">
-                            <span class="input-container-label">PEOPLE *</span>
+                        <div className="input-container" id="session-creator-people-container">
+                            <span className="input-container-label">PEOPLE *</span>
                             <div id="session-creator-people">
                                 <PEOPLE_SELECTOR role="Coaches" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
                                 <PEOPLE_SELECTOR role="Players" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
@@ -928,15 +1005,15 @@ export default function CoachCalendar() {
                     </div>
 
                     <div id="session-creator-middle-right-bottom">
-                        <div class="input-container" id="session-creator-drills-container">
-                            <span class="input-container-label">DRILLS</span>
+                        <div className="input-container" id="session-creator-drills-container">
+                            <span className="input-container-label">DRILLS</span>
                             <div id="session-creator-drills">
                                 <SESSION_CREATOR_DRILLS
                                     selectedDrills={selectedDrills}
                                     removeDrillFromSession={removeDrillFromSession}
                                 />
                                 <button 
-                                    class='drill-btn'
+                                    className='drill-btn'
                                     onClick={() => setShowAddDrill(true)}
                                 >
                                     <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -969,7 +1046,7 @@ export default function CoachCalendar() {
                     }}
                 >
                     <div id="mobile-session-creator" ref={mobileSessionCreatorRef}>
-                        <h2 class="content-header">Session Creator</h2>
+                        <h2 className="content-header">Session Creator</h2>
                         <TYPING_INPUT 
                             label="NAME *" 
                             num_rows="1" 
@@ -1010,71 +1087,83 @@ export default function CoachCalendar() {
                                 isNumber={false}
                         />  
 
-                        <div class="input-container">
-                            <span class="input-container-label">TIMES *</span>
+                        <div className="input-container">
+                            <span className="input-container-label">START TIME *</span>
                             <div id="mobile-session-creator-times">
-                                <div class="mobile-session-creator-times-container">
-                                    <p>Start</p>
+                                <div className="mobile-session-creator-times-container">
+                                    <p>Hour</p>
                                     <select
-                                        value={sessionSettings.sessionStart}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setMobileSessionStart(val);
-                                            updateSessionField('sessionStart', val);
-                                        }}
+                                        className='mobile-time-dropdown'
+                                        value={mobileStartHour}
+                                        onChange={(e) => setMobileStartHour(e.target.value)}
                                     >
-                                        {mobileSessionCreatorTimes.map(time => (
-                                            <option
-                                                key={time.name}
-                                                value={time.val}
-                                            >
-                                                {time.name}
-                                            </option>
+                                        {mobileHours.map(h => (
+                                            <option key={h.val} value={h.val}>{h.name}</option>
                                         ))}
                                     </select>
                                 </div>
-
-                                <div class="mobile-session-creator-times-container">
-                                    <p>End</p>
+                                <div className="mobile-session-creator-times-container">
+                                    <p>Minute</p>
                                     <select
-                                        value={sessionSettings.sessionEnd}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            setMobileSessionEnd(val);
-                                            updateSessionField('sessionEnd', val);
-                                        }}
+                                        className='mobile-time-dropdown'
+                                        value={mobileStartMin}
+                                        onChange={(e) => setMobileStartMin(e.target.value)}
                                     >
-                                        {validEndTimes.map(time => (
-                                            <option
-                                                key={time.name}
-                                                value={time.val}
-                                            >
-                                                {time.name}
-                                            </option>
-                                            
+                                        {mobileMinutes.map(m => (
+                                            <option key={m.val} value={m.val}>{m.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="input-container">
+                            <span className="input-container-label">DURATION *</span>
+                            <div id="mobile-session-creator-times">
+                                <div className="mobile-session-creator-times-container">
+                                    <p>Hours</p>
+                                    <select
+                                        className='mobile-time-dropdown'
+                                        value={mobileDurationHour}
+                                        onChange={(e) => setMobileDurationHour(e.target.value)}
+                                    >
+                                        {validDurationHours.map(h => (
+                                            <option key={h.val} value={h.val}>{h.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="mobile-session-creator-times-container">
+                                    <p>Minutes</p>
+                                    <select
+                                        className='mobile-time-dropdown'
+                                        value={mobileDurationMin}
+                                        onChange={(e) => setMobileDurationMin(e.target.value)}
+                                    >
+                                        {validDurationMinutes.map(m => (
+                                            <option key={m.val} value={m.val}>{m.name}</option>
                                         ))}
                                     </select>
                                 </div>
                             </div>
                         </div>
             
-                        <div class="input-container" >
-                            <span class="input-container-label">PEOPLE *</span>
+                        <div className="input-container" >
+                            <span className="input-container-label">PEOPLE *</span>
                             <div id="session-creator-people">
                                 <PEOPLE_SELECTOR role="Coaches" people={coaches} selectedPeople={selectedCoaches} setSelectedPeople={setSelectedCoaches} />
                                 <PEOPLE_SELECTOR role="Players" people={players} selectedPeople={selectedPlayers} setSelectedPeople={setSelectedPlayers} />
                             </div>
                         </div>
 
-                        <div class="input-container">
-                            <span class="input-container-label">DRILLS</span>
+                        <div className="input-container">
+                            <span className="input-container-label">DRILLS</span>
                             <div id="session-creator-drills">
                                 <SESSION_CREATOR_DRILLS
                                     selectedDrills={selectedDrills}
                                     removeDrillFromSession={removeDrillFromSession}
                                 />
                                 <button 
-                                    class='drill-btn'
+                                    className='drill-btn'
                                     onClick={() => setShowAddDrill(true)}
                                 >
                                     <svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1087,18 +1176,19 @@ export default function CoachCalendar() {
                         
                         <div id="mobile-session-creator-bottom">
                             <button 
-                                class="drill-btn drill-btn-ghost"
+                                className="drill-btn drill-btn-ghost"
                                 onClick={() => setShowMobileSessionCreator(false)}
                             >
                                 Cancel
                             </button>
                             <button 
-                                class="drill-btn drill-btn-primary"
+                                className="drill-btn drill-btn-primary"
                                 onClick={() => mobilePushSession({
                                     sessionSettings: sessionSettings,
                                     currentDay: weekStart,
-                                    startTimeStr: mobileSessionStart,
-                                    endTimeStr: mobileSessionEnd
+                                    startHour: mobileStartHour,
+                                    startMin: mobileStartMin,
+                                    durationStr: `${mobileDurationHour}:${mobileDurationMin}:00`
                                 })}   
                             >
                                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1121,15 +1211,15 @@ export default function CoachCalendar() {
                         }
                     }}
                 >
-                    <div class="content-box" id="session-drill-library" ref={drillLibraryRef}>
-                        <div class="content-box-top">
-                            <div class="content-box-top-left">
-                                <h2 class="content-header">Drill Library</h2>
+                    <div className="content-box" id="session-drill-library" ref={drillLibraryRef}>
+                        <div className="content-box-top">
+                            <div className="content-box-top-left">
+                                <h2 className="content-header">Drill Library</h2>
                             </div>
-                            <div class="content-box-top-middle"></div>
-                            <div class="content-box-top-right">
+                            <div className="content-box-top-middle"></div>
+                            <div className="content-box-top-right">
                                 <button
-                                    class="drill-icon-btn"
+                                    className="drill-icon-btn"
                                     onClick={() => setShowAddDrill(false)}
                                 >
                                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1138,10 +1228,10 @@ export default function CoachCalendar() {
                                 </button>
                             </div>
                         </div>
-                        <div class="content-box-middle">
+                        <div className="content-box-middle">
                             <div id="session-drill-library-filter">
                                 <input
-                                    class="typing-input-box"
+                                    className="typing-input-box"
                                     placeholder='Search drill...'
                                     type="text"
                                     value={drillSearchQuery}
@@ -1203,7 +1293,7 @@ export default function CoachCalendar() {
                             </div>
                             <div id="session-editor-top-right">
                                 <button 
-                                    class="drill-icon-btn"
+                                    className="drill-icon-btn"
                                     onClick={() => {
                                         setShowSessionEditor(false);
                                         setSelectedSession(null);
@@ -1259,8 +1349,8 @@ export default function CoachCalendar() {
                             </div>
 
                             <div id="session-editor-middle-middle">
-                                <div class="input-container" id="session-editor-people-container">
-                                    <span class="input-container-label">PEOPLE *</span>
+                                <div className="input-container" id="session-editor-people-container">
+                                    <span className="input-container-label">PEOPLE *</span>
                                     <div id="session-editor-people">
                                         <PEOPLE_SELECTOR 
                                             role="Coaches" people={coaches} 
@@ -1277,8 +1367,8 @@ export default function CoachCalendar() {
                             </div>
 
                             <div id="session-editor-middle-right">
-                                <div class="input-container" id="session-editor-drills-container">
-                                    <span class="input-container-label">DRILLS</span>
+                                <div className="input-container" id="session-editor-drills-container">
+                                    <span className="input-container-label">DRILLS</span>
                                     <div id="session-editor-drills">
                                         <SESSION_CREATOR_DRILLS
                                             selectedDrills={editedSessionDrills}
@@ -1299,7 +1389,7 @@ export default function CoachCalendar() {
                             
                             <div id="session-editor-bottom-left">
                                 <button 
-                                    class="drill-btn drill-btn-danger" 
+                                    className="drill-btn drill-btn-danger" 
                                     id="delete-session" 
                                     onClick={() => setShowDeleteConfirmation(true)}
                                 >
@@ -1312,7 +1402,7 @@ export default function CoachCalendar() {
                             <div id="session-editor-bottom-middle"></div>
                             <div id="session-editor-bottom-right">
                                 <button 
-                                    class="drill-btn drill-btn-primary"
+                                    className="drill-btn drill-btn-primary"
                                     onClick={saveSessionChanges}
                                 >
                                     <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1336,7 +1426,7 @@ export default function CoachCalendar() {
                     }}
                 >
                     <div id="mobile-session-editor" ref={mobileSessionEditorRef}>
-                        <h2 class="content-header">Session Editor</h2>
+                        <h2 className="content-header">Session Editor</h2>
                         <TYPING_INPUT 
                             label="NAME *" 
                             num_rows="1" 
@@ -1379,62 +1469,65 @@ export default function CoachCalendar() {
                             isNumber={false}
                         />
 
-                        <div class="input-container">
-                            <span class="input-container-label">TIMES *</span>
+                        <div className="input-container">
+                            <span className="input-container-label">START TIME *</span>
                             <div id="mobile-session-editor-times">
-                                <div class="mobile-session-creator-times-container">
-                                    <p>Start</p>
+                                <div className="mobile-session-creator-times-container">
+                                    <p>Hour</p>
                                     <select
-                                        value={
-                                            tempSession?.startTime || 
-                                            DateTime.fromJSDate(selectedSession.start).toFormat('HH:mm:ss')
-                                        }
+                                        className='mobile-time-dropdown'
+                                        value={tempSession?.startTime?.split(':')[0] || "06"}
                                         onChange={(e) => {
-                                            const val = e.target.value;
-                                            setTempSession({ ...tempSession, startTime: val });
-                                            setMobileSessionStart(val);
+                                            const newHour = e.target.value;
+                                            const currentMin = tempSession?.startTime?.split(':')[1] || "00";
+                                            setTempSession({ 
+                                                ...tempSession, 
+                                                startTime: `${newHour}:${currentMin}:00` 
+                                            });
                                         }}
                                     >
-                                        {mobileSessionCreatorTimes.map(time => (
-                                            <option
-                                                key={time.name}
-                                                value={time.val}
-                                            >
-                                                {time.name}
-                                            </option>
+                                        {mobileHours.map(h => (
+                                            <option key={h.val} value={h.val}>{h.name}</option>
                                         ))}
                                     </select>
                                 </div>
-
-                                <div class="mobile-session-creator-times-container">
-                                    <p>End</p>
+                                <div className="mobile-session-creator-times-container">
+                                    <p>Minute</p>
                                     <select
-                                        value={
-                                            tempSession?.endTime ||
-                                            DateTime.fromJSDate(selectedSession.end).toFormat('HH:mm:ss')
-                                        }
+                                        className='mobile-time-dropdown'
+                                        value={tempSession?.startTime?.split(':')[1] || "00"}
                                         onChange={(e) => {
-                                            const val = e.target.value;
-                                            setTempSession({ ...tempSession, endTime: val });
-                                            setMobileSessionEnd(val);
+                                            const newMin = e.target.value;
+                                            const currentHour = tempSession?.startTime?.split(':')[0] || "06";
+                                            setTempSession({ 
+                                                ...tempSession, 
+                                                startTime: `${currentHour}:${newMin}:00` 
+                                            });
                                         }}
                                     >
-                                        {validEndTimes.map(time => (
-                                            <option
-                                                key={time.name}
-                                                value={time.val}
-                                            >
-                                                {time.name}
-                                            </option>
-                                            
+                                        {mobileMinutes.map(m => (
+                                            <option key={m.val} value={m.val}>{m.name}</option>
                                         ))}
                                     </select>
                                 </div>
                             </div>
                         </div>
+
+                        <div className="input-container">
+                            <span className="input-container-label">DURATION *</span>
+                            <div id="mobile-session-editor-times">
+                                <MOBILE_DURATION_INPUT 
+                                    tempSession={tempSession} 
+                                    setTempSession={setTempSession}
+                                    mobileDurationHours={mobileDurationHours}
+                                    mobileDurationMinutes={mobileDurationMinutes}
+                                    getMaxDurationFromStart={getMaxDurationFromStart}
+                                />
+                            </div>
+                        </div>
             
-                        <div class="input-container" >
-                            <span class="input-container-label">PEOPLE *</span>
+                        <div className="input-container" >
+                            <span className="input-container-label">PEOPLE *</span>
                             <div id="session-editor-people">
                                 <PEOPLE_SELECTOR 
                                     role="Coaches" people={coaches} 
@@ -1449,8 +1542,8 @@ export default function CoachCalendar() {
                             </div>
                         </div>
 
-                        <div class="input-container">
-                            <span class="input-container-label">DRILLS</span>
+                        <div className="input-container">
+                            <span className="input-container-label">DRILLS</span>
                             <div id="session-editor-drills">
                                 <SESSION_CREATOR_DRILLS
                                     selectedDrills={editedSessionDrills}
@@ -1470,7 +1563,7 @@ export default function CoachCalendar() {
                         
                         <div id="mobile-editor-creator-bottom">
                             <button 
-                                class="drill-btn drill-btn-danger" 
+                                className="drill-btn drill-btn-danger" 
                                 id="delete-session" 
                                 onClick={() => setShowDeleteConfirmation(true)}
                             >
@@ -1480,7 +1573,7 @@ export default function CoachCalendar() {
                                 Delete
                             </button>
                             <button 
-                                class="drill-btn drill-btn-primary"
+                                className="drill-btn drill-btn-primary"
                                 onClick={saveSessionChanges}
                             >
                                 <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">

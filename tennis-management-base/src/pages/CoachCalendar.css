@@ -116,6 +116,10 @@
     color: var(--danger-body-color) !important;
 }
 
+.draggable-session-label {
+    font-size: 8px !important;
+}
+
 #session-editor-input-container {
     height: 100%;
     overflow-y: auto;
@@ -673,4 +677,8 @@ select::picker(select) {
     align-items: center;
     display: flex;
     gap: 5px;
+}
+
+.mobile-time-dropdown {
+    border-color: transparent !important;
 }

@@ -51,7 +51,7 @@ export const PLAYER_CALENDAR = forwardRef(({
     return (
         <div id="calendar-container">
             <div id="calendar-date-container" >
-                <h1 id="calendar-date" class="calendar-title-fade" key={activeStart?.toISODate()}>
+                <h1 id="calendar-date" className="calendar-title-fade" key={activeStart?.toISODate()}>
                     {calendarTitle} 
                 </h1>
             </div>
@@ -60,6 +60,7 @@ export const PLAYER_CALENDAR = forwardRef(({
                     plugins={[ dayGridPlugin, timeGridPlugin, interactionPlugin ]}
                     ref={ref}
                     events={events}
+                    slotDuration="00:10:00"
                     allDaySlot={false}
                     eventOverlap={false}
                     selectOverlap={false}

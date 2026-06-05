@@ -253,7 +253,7 @@ export default function CoachCalendar() {
             {/* Session details */}
                 { !showCollapsedUsers && selectedSession && showSessionDetails && !isMobile && (
                     <div 
-                        class="session-details-container" 
+                        className="session-details-container" 
                         onClick={(e) => {
                             if (sessionDetailsRef.current && !sessionDetailsRef.current.contains(e.target)) {
                                 setShowSessionDetails(false);
@@ -261,13 +261,13 @@ export default function CoachCalendar() {
                             }
                         }}
                     >
-                        <div class="session-details" ref={sessionDetailsRef}>
-                            <div class="session-details-top-left">
-                                <h2 class="session-details-header">Session Details</h2>
+                        <div className="session-details" ref={sessionDetailsRef}>
+                            <div className="session-details-top-left">
+                                <h2 className="session-details-header">Session Details</h2>
                             </div>
-                            <div class="session-details-top-right">
+                            <div className="session-details-top-right">
                                 <button 
-                                    class="drill-icon-btn"
+                                    className="drill-icon-btn"
                                     onClick={() => {
                                         setShowSessionDetails(false);
                                         setSelectedSession(null);
@@ -279,26 +279,26 @@ export default function CoachCalendar() {
                                 </button>
                             </div>
 
-                            <div class="session-details-middle-left">
-                                <div class="input-container">
-                                    <span class="input-container-label">NAME</span>
-                                    <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
+                            <div className="session-details-middle-left">
+                                <div className="input-container">
+                                    <span className="input-container-label">NAME</span>
+                                    <div className="input-box-wrapper session-details-name">{selectedSession.title}</div>
                                 </div>
-                                <div class="input-container">
-                                    <span class="input-container-label">RPE</span>
-                                    <div class="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
+                                <div className="input-container">
+                                    <span className="input-container-label">RPE</span>
+                                    <div className="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
                                 </div>
                                 {selectedSession.extendedProps.notes.length > 0 && (
-                                    <div class="input-container">
-                                        <span class="input-container-label">NOTES</span>
-                                        <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
+                                    <div className="input-container">
+                                        <span className="input-container-label">NOTES</span>
+                                        <div className="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes || "No notes for this session."}</div>
                                     </div>
                                 )}
                             </div>
-                            <div class="session-details-middle-middle">
-                                <div class="input-container session-details-people-container">
-                                    <span class="input-container-label">PEOPLE</span>
-                                    <div class="session-details-people">
+                            <div className="session-details-middle-middle">
+                                <div className="input-container session-details-people-container">
+                                    <span className="input-container-label">PEOPLE</span>
+                                    <div className="session-details-people">
                                         <div>Coaches</div>
                                         <ul>
                                             {selectedSessionPeople
@@ -321,10 +321,10 @@ export default function CoachCalendar() {
                                 </div>
                             </div>
 
-                            <div class="session-details-middle-right">
-                                <div class="input-container session-details-drills-container">
-                                    <span class="input-container-label">DRILLS</span>
-                                    <div class="session-details-drills">
+                            <div className="session-details-middle-right">
+                                <div className="input-container session-details-drills-container">
+                                    <span className="input-container-label">DRILLS</span>
+                                    <div className="session-details-drills">
                                         {selectedSessionDrills.length > 0 && (
                                             <SESSION_DETAILS_DRILLS
                                                 selectedDrills={selectedSessionDrills}
@@ -340,7 +340,7 @@ export default function CoachCalendar() {
                 )}
 
                 { isMobile && showSessionDetails && selectedSession && (
-                    <div class="mobile-session-details-container"
+                    <div className="mobile-session-details-container"
                         onClick={(e) => {
                             if (sessionDetailsRef.current && !sessionDetailsRef.current.contains(e.target)) {
                                 setShowSessionDetails(false);
@@ -348,27 +348,27 @@ export default function CoachCalendar() {
                             }
                         }}
                     >
-                        <div class="mobile-session-details" ref={sessionDetailsRef}>
-                            <div class="mobile-session-details-top">
-                                <h2 class="content-header">Session Details</h2>
+                        <div className="mobile-session-details" ref={sessionDetailsRef}>
+                            <div className="mobile-session-details-top">
+                                <h2 className="content-header">Session Details</h2>
                             </div>
 
-                            <div class="input-container">
-                                <span class="input-container-label">NAME</span>
-                                <div class="input-box-wrapper session-details-name">{selectedSession.title}</div>
+                            <div className="input-container">
+                                <span className="input-container-label">NAME</span>
+                                <div className="input-box-wrapper session-details-name">{selectedSession.title}</div>
                             </div>
-                            <div class="input-container">
-                                <span class="input-container-label">RPE</span>
-                                <div class="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
+                            <div className="input-container">
+                                <span className="input-container-label">RPE</span>
+                                <div className="input-box-wrapper session-details-rpe">{selectedSession.extendedProps.rpe}</div>
                             </div>
-                            <div class="input-container">
-                                <span class="input-container-label">NOTES</span>
-                                <div class="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes}</div>
+                            <div className="input-container">
+                                <span className="input-container-label">NOTES</span>
+                                <div className="input-box-wrapper session-details-notes">{selectedSession.extendedProps.notes || "No notes for this session."}</div>
                             </div>
 
-                            <div class="input-container mobile-session-details-people-container">
-                                <span class="input-container-label">PEOPLE</span>
-                                <div class="mobile-session-details-people">
+                            <div className="input-container mobile-session-details-people-container">
+                                <span className="input-container-label">PEOPLE</span>
+                                <div className="mobile-session-details-people">
                                     <div>Coaches</div>
                                     <ul>
                                         {selectedSessionPeople
@@ -390,9 +390,9 @@ export default function CoachCalendar() {
                                 </div>
                             </div>
 
-                            <div class="input-container session-details-drills-container">
-                                <span class="input-container-label">DRILLS</span>
-                                <div class="session-details-drills">
+                            <div className="input-container session-details-drills-container">
+                                <span className="input-container-label">DRILLS</span>
+                                <div className="session-details-drills">
                                     {selectedSessionDrills.length > 0 && (
                                         <SESSION_DETAILS_DRILLS
                                             selectedDrills={selectedSessionDrills}
@@ -409,9 +409,9 @@ export default function CoachCalendar() {
             <div id="other-users-main-panel">
                 {/* User selector */}
                 { !showCollapsedUsers && (
-                    <div class="content-box" id='user-selector'>
-                        <div class="user-selector-top">
-                            <h2 class="content-header">Users</h2>
+                    <div className="content-box" id='user-selector'>
+                        <div className="user-selector-top">
+                            <h2 className="content-header">Users</h2>
                             { isMobile && (
                                 <button
                                     className='drill-btn'
@@ -419,11 +419,11 @@ export default function CoachCalendar() {
                                 >Show Less</button>
                             )}
                         </div>
-                        <div class="content-box-top">
+                        <div className="content-box-top">
                             <div id="user-filter-container">
-                                <div class="content-box-middle">
+                                <div className="content-box-middle">
                                     <input
-                                        class="typing-input-box"
+                                        className="typing-input-box"
                                         placeholder='Search user'
                                         type="text"
                                         value={searchQuery}
@@ -431,7 +431,7 @@ export default function CoachCalendar() {
                                     >
                                     </input>
                                 </div>
-                                <div class="content-box-bottom" id="users-filter-btn">
+                                <div className="content-box-bottom" id="users-filter-btn">
                                         <button 
                                             onClick={() => setSearchFilter("coaches")}
                                             className={`user-filter-btn drill-btn drill-btn-secondary ${searchFilter === 'coaches' ? 'active' : ''}`}
@@ -450,7 +450,7 @@ export default function CoachCalendar() {
                                 </div>
                             </div>
                         </div>
-                        <div class="content-box-middle">
+                        <div className="content-box-middle">
                             <USERS_LIST 
                                 coaches={filteredCoaches} players={filteredPlayers} 
                                 selectedUser={selectedUser}
@@ -461,15 +461,15 @@ export default function CoachCalendar() {
                 )}
 
                 { showCollapsedUsers && isMobile && (
-                    <div class="content-box" id='collapsed-users'>
-                        <div class="user-selector-top">
-                            <h2 class="content-header">Users</h2>
+                    <div className="content-box" id='collapsed-users'>
+                        <div className="user-selector-top">
+                            <h2 className="content-header">Users</h2>
                                 <button
                                     className='drill-btn'
                                     onClick={() => setShowCollapsedUsers(false)}
                                 >Show More</button>
                         </div>
-                        <ul class="user-list">
+                        <ul className="user-list">
                             <li
                                 key={selectedUser?.id}
                                 className={`${selectedUser ? 'active' : ''}`}
@@ -487,7 +487,7 @@ export default function CoachCalendar() {
                 )}
 
                 {/* Calendar */}
-                <div class="content-box" id="calendar-box">
+                <div className="content-box" id="calendar-box">
                     <OTHER_CALENDARS 
                         events={calendarEvents}
                         activeStart={weekStart} activeEnd={weekEnd}
