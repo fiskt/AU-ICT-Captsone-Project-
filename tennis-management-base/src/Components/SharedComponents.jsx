@@ -39,6 +39,7 @@ function USER_CARD() {
     }, []);
 
     const handleLogout = async () => {
+        sessionStorage.removeItem('userRole');
         await supabase.auth.signOut();
         navigate('/Login');
     };
@@ -60,32 +61,6 @@ function USER_CARD() {
                     boxShadow: '0 -4px 16px rgba(0,0,0,0.5)',
                     zIndex: 200,
                 }}>
-                    {/* Account Settings */}
-                    <div
-                        onClick={() => { setOpen(false); navigate('/AccountSettings'); }}
-                        style={{
-                            padding: '10px 14px',
-                            color: '#FFFFFF90',
-                            fontSize: '13px',
-                            fontFamily: 'DM Sans Light, sans-serif',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            borderBottom: '1px solid #3a3835',
-                            transition: 'background 0.15s',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2a2825'}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                    >
-                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        Account Settings
-                    </div>
-
-                    {/* Log out */}
                     <div
                         onClick={handleLogout}
                         style={{
@@ -195,6 +170,16 @@ const Icons = {
     close: (
         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    ),
+    settings: (
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+    ),
+    injuries: (
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
         </svg>
     ),
 };
@@ -396,12 +381,13 @@ export function COACH_SIDEBAR() {
                         </div>
 
                         <div className="mobile-sidebar-nav">
-                            <SIDEBAR_BUTTON label="Dashboard"           path="/CoachDashboard" icon={Icons.dashboard} closeMobileSidebar={setMobileOpen}/>
-                            <SIDEBAR_BUTTON label="Calendar"            path="/CoachCalendar"  icon={Icons.calendar}  closeMobileSidebar={setMobileOpen}/>
-                            <SIDEBAR_BUTTON label="Players"             path="/PlayerProfile"  icon={Icons.players}   closeMobileSidebar={setMobileOpen}/>
-                            <SIDEBAR_BUTTON label="Drill Library"       path="/DrillLibrary"   icon={Icons.drills}    closeMobileSidebar={setMobileOpen}/>
-                            <SIDEBAR_BUTTON label="Performance Testing" path="/Testing"        icon={Icons.testing}   closeMobileSidebar={setMobileOpen}/>
-                            <SIDEBAR_BUTTON label="Other Users"         path="/OtherUsers"     icon={Icons.users}     closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Dashboard"           path="/CoachDashboard"  icon={Icons.dashboard} closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Calendar"            path="/CoachCalendar"   icon={Icons.calendar}  closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Players"             path="/PlayerProfile"   icon={Icons.players}   closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Drill Library"       path="/DrillLibrary"    icon={Icons.drills}    closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Performance Testing" path="/Testing"         icon={Icons.testing}   closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Other Users"         path="/OtherUsers"      icon={Icons.users}     closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Account Settings"    path="/AccountSettings" icon={Icons.settings}  closeMobileSidebar={setMobileOpen}/>
                             <PREVIEW_BTN />
                         </div>
 
@@ -431,12 +417,13 @@ export function COACH_SIDEBAR() {
                     </div>
 
                     <div id="sidebar-nav">
-                        <SIDEBAR_BUTTON label="Dashboard"           path="/CoachDashboard" icon={Icons.dashboard} />
-                        <SIDEBAR_BUTTON label="Calendar"            path="/CoachCalendar"  icon={Icons.calendar}  />
-                        <SIDEBAR_BUTTON label="Players"             path="/PlayerProfile"  icon={Icons.players}   />
-                        <SIDEBAR_BUTTON label="Drill Library"       path="/DrillLibrary"   icon={Icons.drills}    />
-                        <SIDEBAR_BUTTON label="Performance Testing" path="/Testing"        icon={Icons.testing}   />
-                        <SIDEBAR_BUTTON label="Other Users"         path="/OtherUsers"     icon={Icons.users}     />
+                        <SIDEBAR_BUTTON label="Dashboard"           path="/CoachDashboard"  icon={Icons.dashboard} />
+                        <SIDEBAR_BUTTON label="Calendar"            path="/CoachCalendar"   icon={Icons.calendar}  />
+                        <SIDEBAR_BUTTON label="Players"             path="/PlayerProfile"   icon={Icons.players}   />
+                        <SIDEBAR_BUTTON label="Drill Library"       path="/DrillLibrary"    icon={Icons.drills}    />
+                        <SIDEBAR_BUTTON label="Performance Testing" path="/Testing"         icon={Icons.testing}   />
+                        <SIDEBAR_BUTTON label="Other Users"         path="/OtherUsers"      icon={Icons.users}     />
+                        <SIDEBAR_BUTTON label="Account Settings"    path="/AccountSettings" icon={Icons.settings}  />
                         <PREVIEW_BTN />
                     </div>
 
@@ -500,9 +487,10 @@ export function PLAYER_SIDEBAR() {
                         </div>
 
                         <div className="mobile-sidebar-nav">
-                            <SIDEBAR_BUTTON label="Dashboard"       path="/PlayerDashboard" icon={Icons.dashboard} closeMobileSidebar={setMobileOpen}/>
-                            <SIDEBAR_BUTTON label="Session Feedback" path="/SessionFeedback" icon={Icons.testing}  closeMobileSidebar={setMobileOpen}/>
-                            <SIDEBAR_BUTTON label="Calendar"        path="/PlayerCalendar"  icon={Icons.calendar}  closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Dashboard"        path="/PlayerDashboard" icon={Icons.dashboard} closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Session Feedback" path="/SessionFeedback" icon={Icons.testing}   closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Calendar"         path="/PlayerCalendar"  icon={Icons.calendar}  closeMobileSidebar={setMobileOpen}/>
+                            <SIDEBAR_BUTTON label="Account Settings" path="/AccountSettings" icon={Icons.settings}  closeMobileSidebar={setMobileOpen}/>
                         </div>
 
                         <div className="mobile-sidebar-bottom">
@@ -531,9 +519,10 @@ export function PLAYER_SIDEBAR() {
                     </div>
 
                     <div id="sidebar-nav">
-                        <SIDEBAR_BUTTON label="Dashboard"       path="/PlayerDashboard" icon={Icons.dashboard} />
-                        <SIDEBAR_BUTTON label="Session Feedback" path="/SessionFeedback" icon={Icons.testing}  />
-                        <SIDEBAR_BUTTON label="Calendar"        path="/PlayerCalendar"  icon={Icons.calendar}  />
+                        <SIDEBAR_BUTTON label="Dashboard"        path="/PlayerDashboard" icon={Icons.dashboard} />
+                        <SIDEBAR_BUTTON label="Session Feedback" path="/SessionFeedback" icon={Icons.testing}   />
+                        <SIDEBAR_BUTTON label="Calendar"         path="/PlayerCalendar"  icon={Icons.calendar}  />
+                        <SIDEBAR_BUTTON label="Account Settings" path="/AccountSettings" icon={Icons.settings}  />
                     </div>
 
                     <div id="sidebar-bottom">

@@ -29,24 +29,42 @@ const SHARED_ROUTES = ['/AccountSettings'];
 
 function AppLayout() {
     const location = useLocation();
-    const [userRole, setUserRole] = useState(null);
+    const [userRole, setUserRole] = useState(() => sessionStorage.getItem('userRole'));
+    const [roleLoading, setRoleLoading] = useState(true);
 
     const isAuthPage    = AUTH_ROUTES.includes(location.pathname);
     const isPlayerRoute = PLAYER_ROUTES.includes(location.pathname);
     const isSharedRoute = SHARED_ROUTES.includes(location.pathname);
     const isCoachPreview = location.state?.isCoachPreview ?? false;
 
-    // Fetch role when on a shared route so we know which sidebar to show
+    // Use cached role for instant first render, but ALWAYS verify against the
+    // actual logged-in user so a stale cache (from a previous session) can't
+    // show the wrong sidebar.
     useEffect(() => {
-        if (!isSharedRoute) return;
         supabase.auth.getUser().then(({ data: { user } }) => {
-            setUserRole(user?.user_metadata?.role || null);
+            const role = user?.user_metadata?.role || null;
+            if (role) sessionStorage.setItem('userRole', role);
+            else sessionStorage.removeItem('userRole');
+            setUserRole(role);
+            setRoleLoading(false);
         });
     }, [location.pathname]);
 
-    const showPlayerSidebar = isPlayerRoute && !isCoachPreview
-        || (isSharedRoute && userRole === 'player');
-    const showCoachSidebar  = !isAuthPage && !showPlayerSidebar;
+    // On shared routes, wait until the role is confirmed before picking a sidebar
+    const waitingForSharedRole = isSharedRoute && roleLoading && !userRole;
+
+    const showPlayerSidebar =
+        !isAuthPage &&
+        !isCoachPreview &&
+        (
+            isPlayerRoute ||
+            (isSharedRoute && userRole === 'player')
+        );
+
+    const showCoachSidebar =
+        !waitingForSharedRole &&
+        !isAuthPage &&
+        !showPlayerSidebar;
 
     return (
         <div id="layout">
