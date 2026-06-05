@@ -494,7 +494,7 @@ export default function Dashboard() {
                             <div className="drill-stat-card">
                                 <span className="drill-stat-label">Week Total Sessions</span>
                                 <span className="drill-stat-value accent">{filteredUpcomingSessions.length}</span>
-                                <span className="drill-stat-sub">Sessions logged</span>
+                                <span className="drill-stat-sub">Sessions scheduled</span>
                             </div>
 
                             <div className="drill-stat-card">
@@ -512,7 +512,7 @@ export default function Dashboard() {
                             </div>
 
                             <div className="drill-stat-card">
-                                <p className="drill-stat-label">PLANNED RPE / WEEKLY TARGET</p>
+                                <p className="drill-stat-label">LOAD VS TARGET</p>
                                 <h2 className="drill-stat-value">{weeklyTotalTargetRPE} / {weeklyTargetRPE || "—"}</h2>
                                 {selectedPlayer !== "All Athletes" && (
                                     <div className="targetInputBox">
@@ -538,9 +538,9 @@ export default function Dashboard() {
                             </div>
 
                             <div className="drill-stat-card">
-                                <p className="drill-stat-label">ACTUAL RPE LOAD</p>
+                                <p className="drill-stat-label">WEEKLY ACTUAL LOAD</p>
                                 <h2 className="drill-stat-value">{totalRPE}</h2>
-                                <span className="drill-stat-sub"> {selectedPlayer === "All Players" ? "Selected week" : selectedPlayer}</span>
+                                <span className="drill-stat-sub"> {selectedPlayer === "All Athletes" ? "Selected week" : selectedPlayer}</span>
                             </div>
                         </div>
 

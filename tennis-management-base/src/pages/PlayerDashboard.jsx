@@ -35,11 +35,14 @@ export default function PlayerDashboard() {
     const [latestFeedback, setLatestFeedback] = useState(null);
     const [weeklySessions, setWeeklySessions] = useState([]);
 
-    // State for Strengths and Weaknesses.
+    // FEEDBACK STATE
+    const [feedback, setFeedback] = useState([]);
+
+    // STRENGTH AND WEAKNESS STATE
     const [strengths, setStrengths] = useState([]);
     const [weaknesses, setWeaknesses] = useState([]);
 
-    // State for updates
+    // UPDATES STATES
     const [coachUpdates, setCoachUpdates] = useState([]);
 
     // LOADING STATE
@@ -56,6 +59,7 @@ export default function PlayerDashboard() {
     endOfSelectedWeek.setDate(startOfSelectedWeek.getDate() + 6);
     endOfSelectedWeek.setHours(23, 59, 59, 999);
 
+    // FETCH DATA: SESSIONES, COACH UPDATE, SESSION FEEDBACK, STRENGTH AND WEKNESSES
     async function fetchData() {
         setIsLoading(true);
         let userId;
@@ -102,9 +106,13 @@ export default function PlayerDashboard() {
 
         // Fetch code: Sessions Feedback.
         const { data: feedbackData, error: feedbackError } = await supabase
-            .from("session_feedback").select("*").eq("player_id", userId);
+            .from("session_feedback")
+            .select("*")
+            .eq("player_id", userId);
 
         if (feedbackError) { console.log("Error fetching feedback:", feedbackError.message); return; }
+
+        setFeedback(feedbackData || []);
 
         const latest = [...feedbackData].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
         const latestSession = sessionData.find(s => s.id === latest?.session_id);
@@ -131,6 +139,17 @@ export default function PlayerDashboard() {
         setIsLoading(false);
     }
 
+    // SESSIONS TO RATE LOGIC
+    const sessionsToRate = sessions.filter(session => {
+        const isCompleted = new Date(session.end_datetime) < new Date();
+
+        const isRated = feedback.some(
+            f => f.session_id === session.id
+        );
+
+        return isCompleted && !isRated;
+    });
+
     useEffect(() => {
         // Reset all state before fetching new player data
         setSessions([]);
@@ -142,6 +161,7 @@ export default function PlayerDashboard() {
         setWeaknesses([]);
         setCoachUpdates([]);
         fetchData();
+        setFeedback([]);
     }, [previewPlayerId]);
 
     // Save handler for session feedback
@@ -262,7 +282,7 @@ export default function PlayerDashboard() {
                                 </h2>
                                 <p className="drill-stat-sub">
                                     {nextSessionData
-                                        ? `${new Date(nextSessionData.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} • ${nextSessionData.name}` 
+                                        ? `${new Date(nextSessionData.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} • ${nextSessionData.name}`
                                         : "No upcoming session"}
                                 </p>
                             </div>
@@ -270,13 +290,15 @@ export default function PlayerDashboard() {
                             <div className="drill-stat-card"
                                 onClick={() => {
                                     if (!isCoachPreview) {
-                                        navigate("/SessionFeedback", { state: { selectedSessionId: latestFeedback.session_id } });
+                                        navigate("/SessionFeedback", { state: { selectedSessionId: sessionsToRate.session_id } });
                                     }
                                 }}
                                 style={{ cursor: isCoachPreview ? "default" : "pointer" }}>
-                                <p className="drill-stat-label">LAST RATING</p>
-                                <h2 className="drill-stat-value">{latestFeedback ? `${latestFeedback.intensity}/10` : "—"}</h2>
-                                <p className="drill-stat-sub">{latestFeedback ? latestFeedback.session_name : "No feedback yet"}</p>
+                                <p className="drill-stat-label">SESSIONS TO RATE</p>
+                                <h2 className="drill-stat-value">{sessionsToRate.length}</h2>
+                                <p className="drill-stat-sub">{sessionsToRate.length > 0
+                                    ? "Completed sessions awaiting feedback"
+                                    : "All completed sessions rated"}</p>
                             </div>
 
                             <div className="drill-stat-card">
@@ -318,7 +340,39 @@ export default function PlayerDashboard() {
                                     ) : (<p className="dashboardLabel">No upcoming session.</p>)
                                     }
                                 </div>
-                                
+
+                                {/* LATEST SESSION FEEDBACK FORM */}
+                                {/* HIDES FEEDBACK FORM IN COACH PREVIEW MODE */}
+                                {!isCoachPreview && pendingSession &&(
+                                    <div className="chartBox">
+                                        <div className="sectionHeader">
+                                            <p className="dashboardLabel">RATE OF PERCEIVED EXERTION (RPE)</p>
+                                            <h3>Session Feedback</h3>
+                                        </div>
+                                        {!pendingSession ? <p className="dashboardLabel">No pending feedback.</p> : (
+                                            <div className="sessionList">
+                                                <div className="drill-form-group">
+                                                    <p className="drill-modal-title" style={{ color: "var(--accent-color)" }} >{pendingSession.name} - {new Date(pendingSession.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</p>
+
+                                                    <label className="drill-form-label">Session Intensity</label>
+                                                    <select className="drill-form-select" value={intensity} onChange={(e) => setIntensity(e.target.value)}>
+                                                        <option value="">Select intensity</option>
+                                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n}>{n}</option>)}
+                                                    </select>
+
+                                                    <label className="drill-form-label">Actual Duration (minutes)</label>
+                                                    <input className="drill-form-input" type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} />
+
+                                                    <label className="drill-form-label">Comment</label>
+                                                    <textarea className="drill-form-textarea" placeholder="How was the session?" value={notes} onChange={(e) => setNotes(e.target.value)} />
+
+                                                    <button className="weekButton active" onClick={handleSave}>Submit Feedback</button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {/* WEEKLY ACTIVITY */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
@@ -355,39 +409,6 @@ export default function PlayerDashboard() {
                                         )}
                                     </div>
                                 </div>
-
-                                {/* LATEST SESSION FEEDBACK FORM */}
-                                {/* HIDES FEEDBACK FORM IN PREVIEW MODE */}
-                                {!isCoachPreview && (
-                                    <div className="chartBox">
-                                        <div className="sectionHeader">
-                                            <p className="dashboardLabel">RATE OF PERCEIVED EXERTION (RPE)</p>
-                                            <h3>Session Feedback</h3>
-                                        </div>
-                                        {!pendingSession ? <p className="dashboardLabel">No pending feedback.</p> : (
-                                            <div className="sessionList">
-                                                <div className="drill-form-group">
-                                                    <p className="drill-modal-title" style={{ color: "var(--accent-color)" }} >{pendingSession.name} - {new Date(pendingSession.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })}</p>
-
-                                                    <label className="drill-form-label">Session Intensity</label>
-                                                    <select className="drill-form-select" value={intensity} onChange={(e) => setIntensity(e.target.value)}>
-                                                        <option value="">Select intensity</option>
-                                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => <option key={n} value={n}>{n}</option>)}
-                                                    </select>
-
-                                                    <label className="drill-form-label">Actual Duration (minutes)</label>
-                                                    <input className="drill-form-input" type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} />
-
-                                                    <label className="drill-form-label">Comment</label>
-                                                    <textarea className="drill-form-textarea" placeholder="How was the session?" value={notes} onChange={(e) => setNotes(e.target.value)} />
-
-                                                    <button className="weekButton active" onClick={handleSave}>Submit Feedback</button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
                             </div>
 
                             {/* RIGHT COLUMN */}
@@ -408,7 +429,7 @@ export default function PlayerDashboard() {
                                         )}
                                     </div>
                                 </div>
-                                
+
                                 {/* WEAKNESSES */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
@@ -424,7 +445,7 @@ export default function PlayerDashboard() {
                                         )}
                                     </div>
                                 </div>
-                                
+
                                 {/* UPDATE BOARD */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">

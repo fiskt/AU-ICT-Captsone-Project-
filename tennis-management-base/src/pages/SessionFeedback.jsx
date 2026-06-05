@@ -132,10 +132,6 @@ export default function SessionFeedback() {
     const upcomingSessions = sessions.filter(session =>
         new Date(session.end_datetime) >= now
     );
-    // SORT NEWEST TO OLDEST, AND TAKING 5 RECENT SESSIONS
-    const recentUpcomingSessions = [...upcomingSessions]
-        .sort((a, b) => new Date(b.end_datetime) - new Date(a.end_datetime))
-        .slice(0, 5);
 
     // SAVING INPUT TO SESSION_FEEDBACK
     async function handleSave() {
@@ -253,11 +249,6 @@ export default function SessionFeedback() {
                         <div id="sf-main-panel">
                             <div className="sf-panel-header"> <h3> SESSIONS TO BE RATED </h3> </div>
                             <div className="sf-grid"> {unratedSessions.map(renderSessionCard)} </div>
-                        </div>
-
-                        <div id="sf-main-panel">
-                            <div className="sf-panel-header"> <h3> UPCOMING SESSIONS </h3> </div>
-                            <div className="sf-grid"> {recentUpcomingSessions.map(renderSessionCard)} </div>
                         </div>
 
                         {selectedSession && (
