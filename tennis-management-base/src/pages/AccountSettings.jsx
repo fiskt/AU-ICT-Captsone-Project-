@@ -88,7 +88,7 @@ function ChangeDetails() {
     };
     const labelStyle = {
         fontFamily: 'DM Mono Light, sans-serif', fontSize: '12px',
-        color: 'var(--content-subhead-color)', marginBottom: '6px', display: 'block',
+        color: 'var(--content-subhead-color)', marginBottom: '6px', display: 'block', textAlign: 'left',
     };
     const fieldStyle = { display: 'flex', flexDirection: 'column', marginBottom: '16px' };
 
@@ -99,7 +99,7 @@ function ChangeDetails() {
     );
 
     return (
-        <div>
+        <div style={{ textAlign: 'left' }}>
             <h2 style={{ fontFamily: 'Bebas, sans-serif', fontSize: isMobile ? '20px' : '22px', letterSpacing: '1px', margin: '0 0 4px', color: 'var(--content-head-color)' }}>Change Details</h2>
             <p style={{ fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: 'var(--content-subhead-color)', margin: '0 0 20px' }}>
                 Update your personal information below.
@@ -186,7 +186,7 @@ function MyInjuries() {
     };
     const labelStyle = {
         fontFamily: 'DM Mono Light, sans-serif', fontSize: '12px',
-        color: 'var(--content-subhead-color)', marginBottom: '6px', display: 'block',
+        color: 'var(--content-subhead-color)', marginBottom: '6px', display: 'block', textAlign: 'left',
     };
     const fieldStyle = { display: 'flex', flexDirection: 'column', marginBottom: '16px' };
 
@@ -269,16 +269,16 @@ function MyInjuries() {
     };
 
     return (
-        <div>
+        <div style={{ textAlign: 'left' }}>
             {/* Section header with report button */}
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '20px', textAlign: 'left' }}>
                 <h2 style={{ fontFamily: 'Bebas, sans-serif', fontSize: isMobile ? '20px' : '22px', letterSpacing: '1px', margin: '0 0 4px', color: 'var(--content-head-color)' }}>My Injuries</h2>
                 <p style={{ fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: 'var(--content-subhead-color)', margin: 0 }}>
                     Report and track your injury history. Your coach can review these and add training restrictions.
                 </p>
                 {!showForm && (
                     <button onClick={() => setShowForm(true)}
-                        style={{ padding: '8px 18px', background: 'var(--accent-color)', color: '#fff', border: 'none', borderRadius: '8px', fontFamily: 'Bebas, sans-serif', fontSize: '16px', letterSpacing: '2px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        style={{ marginTop: '12px', padding: '8px 18px', background: 'var(--accent-color)', color: '#fff', border: 'none', borderRadius: '8px', fontFamily: 'Bebas, sans-serif', fontSize: '16px', letterSpacing: '2px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         + REPORT INJURY
                     </button>
                 )}
@@ -355,19 +355,22 @@ function MyInjuries() {
                     <div style={{ width: '28px', height: '28px', border: '3px solid #DDDBD6', borderTop: '3px solid #C8714E', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                 </div>
             ) : injuries.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                <div style={{ textAlign: 'left', padding: '40px 20px' }}>
                     <p style={{ fontFamily: 'DM Sans Light, sans-serif', fontSize: '14px', color: 'var(--content-subhead-color)' }}>No injuries reported yet.</p>
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {injuries.map((injury) => (
-                        <div key={injury.id} style={{ background: 'var(--content-bg-color)', border: '1.5px solid var(--content-input-border-color)', borderRadius: '10px', padding: '16px' }}>
+                        <div key={injury.id} style={{ background: 'var(--content-bg-color)', border: '1.5px solid var(--content-input-border-color)', borderRadius: '10px', padding: '16px', textAlign: 'left' }}>
                             {/* Injury header */}
                             <p style={{ margin: '0 0 4px', fontFamily: 'DM Sans Light, sans-serif', fontSize: '14px', fontWeight: '600', color: 'var(--content-head-color)' }}>
                                 {injury.injury_type} — {injury.body_part}
                             </p>
                             <p style={{ margin: '0 0 8px', fontFamily: 'DM Mono Light, sans-serif', fontSize: '11px', color: 'var(--content-subhead-color)' }}>
-                                {new Date(injury.date_occurred).toLocaleDateString('en-AU')}
+                                Occurred: {new Date(injury.date_occurred).toLocaleDateString('en-AU')}
+                                {injury.date_recovered && (
+                                    <> · Recovered: {new Date(injury.date_recovered).toLocaleDateString('en-AU')}</>
+                                )}
                             </p>
                             {/* Severity and status badges */}
                             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
@@ -435,13 +438,13 @@ function DeleteAccount() {
     };
 
     return (
-        <div>
+        <div style={{ textAlign: 'left' }}>
             <h2 style={{ fontFamily: 'Bebas, sans-serif', fontSize: isMobile ? '20px' : '22px', letterSpacing: '1px', margin: '0 0 4px', color: 'var(--content-head-color)' }}>Delete Account</h2>
             <p style={{ fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: 'var(--content-subhead-color)', margin: '0 0 20px' }}>
                 Permanently delete your account and all associated data.
             </p>
 
-            <div style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5', borderRadius: '8px', padding: '16px', marginBottom: '24px' }}>
+            <div style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5', borderRadius: '8px', padding: '16px', marginBottom: '24px', textAlign: 'left' }}>
                 <p style={{ margin: '0 0 8px', fontFamily: 'DM Sans Light, sans-serif', fontSize: '14px', color: '#991B1B', fontWeight: '600' }}>This action cannot be undone.</p>
                 <p style={{ margin: 0, fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: '#B91C1C' }}>
                     Your account will be permanently deleted. You will lose access to all your data including sessions, feedback, and performance records.
@@ -578,7 +581,7 @@ export default function AccountSettings() {
                 )}
 
                 {/* Content area */}
-                <div style={{ flex: 1, background: 'var(--content-bg-color)', border: '1px solid var(--content-input-border-color)', borderRadius: '10px', padding: isMobile ? '16px' : '24px' }}>
+                <div style={{ flex: 1, background: 'var(--content-bg-color)', border: '1px solid var(--content-input-border-color)', borderRadius: '10px', padding: isMobile ? '16px' : '24px', textAlign: 'left' }}>
                     {activeSection === 'details'  && <ChangeDetails />}
                     {activeSection === 'injuries' && <MyInjuries />}
                     {activeSection === 'delete'   && <DeleteAccount />}

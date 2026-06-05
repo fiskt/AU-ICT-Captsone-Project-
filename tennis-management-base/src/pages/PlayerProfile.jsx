@@ -84,9 +84,24 @@ export function ADD_STRENGTH_WEAKNESS({ modalRef, setShowModal, type, onAdd, isS
 function PLAYER_LIST({ players, setSelectedPlayer }) {
     return (
         <div className="player-list">
-            {players.map((player) => (
-                <PLAYER_CARD key={player.id} player={player} setSelectedPlayer={setSelectedPlayer} />
-            ))}
+            {players.length > 0 ? (
+                players.map((player) => (
+                    <PLAYER_CARD key={player.id} player={player} setSelectedPlayer={setSelectedPlayer} />
+                ))
+            ) : (
+                <div style={{
+                    padding: '30px 16px',
+                    textAlign: 'left',
+                    border: '2px solid var(--topbar-accent-color)',
+                    borderRadius: '8px',
+                    background: 'var(--content-bg-color)',
+                    fontFamily: 'DM Sans Light, sans-serif',
+                    fontSize: '13px',
+                    color: 'var(--content-subhead-color)'
+                }}>
+                    No players match the selected filters.
+                </div>
+            )}
         </div>
     );
 }
@@ -164,7 +179,7 @@ function PLAYER_INJURIES({ player }) {
                 status: editStatus,
                 coach_notes: editCoachNotes || null,
                 training_restriction: editRestriction || null,
-                date_recovered: editRecovered || null,
+                date_recovered: editStatus === 'recovered' ? (editRecovered || null) : null,
             })
             .eq('id', injuryId);
 
@@ -247,7 +262,7 @@ function PLAYER_INJURIES({ player }) {
     };
 
     return (
-        <div>
+        <div style={{ textAlign: 'left', width: '100%' }}>
             {/* Section header with report button */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                 <h2 className="content-header" style={{ padding: 0, margin: 0 }}>Injury History</h2>
@@ -335,15 +350,15 @@ function PLAYER_INJURIES({ player }) {
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {injuries.map((injury) => (
-                            <div key={injury.id} style={{ border: '1.5px solid var(--content-input-border-color)', borderRadius: '10px', overflow: 'hidden' }}>
+                            <div key={injury.id} style={{ border: '1.5px solid var(--content-input-border-color)', borderRadius: '10px', overflow: 'hidden', textAlign: 'left', background: 'var(--content-bg-color)' }}>
                                 {/* Injury summary row */}
-                                <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap', background: 'var(--content-bg-color)' }}>
-                                    <div style={{ flex: 1 }}>
+                                <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap', background: 'var(--content-bg-color)', textAlign: 'left' }}>
+                                    <div style={{ flex: 1, minWidth: '240px', textAlign: 'left' }}>
                                         <p style={{ margin: '0 0 4px', fontFamily: 'DM Sans Light, sans-serif', fontSize: '14px', fontWeight: '600', color: 'var(--content-head-color)' }}>
                                             {injury.injury_type} — {injury.body_part}
                                         </p>
                                         <p style={{ margin: '0 0 8px', fontFamily: 'DM Mono Light, sans-serif', fontSize: '11px', color: 'var(--content-subhead-color)' }}>
-                                            Reported: {new Date(injury.reported_at).toLocaleDateString('en-AU')} · Occurred: {new Date(injury.date_occurred).toLocaleDateString('en-AU')}
+                                            Reported: {new Date(injury.reported_at).toLocaleDateString('en-AU')} · Occurred: {new Date(injury.date_occurred).toLocaleDateString('en-AU')}{injury.date_recovered && <> · Recovered: {new Date(injury.date_recovered).toLocaleDateString('en-AU')}</>}
                                         </p>
                                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                             <span style={{ ...badgeStyle, ...severityStyle(injury.severity) }}>{injury.severity}</span>
@@ -359,22 +374,22 @@ function PLAYER_INJURIES({ player }) {
 
                                 {/* Player description */}
                                 {injury.description && (
-                                    <div style={{ padding: '0 16px 12px', background: 'var(--content-bg-color)' }}>
+                                    <div style={{ padding: '0 16px 12px', background: 'var(--content-bg-color)', textAlign: 'left' }}>
                                         <p style={{ margin: 0, fontFamily: 'DM Sans Light, sans-serif', fontSize: '13px', color: 'var(--content-subhead-color)', lineHeight: '1.5' }}>{injury.description}</p>
                                     </div>
                                 )}
 
                                 {/* Existing coach notes / restriction preview */}
                                 {(injury.coach_notes || injury.training_restriction) && expandedId !== injury.id && (
-                                    <div style={{ padding: '0 16px 12px', background: 'var(--content-bg-color)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ padding: '0 16px 12px', background: 'var(--content-bg-color)', display: 'flex', flexDirection: 'column', gap: '6px', textAlign: 'left' }}>
                                         {injury.coach_notes && (
-                                            <div style={{ background: '#FFF3EB', border: '1.5px solid #EC7842', borderRadius: '6px', padding: '8px 12px' }}>
+                                            <div style={{ background: '#FFF3EB', border: '1.5px solid #EC7842', borderRadius: '6px', padding: '8px 12px', textAlign: 'left' }}>
                                                 <p style={{ margin: '0 0 2px', fontFamily: 'DM Mono Light, sans-serif', fontSize: '10px', color: '#C8714E', letterSpacing: '1px', textTransform: 'uppercase' }}>Your Notes</p>
                                                 <p style={{ margin: 0, fontFamily: 'DM Sans Light, sans-serif', fontSize: '12px', color: '#7C3A1A' }}>{injury.coach_notes}</p>
                                             </div>
                                         )}
                                         {injury.training_restriction && (
-                                            <div style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5', borderRadius: '6px', padding: '8px 12px' }}>
+                                            <div style={{ background: '#FEF2F2', border: '1.5px solid #FCA5A5', borderRadius: '6px', padding: '8px 12px', textAlign: 'left' }}>
                                                 <p style={{ margin: '0 0 2px', fontFamily: 'DM Mono Light, sans-serif', fontSize: '10px', color: '#DC2626', letterSpacing: '1px', textTransform: 'uppercase' }}>Training Restriction</p>
                                                 <p style={{ margin: 0, fontFamily: 'DM Sans Light, sans-serif', fontSize: '12px', color: '#B91C1C' }}>{injury.training_restriction}</p>
                                             </div>
@@ -384,11 +399,17 @@ function PLAYER_INJURIES({ player }) {
 
                                 {/* Coach management panel */}
                                 {expandedId === injury.id && (
-                                    <div style={{ padding: '16px', background: 'var(--topbar-accent-color)', borderTop: '1.5px solid var(--content-input-border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <div style={{ padding: '16px', background: 'var(--topbar-accent-color)', borderTop: '1.5px solid var(--content-input-border-color)', display: 'flex', flexDirection: 'column', gap: '12px', textAlign: 'left' }}>
                                         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                                             <div style={{ flex: 1, minWidth: '140px' }}>
                                                 <label style={labelStyle}>Status</label>
-                                                <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+                                                <select value={editStatus} onChange={(e) => {
+                                                    const newStatus = e.target.value;
+                                                    setEditStatus(newStatus);
+                                                    if (newStatus !== 'recovered') {
+                                                        setEditRecovered('');
+                                                    }
+                                                }} style={{ ...inputStyle, cursor: 'pointer' }}>
                                                     <option value="active">Active</option>
                                                     <option value="monitoring">Monitoring</option>
                                                     <option value="recovered">Recovered</option>
@@ -528,7 +549,7 @@ function PLAYER_DETAILS({ player, playerDetails, setSelectedPlayer, setShowDelet
             </div>
 
             {/* Injuries section */}
-            <div style={{ marginTop: '24px', background: 'var(--content-bg-color)', border: '2px solid var(--topbar-accent-color)', borderRadius: '8px', padding: '16px' }}>
+            <div style={{ marginTop: '24px', background: 'var(--content-bg-color)', border: '2px solid var(--topbar-accent-color)', borderRadius: '8px', padding: '16px', textAlign: 'left' }}>
                 <PLAYER_INJURIES player={player}  />
             </div>
         </div>
@@ -553,6 +574,10 @@ export default function PlayerProfile() {
     const [isSaving, setIsSaving] = useState(false);
     const addModalRef = useRef(null);
     const [playerDetails, setPlayerDetails] = useState(null);
+
+    // PLAYER LIST FILTERS
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortOrder, setSortOrder] = useState('az');
 
     async function addStrengthWeakness(value) {
         if (!playerDetails) return;
@@ -608,6 +633,23 @@ export default function PlayerProfile() {
         }
     }, [selectedPlayerId, players]);
 
+    const filteredPlayers = [...(players || [])]
+        .filter(player => {
+            const fullName = `${player.first_name || ''} ${player.last_name || ''}`.toLowerCase();
+            const query = searchQuery.toLowerCase().trim();
+
+            if (query && !fullName.includes(query)) return false;
+
+            return true;
+        })
+        .sort((a, b) => {
+            const nameA = `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase();
+            const nameB = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase();
+
+            if (sortOrder === 'za') return nameB.localeCompare(nameA);
+            return nameA.localeCompare(nameB);
+        });
+
     return (
         <>
             {isDataLoading && <LOADING_OVERLAY caption={"session data"} />}
@@ -645,7 +687,73 @@ export default function PlayerProfile() {
                 <div id="player-profile-main">
                     {!selectedPlayer ? (
                         <div id="player-list-container">
-                            <PLAYER_LIST players={players || []} setSelectedPlayer={setSelectedPlayer} />
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                flexWrap: 'wrap',
+                                marginBottom: '14px'
+                            }}>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search players..."
+                                    style={{
+                                        flex: 1,
+                                        minWidth: '220px',
+                                        padding: '10px 12px',
+                                        border: '2px solid var(--content-input-border-color)',
+                                        borderRadius: '8px',
+                                        fontFamily: 'DM Sans Light, sans-serif',
+                                        fontSize: '13px',
+                                        color: 'var(--content-body-color)',
+                                        background: 'var(--content-bg-color)',
+                                        outline: 'none'
+                                    }}
+                                />
+
+                                <select
+                                    value={sortOrder}
+                                    onChange={(e) => setSortOrder(e.target.value)}
+                                    style={{
+                                        padding: '10px 12px',
+                                        border: '2px solid var(--content-input-border-color)',
+                                        borderRadius: '8px',
+                                        fontFamily: 'DM Sans Light, sans-serif',
+                                        fontSize: '13px',
+                                        color: 'var(--content-body-color)',
+                                        background: 'var(--content-bg-color)',
+                                        outline: 'none',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value="az">A-Z</option>
+                                    <option value="za">Z-A</option>
+                                </select>
+
+
+                                <button
+                                    className="drill-btn drill-btn-secondary"
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setSortOrder('az');
+                                    }}
+                                >
+                                    Clear
+                                </button>
+                            </div>
+
+                            <p style={{
+                                margin: '0 0 10px',
+                                fontFamily: 'DM Mono Light, sans-serif',
+                                fontSize: '11px',
+                                color: 'var(--content-subhead-color)'
+                            }}>
+                                Showing {filteredPlayers.length} of {players.length} players
+                            </p>
+
+                            <PLAYER_LIST players={filteredPlayers} setSelectedPlayer={setSelectedPlayer} />
                         </div>
                     ) : (
                         <PLAYER_DETAILS
