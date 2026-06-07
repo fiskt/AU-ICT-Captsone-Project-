@@ -33,11 +33,13 @@ export default function CoachCalendar() {
     const [weekStart, setWeekStart] = useState(DateTime.now().startOf('week'));
     const [weekEnd, setWeekEnd] = useState(DateTime.now().endOf('week'));
 
-     const handleDateChange = (start, end) => { 
+    // Change the date title based on the current dates displayed on the calendar
+    const handleDateChange = (start, end) => { 
         setWeekStart(DateTime.fromJSDate(start));
         setWeekEnd(DateTime.fromJSDate(end));
     };
 
+    // fetch the sessions the current user is in
     async function fetchCalendarData() {
         if (!currentUserID) return;
         setIsDataLoading(true);
@@ -50,6 +52,12 @@ export default function CoachCalendar() {
                 session_people!inner(user_id)
             `)
             .eq('session_people.user_id', currentUserID);
+
+        if (error) {
+            console.log("Error fetching sessions: ", error.message);
+            setIsDataLoading(false);
+            return;
+        }
 
         // set the session data for the calendar events
         const session = (data || []).map(ses => {
@@ -229,7 +237,6 @@ export default function CoachCalendar() {
             setCoaches([]);
         } else {
             setCoaches(data);
-            console.log("coaches", coaches);
         }
     }
 
@@ -245,7 +252,6 @@ export default function CoachCalendar() {
             setPlayers([]);
         } else {
             setPlayers(data);
-            console.log("players", players);
         }
     }
 
@@ -349,9 +355,12 @@ export default function CoachCalendar() {
         { name: "40m", val: "40" },
         { name: "50m", val: "50" },
     ];
+    
+    // 10 pm is the last hour available on the calendar, limits durations so it doesnt go over
+    const CALENDAR_END_HOUR = 22;   
 
-    const CALENDAR_END_HOUR = 22;
-
+    // finds the possible session duration with the difference of start time and the calendar end
+    // returns remainder time in mins
     function getMaxDurationFromStart(startHour, startMin) {
         const startTotalMin = parseInt(startHour) * 60 + parseInt(startMin);
         const endTotalMin = CALENDAR_END_HOUR * 60;
@@ -359,31 +368,36 @@ export default function CoachCalendar() {
         return remainingMin;  // max duration in minutes
     }
 
+    // start time
     const [mobileStartHour, setMobileStartHour] = useState("06");
     const [mobileStartMin, setMobileStartMin] = useState("00");
 
+    // duration
     const [mobileDurationHour, setMobileDurationHour] = useState("01");
     const [mobileDurationMin, setMobileDurationMin] = useState("00");
 
+    // find valid options based on start min and hour
     const maxDurationMin = getMaxDurationFromStart(mobileStartHour, mobileStartMin);
-    const maxHours = Math.floor(maxDurationMin / 60);
-    const maxMinAtCurrentHour = maxDurationMin - (parseInt(mobileDurationHour) * 60);
+    const maxHours = Math.floor(maxDurationMin / 60);   // limit for the hour options
+
+    const maxMinAtCurrentHour = maxDurationMin - (parseInt(mobileDurationHour) * 60);   // limit for the min options
 
     const validDurationHours = mobileDurationHours.filter(h => parseInt(h.val) <= maxHours);
     const validDurationMinutes = mobileDurationMinutes.filter(m => parseInt(m.val) <= maxMinAtCurrentHour);
 
+    // update the valid options when times change
     useEffect(() => {
         const maxMin = getMaxDurationFromStart(mobileStartHour, mobileStartMin);
         const currentDurationMin = parseInt(mobileDurationHour) * 60 + parseInt(mobileDurationMin);
         
         if (currentDurationMin > maxMin) {
-            // Snap to max valid duration
+            // set to max valid duration
             const newHour = Math.floor(maxMin / 60).toString().padStart(2, '0');
             const newMin = (maxMin % 60).toString().padStart(2, '0');
             setMobileDurationHour(newHour);
             setMobileDurationMin(newMin);
         } else {
-            // Within the hour boundary, just check the minutes
+            // within the hour boundary, just check the mins
             const maxMinAtHour = maxMin - (parseInt(mobileDurationHour) * 60);
             if (parseInt(mobileDurationMin) > maxMinAtHour) {
                 setMobileDurationMin(maxMinAtHour.toString().padStart(2, '0'));
@@ -392,6 +406,7 @@ export default function CoachCalendar() {
     }, [mobileStartHour, mobileStartMin, mobileDurationHour]);
 
 
+    // separate push session function for mobile
     async function mobilePushSession({ currentDay, sessionSettings, startHour, startMin, durationStr }) {
         if (
             !sessionSettings ||
@@ -470,6 +485,7 @@ export default function CoachCalendar() {
             console.log(error);
         }
     }
+
 
 
     /* DRILLS ------------------------------------------------------------------------ */ 
@@ -669,8 +685,6 @@ export default function CoachCalendar() {
 
                 const sessionDrills = sessionDrillIDs.map((drill, index) => {
                     const masterDrill = drills.find(d => d.id === drill.drill_id);
-                    console.log("drill id: ", drill.drill_id);
-                    console.log("master drill: ", masterDrill);
                     return {
                         ...masterDrill,
                         instanceId: `saved-${selectedSession.id}-${index}`, 
@@ -684,7 +698,6 @@ export default function CoachCalendar() {
                 const startDT = DateTime.fromJSDate(selectedSession.start);
                 const endDT = DateTime.fromJSDate(selectedSession.end);
                 const sessionDuration = endDT.diff(startDT).toFormat('hh:mm:ss');
-
 
                 setTempSession({
                     id: selectedSession.id,

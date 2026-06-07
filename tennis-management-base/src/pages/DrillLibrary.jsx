@@ -128,7 +128,7 @@ function TagInput({ selectedTags, onTagsChange, allTags }) {
     );
 }
 
-function Stars({ level }) {
+export function Stars({ level }) {
     const levelMap = { Beginner: 1, Intermediate: 2, Advanced: 3, Elite: 5 };
     const filled = levelMap[level] ?? 2;
     return (

@@ -1,5 +1,5 @@
 import { DROPDOWN_INPUT, LOADING_OVERLAY, TYPING_INPUT } from '../Components/SharedComponents.jsx';
-import { CALENDAR, DRAGGABLE_SESSION, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
+import { CALENDAR, PEOPLE_SELECTOR } from '../Components/CoachCalendarComponents.jsx';
 import { USERS_LIST, OTHER_CALENDARS, SESSION_DETAILS_DRILLS } from '../Components/OtherUsersComponents.jsx';
 import { useState, useRef, useEffect } from 'react';
 
@@ -7,22 +7,27 @@ import { DateTime, Duration } from 'luxon';
 import { supabase } from '../supabaseClient'
 
 export default function CoachCalendar() {
-    const sessionDetailsRef = useRef(null);
-    const calendarRef = useRef(null);
-    const [showSessionDetails, setShowSessionDetails] = useState(false);
-    const [showCollapsedUsers, setShowCollapsedUsers] = useState(false);
+    /* SELECTED USER, SESSION ------------------------------------------------------------------------ */ 
+    const [selectedUser, setSelectedUser] = useState();
     const [selectedSession, setSelectedSession] = useState(null);
 
-    const [calendarEvents, setCalendarEvents] = useState([]);
+    /* LOADING SCREEN STATE ------------------------------------------------------------------------ */ 
+    const [isDataLoading, setIsDataLoading] = useState(true);
 
-    const [coaches, setCoaches] = useState([]);
-    const [players, setPlayers] = useState([]);
+    /* SESSION DETAILS STATE ------------------------------------------------------------------------ */ 
+    const [showSessionDetails, setShowSessionDetails] = useState(false);
 
-    const [selectedSessionPeople, setSelectedSessionPeople] = useState([]);
-    const [selectedSessionDrills, setSelectedSessionDrills] = useState([]);
 
-    // detecting mobile window size
+
+    /* REFS ------------------------------------------------------------------------ */ 
+    const calendarRef = useRef(null);
+    const sessionDetailsRef = useRef(null);
+    
+    
+
+    /* MOBILE ------------------------------------------------------------------------ */ 
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [showCollapsedUsers, setShowCollapsedUsers] = useState(false);
 
     useEffect(() => {
         const handleResize = () => {
@@ -49,9 +54,13 @@ export default function CoachCalendar() {
     }, [isMobile]);
 
 
-    // filtering and searching users
+
+    /* USER LIST FILTERS ------------------------------------------------------------------------ */ 
     const [searchQuery, setSearchQuery] = useState("");
     const [searchFilter, setSearchFilter] = useState("all");
+
+    const [coaches, setCoaches] = useState([]);
+    const [players, setPlayers] = useState([]);
 
     const [filteredCoaches, setFilteredCoaches] = useState([]);
     const [filteredPlayers, setFilteredPlayers] = useState([]);
@@ -90,22 +99,10 @@ export default function CoachCalendar() {
         }
     }, [searchQuery, searchFilter, coaches, players]);
 
-    const [selectedUser, setSelectedUser] = useState();
+    
 
-    async function fetchSelectedSessionPeople() {
-        const { data, error } = await supabase
-            .from('signin_details')
-            .select(`
-                *,
-                session_people!inner(session_id)
-            `)
-            .eq('session_people.session_id', selectedSession.id);
-
-        if (!error) {
-            setSelectedSessionPeople(data);
-        }
-    }
-
+    /* USERS ------------------------------------------------------------------------ */ 
+    // fetch all users for the user list
     async function fetchPlayers() {
         const { data, error } = await supabase
             .from('signin_details')
@@ -117,7 +114,6 @@ export default function CoachCalendar() {
             setPlayers([]);
         } else {
             setPlayers(data);
-            console.log("players", players);
         }
     }
 
@@ -132,10 +128,44 @@ export default function CoachCalendar() {
             setCoaches([]);
         } else {
             setCoaches(data);
-            console.log("coaches", coaches);
         }
     }
 
+    useEffect(() => {
+        const initializeUsers = async () => {
+            setIsDataLoading(true);
+            await Promise.all([
+                fetchCoaches(),
+                fetchPlayers()
+            ]);
+            setIsDataLoading(false);
+        };
+
+        initializeUsers();
+    }, []);
+
+
+
+    /* SESSION DETAILS ------------------------------------------------------------------------ */ 
+    const [selectedSessionPeople, setSelectedSessionPeople] = useState([]);
+    const [selectedSessionDrills, setSelectedSessionDrills] = useState([]);
+
+    // fetch the people that are participating in the selected session
+    async function fetchSelectedSessionPeople() {
+        const { data, error } = await supabase
+            .from('signin_details')
+            .select(`
+                *,
+                session_people!inner(session_id)
+            `)
+            .eq('session_people.session_id', selectedSession.id);
+
+        if (!error) {
+            setSelectedSessionPeople(data);
+        }
+    }
+    
+    // fetch the drills added to the selected session
     async function fetchSelectedSessionDrills() {
         const { data, error } = await supabase
             .from('drill_library')
@@ -150,9 +180,22 @@ export default function CoachCalendar() {
         }
     }
 
-    // loading screen appears when data isnt fully loaded
-    const [isDataLoading, setIsDataLoading] = useState(true);
+    useEffect(() => {
+        const fetchData = async () => {
+            await Promise.all([
+                fetchSelectedSessionPeople(),
+                fetchSelectedSessionDrills()
+            ]);
+        };
+        if (selectedSession) {
+            fetchData();
+        }
+    }, [fetchSelectedSessionPeople, fetchSelectedSessionDrills]);
 
+
+
+    /* CALENDAR ------------------------------------------------------------------------ */ 
+    const [calendarEvents, setCalendarEvents] = useState([]);
     const [weekStart, setWeekStart] = useState(DateTime.now().startOf('week'));
     const [weekEnd, setWeekEnd] = useState(DateTime.now().endOf('week'));
 
@@ -161,12 +204,12 @@ export default function CoachCalendar() {
         setWeekEnd(DateTime.fromJSDate(end));
     };
 
+    // fetch calendar events based on the selected user from the user list
     async function fetchCalendarData() {
         if (!selectedUser) return;
         setIsDataLoading(true);
 
         let sessionEvents = [];
-        console.log("selected user: ", selectedUser);
         
         const { data, error } = await supabase
             .from('sessions')
@@ -200,6 +243,7 @@ export default function CoachCalendar() {
         setIsDataLoading(false);
     }
 
+    // once a user is selected, load their calendar data
     useEffect(() => {
         if (selectedUser) {
             fetchCalendarData();
@@ -207,31 +251,6 @@ export default function CoachCalendar() {
             setCalendarEvents([]);
         }
     }, [selectedUser]);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            await Promise.all([
-                fetchSelectedSessionPeople(),
-                fetchSelectedSessionDrills()
-            ]);
-        };
-        if (selectedSession) {
-            fetchData();
-        }
-    }, [fetchSelectedSessionPeople, fetchSelectedSessionDrills]);
-
-    useEffect(() => {
-        const initializeUsers = async () => {
-            setIsDataLoading(true);
-            await Promise.all([
-                fetchCoaches(),
-                fetchPlayers()
-            ]);
-            setIsDataLoading(false);
-        };
-
-        initializeUsers();
-    }, []);
 
     return (
         <>

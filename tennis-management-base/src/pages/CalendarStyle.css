@@ -159,3 +159,9 @@
     display: none !important;
 }
 
+.selected-session {
+    border: 2px solid #EC7842 !important;
+    background-color: var(--accent-color);
+    transition: border-color 0.2s ease-in-out;
+    transition: background-color 0.2s ease-in-out;
+}
