@@ -14,7 +14,7 @@
 | BREVO_SMTP_USER               | The "Login" value found in Brevo settings, in the SMTP & API tab under "Your SMTP Settings" "" |
 | BREVO_SMTP_HOST               | The "SMTP Server" value found in Brevo settings, in the SMTP & API tab                          |
 | BREVO_SMTP_PORT               | The "Port" value found in Brevo settings, in the SMTP & API tab                                 |
-| BREVO_SMTP_PASSWORD           |                                                                                                 |
+| BREVO_SMTP_PASSWORD           | Generate SMTP Key through the Brevo settings                                                    |
 | VITE_SUPABASE_URL             | Copy the "Project URL" from the Supabase project overview page                                  |
 | VITE_SUPABASE_PUBLISHABLE_KEY | Copy the "Publishable Key" from the Supabase project overview page                              |
 
@@ -83,10 +83,3 @@ const results = await Promise.allSettled(recipients.map(r =>
 ```
 
 Change the email address (3rd line in the snippet) to an email you want to use to send the session calendar invitations. Make sure to keep the email wrapped in "<>".
-
-### Change Email for Registration Verification
-
-1. Log into Supabase and open the HPT Management Base project.
-2. Open the "Authentication" tab and under "Notifications", open "Emails"
-3. Open the "SMTP Settings" tab
-4. In the "Sender details" section, edit the email address and sender name
