@@ -7,6 +7,7 @@ import { DateTime, Duration } from 'luxon';
 import '../App.css';
 import './Dashboard.css';
 
+// Import Rechats components to use in Line Chart
 import {
     LineChart,
     Line,
@@ -27,9 +28,15 @@ export default function Dashboard() {
 
     // DEFAULT STATE
     const [selectedPlayer, setSelectedPlayer] = useState("All Athletes");
+
+    // ATHLETE STATE
     const [Athletes, setAthletes] = useState([]);
 
+    // WEEKLY RELATED STATES
     const [weeklyData, setWeeklyData] = useState([]);
+    const [weekOffset, setWeekOffset] = useState(0);
+    const [weeklyTargetRPE, setWeeklyTargetRPE] = useState("");
+    const [targetInput, setTargetInput] = useState("");
 
     // STATE FOR SESSIONS
     const [sessions, setSessions] = useState([]);
@@ -37,13 +44,6 @@ export default function Dashboard() {
 
     // LOADING STATE
     const [isLoading, setIsLoading] = useState(true);
-
-    // WEEK OFFSET STATE
-    const [weekOffset, setWeekOffset] = useState(0);
-
-    // WEEKLY TARGET RPE STATE
-    const [weeklyTargetRPE, setWeeklyTargetRPE] = useState("");
-    const [targetInput, setTargetInput] = useState("");
 
     // INJURY STATE
     const [activeInjuryCount, setActiveInjuryCount] = useState(0);

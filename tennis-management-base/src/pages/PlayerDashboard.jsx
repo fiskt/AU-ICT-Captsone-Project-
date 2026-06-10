@@ -6,12 +6,14 @@ import { LOADING_OVERLAY } from '../Components/SharedComponents';
 import '../App.css';
 import "./Dashboard.css";
 
+// Helper Function For Zone Intensity
 function getIntensityZone(intensity) {
     if (intensity >= 1 && intensity <= 3) return "easy";
     if (intensity >= 4 && intensity <= 6) return "medium";
     if (intensity >= 7 && intensity <= 10) return "hard";
 }
 
+// Helper Function For Changing Duration format (00:00:00) to Minutes
 function durationToMinutes(duration) {
     if (!duration) return 0;
     const [hours, minutes, seconds] = duration.split(":").map(Number);
@@ -19,9 +21,11 @@ function durationToMinutes(duration) {
 }
 
 export default function PlayerDashboard() {
+    // NAVIGATE TO OTHER PAGES
     const location = useLocation();
     const navigate = useNavigate();
 
+    // COACH PREVIEW STATE
     const isCoachPreview = location.state?.isCoachPreview ?? false;
     const previewPlayer = location.state?.previewPlayer ?? null;
     const previewPlayerId = location.state?.previewPlayerId ?? null;
@@ -252,14 +256,14 @@ export default function PlayerDashboard() {
 
     return (
         <div id="layout">
-            {/* Loading overlay */}
+            {/* Loading overlay -----------------------------------------*/}
             {isLoading && <LOADING_OVERLAY caption={"athlete dashboard"} />}
 
             <div id="main-content-wrapper">
                 <div id="main-content">
                     <div className="dashboardPage">
 
-                        {/* PREVIEW BANNER */}
+                        {/* PREVIEW BANNER -------------------------------- */}
                         {isCoachPreview && (
                             <div style={{
                                 backgroundColor: '#FFF3EB',
@@ -306,15 +310,17 @@ export default function PlayerDashboard() {
                             </div>
                         </div>
 
-                        {/* STATS */}
+                        {/* STATS --------------------------------------------------------------------------------------  */}
                         <div id="drill-stats-row">
-
+                            
+                            {/* WEEKLY TOTAL SESSION STATS --------------------------------------------------------- */}
                             <div className="drill-stat-card">
                                 <p className="drill-stat-label"> Week Total Sessions</p>
                                 <h2 className="drill-stat-value accent">{weeklySessions.length}</h2>
                                 <p className="drill-stat-sub"> Sessions logged </p>
                             </div>
-
+                            
+                            {/* NEXT SESSION STATS --------------------------------------------------------- */}
                             <div className="drill-stat-card">
                                 <p className="drill-stat-label">NEXT SESSION</p>
                                 <h2 className="drill-stat-value">
@@ -325,7 +331,7 @@ export default function PlayerDashboard() {
                                 <p className="drill-stat-sub">
                                     {nextSessionData ? (
                                         <>
-                                            {nextSessionData.name} •{" "}
+                                            {nextSessionData.name} • {" "}
                                             {new Date(nextSessionData.start_datetime).toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" })} {" • "}
                                             <span style={{ color: "var(--accent-color)" }}>
                                                 {nextSessionCoaches.length > 0
@@ -339,7 +345,8 @@ export default function PlayerDashboard() {
                                         : "No upcoming session"}
                                 </p>
                             </div>
-
+                            
+                            {/* SESSION TO RATE STATS --------------------------------------------------------- */}
                             <div className="drill-stat-card"
                                 onClick={() => {
                                     if (!isCoachPreview) {
@@ -360,29 +367,30 @@ export default function PlayerDashboard() {
                             </div>
                         </div>
 
-                        {/* MAIN GRID */}
+                        {/* MAIN GRID ------------------------------------------------------------------- */}
                         <div className="dashboardGrid">
 
-                            {/* LEFT COLUMN */}
+                            {/* LEFT COLUMN COMPONENTS -------------------------------------------------- */}
                             <div className="leftColumn">
 
-                                {/* UPCOMING SESSION */}
+                                {/* UPCOMING SESSION BOX ------------------------------------------------- */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <h3>UPCOMING SESSION</h3>
                                     </div>
                                     {nextSessionData ? (
+                                        // SESSION CARD - NAVIGATES TO PLAYER CALENDAR
                                         <div key={nextSessionData.id} className="sessionDetailCard"
                                             onClick={() => {
                                                 if (!isCoachPreview) {
                                                     navigate("/PlayerCalendar", { state: { selectedSession: nextSessionData.id } });
-                                                }
-                                            }}
+                                                }}}
                                             style={{ cursor: isCoachPreview ? "default" : "pointer" }}>
                                             <div className="sessionTime">
                                                 <span className="timeMain" >{new Date(nextSessionData.start_datetime).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}</span>
                                             </div>
 
+                                            {/* SESSION CONTENT */}
                                             <div className="sessionContent">
                                                 <h3>{nextSessionData?.name || "No upcoming session"}</h3>
                                                 <p className="sessionName upcoming">Coach: {nextSessionCoaches.length > 0
@@ -399,8 +407,8 @@ export default function PlayerDashboard() {
                                     }
                                 </div>
 
-                                {/* LATEST SESSION FEEDBACK FORM */}
-                                {/* HIDES FEEDBACK FORM IN COACH PREVIEW MODE */}
+                                {/* LATEST SESSION FEEDBACK FORM --------------------------------------------------------------------- */}
+                                {/* Hides Feedback during Coach Preview and No Pending Session */}
                                 {!isCoachPreview && pendingSession && (
                                     <div className="chartBox">
                                         <div className="sectionHeader">
@@ -431,7 +439,7 @@ export default function PlayerDashboard() {
                                     </div>
                                 )}
 
-                                {/* WEEKLY ACTIVITY */}
+                                {/* WEEKLY ACTIVITY BOX ---------------------------------------------------------------------------------------------- */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">WEEKLY ACTIVIY</p>
@@ -443,13 +451,13 @@ export default function PlayerDashboard() {
                                                 const isCompleted = new Date(session.end_datetime) < new Date();
 
                                                 return (
-                                                    <div key={session.id} className="sessionItem" onClick={() => {
+                                                    // SESSION ITEM - NAVIGATES TO PLAYER CALENDAR
+                                                    <div key={session.id} className="sessionItem" 
+                                                    onClick={() => {
                                                         if (!isCoachPreview) {
                                                             navigate("/PlayerCalendar", { state: { selectedSession: session.id } });
-                                                        }
-                                                    }}
-                                                        style={{ cursor: isCoachPreview ? "default" : "pointer" }}
-                                                    >
+                                                        }}}
+                                                        style={{ cursor: isCoachPreview ? "default" : "pointer" }}>
                                                         <div className="sessionMain">
                                                             <p className="sessionClient">{session.name}</p>
                                                             <p className={`sessionName ${isCompleted ? "completed" : "upcoming"}`}>
@@ -469,17 +477,17 @@ export default function PlayerDashboard() {
                                 </div>
                             </div>
 
-                            {/* RIGHT COLUMN */}
+                            {/* RIGHT COLUMN COMPONENTS ------------------------------------------------------------------------- */}
                             <div className="rightColumn">
 
-                                {/* STRENGTH */}
+                                {/* STRENGTH BOX -------------------------------------------------------------------------------- */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">PERFORMANCE</p>
                                         <h3>Current Strengths</h3>
                                     </div>
                                     <div className="tagList">
-                                        {/* EMPTY MESAGGES */}
+                                        {/* STRENGTH DISPPLAY */}
                                         {strengths.length > 0 ? (
                                             strengths.map((item, i) => <span className="positiveTag" key={i}>{item}</span>)
                                         ) : (
@@ -488,14 +496,14 @@ export default function PlayerDashboard() {
                                     </div>
                                 </div>
 
-                                {/* WEAKNESSES */}
+                                {/* WEAKNESSES BOX --------------------------------------------------------------------------------  */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">FOCUS AREA</p>
                                         <h3>Current Weaknesses</h3>
                                     </div>
                                     <div className="tagList">
-                                        {/* EMPTY MESAGGES */}
+                                        {/* WEAKNESS DISPPLAY */}
                                         {weaknesses.length > 0 ? (
                                             weaknesses.map((item, i) => <span className="warningTag" key={i}>{item}</span>)
                                         ) : (
@@ -504,13 +512,14 @@ export default function PlayerDashboard() {
                                     </div>
                                 </div>
 
-                                {/* UPDATE BOARD */}
+                                {/* UPDATE BOARD BOX -------------------------------------------------------------------------------- */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">LATEST ACTIVITY</p>
                                         <h3>Coach Update Board</h3>
                                     </div>
                                     <div className="updateBoard">
+                                        {/* UPDATE DISPPLAY */}
                                         {coachUpdates.length > 0 ? (
                                             coachUpdates.map((update) => (
                                                 <div className="updateItem" key={update.id}>
