@@ -13,37 +13,11 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import { Draggable } from '@fullcalendar/interaction'
 import interactionPlugin from '@fullcalendar/interaction'
 
+
 import { supabase } from '../supabaseClient'
+import { Stars } from '../pages/DrillLibrary'
 
-function Stars({ level, size = '' }) {
-    const levelMap = { Beginner: 1, Intermediate: 2, Advanced: 3, Elite: 5 };
-    const filled = levelMap[level] ?? 2;
-    return (
-        <div className={`drill-stars ${size}`}>
-            {[1, 2, 3, 4, 5].map(i => (
-                <svg
-                    key={i}
-                    className={`drill-star ${i <= filled ? 'filled' : 'empty'}`}
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-            ))}
-        </div>
-    );
-}
-
-// ── TYPE BADGE ────────────────────────────────────────────────────────────────
-function TypeBadge({ type }) {
-    if (!type) return null;
-    return (
-        <span className={`drill-type-badge badge-${type.toLowerCase()}`}>
-            {type}
-        </span>
-    );
-}
-
+// renders tickbox for all the users
 function TICKBOX_SELECTOR({ people = [], selectedPeople = [], onToggle }) {
     return (
         <div>
@@ -63,7 +37,8 @@ function TICKBOX_SELECTOR({ people = [], selectedPeople = [], onToggle }) {
 }
 
 export function PEOPLE_SELECTOR({ role, people = [], selectedPeople = [], setSelectedPeople }) {
-
+    // function to handle toggling users
+    // if a user is already in the list, remove them when this is run, otherwise, add them
     const handleToggle = (id) => {
         setSelectedPeople((prev) =>
             prev.includes(id) 
@@ -84,6 +59,7 @@ export function PEOPLE_SELECTOR({ role, people = [], selectedPeople = [], setSel
     );
 }
 
+// draggable session only for desktop view
 export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlayers, currentCalendarView }) {
     const sessionRef = useRef(null);
 
@@ -95,17 +71,17 @@ export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlay
     // ensure session has at least 1 person selected
     const sessionHasCoaches = sessionCoaches.length > 0;
     const sessionHasPlayers = sessionPlayers.length > 0;
-
     const sessionHasPeople = sessionHasCoaches && sessionHasPlayers;
 
+    // session is only valid if key fields are filled and calendar is in week view
     const sessionIsValid = 
         sessionHasName && 
         sessionHasPeople && 
         sessionHasRPE && 
         currentCalendarView === 'timeGridWeek';
 
+    // change the warning text depending on what is missing
     let sessionWarningText = "Drag into the calendar to schedule the session";
-
     if (!sessionHasName) sessionWarningText = "Invalid: Name";
     if (!sessionHasPeople) sessionWarningText = "Please select at least one coach and one player";
     if (!sessionHasRPE) sessionWarningText = "Invalid: RPE";
@@ -116,9 +92,12 @@ export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlay
 
     if (currentCalendarView !== 'timeGridWeek') sessionWarningText = "Use calendar week view to schedule sessions"
 
+    // attack FullCalenar draggable behaviour to the object with sessionRef when session is valid
     useEffect(() => {
         if (!sessionIsValid) return;
         let session = new Draggable(sessionRef.current, {
+            // eventData runs everytime the session object is dragged
+            // gives FullCalendar the properties for the new event when its dropped into the calendar
             eventData: () => {
                 return {
                     title: sessionSettings.sessionName,
@@ -134,6 +113,8 @@ export function DRAGGABLE_SESSION({ sessionSettings, sessionCoaches, sessionPlay
                 };
             }
         })
+
+        // clear up draggable instance to avoid duplicates
         return () => session.destroy();
     }, [sessionSettings, sessionHasName, sessionHasPeople, sessionIsValid]);
 
@@ -173,11 +154,6 @@ export function SIMPLE_DRILL_CARD({ drill, addDrillToSession, removeDrillFromSes
             onClick={() => addDrillToSession && addDrillToSession(drill)}
             key={drill.id}
         >
-            <div className="drill-card-top">
-                {!isSelectedDrill && (
-                    <TypeBadge type={drill.type} />
-                )}
-            </div>
             <div className="drill-card-name">{drill.name}</div>
             {!isSelectedDrill && (
                 <div className="drill-card-name">{drill.description}</div>
@@ -292,6 +268,7 @@ export function SEND_CONFIRM({
     );
 }
 
+// forwardRef so this component can call API methods (e.g. changeView)
 export const CALENDAR = forwardRef(({ 
     onSessionClick, 
     events, 
@@ -307,7 +284,10 @@ export const CALENDAR = forwardRef(({
     unsentSessions = []
     }, ref) => {
 
+    // start the calendar at day view on mobile, week view on desktop
     const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
+
+    // change calendar view buttons depending on mobile or desktop
     const headerToolBar = isMobile 
         ? {
             start: 'prev,next today', 
@@ -317,15 +297,16 @@ export const CALENDAR = forwardRef(({
             end: 'dayGridMonth,timeGridWeek'
         }   
     
+    // make the week start on sunday
     const todayStart = DateTime.now().startOf('week').minus({ days: 1 });
     const currentWeekStart = activeStart || todayStart;
-
     const currentWeekEnd = activeEnd ? activeEnd.minus({ days: 1 }) : currentWeekStart.endOf('week');
 
+    // check if the calendar is only displaying a single day (for mobile UI)
     const isSingleDay = currentWeekStart.hasSame(currentWeekEnd, 'day');
 
     const calendarTitle = isSingleDay 
-        ? currentWeekStart.toFormat('MMMM d, yyyy') // Single Day: "May 9, 2026"
+        ? currentWeekStart.toFormat('MMMM d, yyyy') // single Day: "May 9, 2026"
         : `${currentWeekStart.toFormat('MMM d')} - ${
             currentWeekStart.month === currentWeekEnd.month 
                 ? currentWeekEnd.toFormat('d, yyyy') 
@@ -334,14 +315,14 @@ export const CALENDAR = forwardRef(({
 
     const [isAnimating, setIsAnimating] = useState(false);
 
+    // push session data onto the database
     async function pushSession({ event, sessionSettings }) {
         if (!event || !event.start) return;
 
         const start = DateTime.fromJSDate(event.start);
         const end = event.end
             ? DateTime.fromJSDate(event.end)
-            : start.plus({ hours: 1 });
-
+            : start.plus({ hours: 1 });     // default duration for sessions on desktop is 1h
         const durationStr = end.diff(start).toFormat('hh:mm:ss');
 
         const { data, error } = await supabase
@@ -358,6 +339,7 @@ export const CALENDAR = forwardRef(({
             .single();
 
         if (data) {
+            // link session id to user id and drill id
             const sessionCoaches = selectedCoaches.map(coachID => ({
                 session_id: data.id,
                 user_id: coachID
@@ -374,12 +356,14 @@ export const CALENDAR = forwardRef(({
                 order: index
             }));
 
+            // insert the links into the database 
             await Promise.all([
                 sessionCoaches.length > 0 && supabase.from('session_people').insert(sessionCoaches),
                 sessionPlayers.length > 0 && supabase.from('session_people').insert(sessionPlayers),
                 sessionDrills.length > 0 && supabase.from('session_drills').insert(sessionDrills)
             ]);
 
+            // sync the calendar event id with the session id
             event.setProp('id', data.id);
             fetchUnsentSessions();
         } else {
@@ -387,12 +371,12 @@ export const CALENDAR = forwardRef(({
         }
     }
 
+    // update session times for calendar event resizing or moving
     async function updateSessionTimes(event) {
         if (!event.id) return;
 
         const start = DateTime.fromJSDate(event.start);
         const end = DateTime.fromJSDate(event.end);
-
         const newDuration = end.diff(start).toFormat('hh:mm:ss');
 
         const { error } = await supabase
@@ -459,13 +443,16 @@ export const CALENDAR = forwardRef(({
                     }}
                     headerToolbar={headerToolBar}
                     eventClassNames={(arg) => {
+                        // add class names to change calendar event style
                         const classes = [];
 
+                        // short events hide the time to save space
                         const duration = arg.event.end - arg.event.start;
                         if (duration === 600000) {
                             classes.push('short-event');
                         }
 
+                        // highlight the selected session
                         if (
                             selectedSession 
                             && arg.event.id === selectedSession.id 
@@ -502,11 +489,9 @@ export const CALENDAR = forwardRef(({
                         }
                     }}
                     eventResize={(info) => {
-                        console.log("event resized");
                         if (isMobile) return;
 
                         if (info.event.extendedProps.type === 'session') {
-                            console.log("update session times ran");
                             updateSessionTimes(info.event);
                         }
                     }}
@@ -542,6 +527,7 @@ export const CALENDAR = forwardRef(({
     );
 });
 
+// session duration inputs for mobile session editor 
 export function MOBILE_DURATION_INPUT({ 
     tempSession, 
     setTempSession, 
@@ -554,6 +540,7 @@ export function MOBILE_DURATION_INPUT({
     const [startHour, startMin] = startParts;
     const [durHour, durMin] = durParts;
 
+    // finds how much time there is between session start and the end of the calendar
     const maxMin = getMaxDurationFromStart(startHour, startMin);
     const maxHours = Math.floor(maxMin / 60);
     const maxMinAtHour = maxMin - (parseInt(durHour) * 60);

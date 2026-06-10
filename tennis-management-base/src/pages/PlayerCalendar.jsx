@@ -12,119 +12,31 @@ import { DateTime, Duration } from 'luxon';
 import { PLAYER_CALENDAR } from '../Components/PlayerCalendarComponents.jsx';
 
 export default function CoachCalendar() {
+    /* CURRENT USER ------------------------------------------------------------------------ */ 
     const { userId: currentUserID, isLoading: authLoading } = useCurrentUser();
-
-    const sessionDetailsRef = useRef(null);
-    const calendarRef = useRef(null);
-    const [showSessionDetails, setShowSessionDetails] = useState(false);
-    const [selectedSession, setSelectedSession] = useState(null);
-
-    const [calendarEvents, setCalendarEvents] = useState([]);
-
-    const [coaches, setCoaches] = useState([]);
-    const [players, setPlayers] = useState([]);
-
-    const [selectedSessionPeople, setSelectedSessionPeople] = useState([]);
-    const [selectedSessionDrills, setSelectedSessionDrills] = useState([]);
-
     const location = useLocation();
     const selectedSessionIdDashboard = location.state?.selectedSession;
 
-    // detecting mobile window size
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+    const [selectedSession, setSelectedSession] = useState(null);
 
-    useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
 
-        window.addEventListener('resize', handleResize);
-    
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
-    useEffect(() => {
-        const calendarApi = calendarRef.current?.getApi();
-        if (!calendarApi) return;
-
-        calendarApi.changeView(isMobile ? "timeGridDay" : "dayGridMonth");
-        calendarApi.updateSize();
-    }, [isMobile]);
-
-    useEffect(() => {
-    if (!selectedSessionIdDashboard || calendarEvents.length === 0) return;
-
-    const sessionToOpen = calendarEvents.find(
-        event => event.id === selectedSessionIdDashboard
-    );
-
-    if (sessionToOpen) {
-        setSelectedSession(sessionToOpen);
-        setShowSessionDetails(true);
-    }
-}, [selectedSessionIdDashboard, calendarEvents]);
-
-    async function fetchSelectedSessionPeople() {
-        const { data, error } = await supabase
-            .from('signin_details')
-            .select(`
-                *,
-                session_people!inner(session_id)
-            `)
-            .eq('session_people.session_id', selectedSession.id);
-
-        if (!error) {
-            setSelectedSessionPeople(data);
-        }
-    }
-
-    async function fetchPlayers() {
-        const { data, error } = await supabase
-            .from('signin_details')
-            .select('*')
-            .eq('role', 'player');
-
-        if (error) {
-            console.log("Error when fetching players: ", error.message);
-            setPlayers([]);
-        } else {
-            setPlayers(data);
-            console.log("players", players);
-        }
-    }
-
-    async function fetchCoaches() {
-        const { data, error } = await supabase
-            .from('signin_details')
-            .select('*')
-            .eq('role', 'coach');
-
-        if (error) {
-            console.log("Error when fetching coaches: ", error.message);
-            setCoaches([]);
-        } else {
-            setCoaches(data);
-            console.log("coaches", coaches);
-        }
-    }
-
-    async function fetchSelectedSessionDrills() {
-        const { data, error } = await supabase
-            .from('drill_library')
-            .select(`
-                *, 
-                session_drills!inner(session_id)
-            `)
-            .eq('session_drills.session_id', selectedSession.id);
-
-        if (!error) {
-            setSelectedSessionDrills(data);
-        }
-    }
-
-    // loading screen appears when data isnt fully loaded
+    /* LOADING SCREEN STATE ------------------------------------------------------------------------ */ 
     const [isDataLoading, setIsDataLoading] = useState(true);
 
+
+
+    /* SESSION DETAILS STATE ------------------------------------------------------------------------ */ 
+    const [showSessionDetails, setShowSessionDetails] = useState(false);
+
+
+
+    /* REFS ------------------------------------------------------------------------ */ 
+    const calendarRef = useRef(null);
+    const sessionDetailsRef = useRef(null);
+
+    /* CALENDAR ------------------------------------------------------------------------ */ 
+    const [calendarEvents, setCalendarEvents] = useState([]);
     const [weekStart, setWeekStart] = useState(DateTime.now().startOf('week'));
     const [weekEnd, setWeekEnd] = useState(DateTime.now().endOf('week'));
 
@@ -179,17 +91,73 @@ export default function CoachCalendar() {
         }
     }, [currentUserID]);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            await Promise.all([
-                fetchSelectedSessionPeople(),
-                fetchSelectedSessionDrills()
-            ]);
-        };
-        if (selectedSession) {
-            fetchData();
+
+
+    /* USERS ------------------------------------------------------------------------ */ 
+    const [coaches, setCoaches] = useState([]);
+    const [players, setPlayers] = useState([]);
+
+    async function fetchPlayers() {
+        const { data, error } = await supabase
+            .from('signin_details')
+            .select('*')
+            .eq('role', 'player');
+
+        if (error) {
+            console.log("Error when fetching players: ", error.message);
+            setPlayers([]);
+        } else {
+            setPlayers(data);
         }
-    }, [fetchSelectedSessionPeople, fetchSelectedSessionDrills]);
+    }
+
+    async function fetchCoaches() {
+        const { data, error } = await supabase
+            .from('signin_details')
+            .select('*')
+            .eq('role', 'coach');
+
+        if (error) {
+            console.log("Error when fetching coaches: ", error.message);
+            setCoaches([]);
+        } else {
+            setCoaches(data);
+        }
+    }
+
+
+
+    /* SESSION DETAILS ------------------------------------------------------------------------ */ 
+    const [selectedSessionPeople, setSelectedSessionPeople] = useState([]);
+    const [selectedSessionDrills, setSelectedSessionDrills] = useState([]);
+
+    async function fetchSelectedSessionPeople() {
+        const { data, error } = await supabase
+            .from('signin_details')
+            .select(`
+                *,
+                session_people!inner(session_id)
+            `)
+            .eq('session_people.session_id', selectedSession.id);
+
+        if (!error) {
+            setSelectedSessionPeople(data);
+        }
+    }
+
+    async function fetchSelectedSessionDrills() {
+        const { data, error } = await supabase
+            .from('drill_library')
+            .select(`
+                *, 
+                session_drills!inner(session_id)
+            `)
+            .eq('session_drills.session_id', selectedSession.id);
+
+        if (!error) {
+            setSelectedSessionDrills(data);
+        }
+    }
 
     useEffect(() => {
         const initializeUsers = async () => {
@@ -203,6 +171,54 @@ export default function CoachCalendar() {
 
         initializeUsers();
     }, []);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            await Promise.all([
+                fetchSelectedSessionPeople(),
+                fetchSelectedSessionDrills()
+            ]);
+        };
+        if (selectedSession) {
+            fetchData();
+        }
+    }, [fetchSelectedSessionPeople, fetchSelectedSessionDrills]);
+
+
+
+    /* MOBILE DETECTION ------------------------------------------------------------------------ */ 
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        window.addEventListener('resize', handleResize);
+    
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        const calendarApi = calendarRef.current?.getApi();
+        if (!calendarApi) return;
+
+        calendarApi.changeView(isMobile ? "timeGridDay" : "dayGridMonth");
+        calendarApi.updateSize();
+    }, [isMobile]);
+
+    useEffect(() => {
+        if (!selectedSessionIdDashboard || calendarEvents.length === 0) return;
+
+        const sessionToOpen = calendarEvents.find(
+            event => event.id === selectedSessionIdDashboard
+        );
+
+        if (sessionToOpen) {
+            setSelectedSession(sessionToOpen);
+            setShowSessionDetails(true);
+        }
+    }, [selectedSessionIdDashboard, calendarEvents]);
 
     return (
         <>
