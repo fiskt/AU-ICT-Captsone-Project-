@@ -431,7 +431,7 @@ export default function Dashboard() {
 
     return (
         <div id="layout">
-            {/* Loading overlay */}
+            {/* Loading overlay ----------------------------------------- */}
             {isLoading && <LOADING_OVERLAY caption={"coach dashboard"} />}
 
             <div id="main-content-wrapper">
@@ -452,7 +452,7 @@ export default function Dashboard() {
                             </div>
 
                             <div className="dashboardControls">
-                                {/* INJURY STATUS*/}
+                                {/* INJURY STATUS ----------------------------------------------------------------*/}
                                 {selectedPlayer !== "All Athletes" && (
                                     <button
                                         className={`injuryBadge ${activeInjuryCount > 0 ? "injured" : "healthy"}`}
@@ -471,7 +471,7 @@ export default function Dashboard() {
                                     </button>
                                 )}
 
-                                {/* PLAYER DROPDOWN SELECTER */}
+                                {/* PLAYER DROPDOWN SELECTER --------------------------------------------------------- */}
                                 <select
                                     className="playerSelect"
                                     value={selectedPlayer}
@@ -489,15 +489,17 @@ export default function Dashboard() {
                             </div>
                         </div>
 
-                        {/* STATS */}
+                        {/* STATS -------------------------------------------------------------------------------------- */}
                         <div id="drill-stats-row">
 
+                            {/* WEEKLY TOTAL SESSION STATS --------------------------------------------------------- */}
                             <div className="drill-stat-card">
                                 <span className="drill-stat-label">Week Total Sessions</span>
                                 <span className="drill-stat-value accent">{filteredUpcomingSessions.length}</span>
                                 <span className="drill-stat-sub">Sessions scheduled</span>
                             </div>
-
+                            
+                            {/* NEXT SESSION STATS --------------------------------------------------------- */}
                             <div className="drill-stat-card">
                                 <p className="drill-stat-label">NEXT SESSION</p>
                                 <h2 className="drill-stat-value">
@@ -521,7 +523,8 @@ export default function Dashboard() {
                                         : "No upcoming session"}
                                 </p>
                             </div>
-
+                            
+                            {/* LOAD VS TARGET STATS --------------------------------------------------------- */}
                             <div className="drill-stat-card">
                                 <p className="drill-stat-label">LOAD VS TARGET</p>
                                 <h2 className="drill-stat-value">{weeklyTotalTargetRPE} / {weeklyTargetRPE || "—"}</h2>
@@ -547,26 +550,24 @@ export default function Dashboard() {
                                     )}
                                 </span>
                             </div>
-
+                            
+                            {/* WEEKLY ACTUAL LOAD STATS --------------------------------------------------------- */}
                             <div className="drill-stat-card"
                                 onClick={() =>
-                                    navigate("/PlayerFeedbackSummary", {
-                                        state: {
-                                            zone: "",
-                                            player: selectedPlayer
-                                        }
-                                    })
-                                }
-                                style={{ cursor: "pointer" }}>
+                                    navigate("/PlayerFeedbackSummary", {state: {zone: "",player: selectedPlayer}})}
+                                    style={{ cursor: "pointer" 
+                                    }}>
                                 <p className="drill-stat-label">WEEKLY ACTUAL LOAD</p>
                                 <h2 className="drill-stat-value">{totalRPE}</h2>
                                 <span className="drill-stat-sub"> {selectedPlayer === "All Athletes" ? "Selected week" : selectedPlayer}</span>
                             </div>
                         </div>
 
-                        {/* MAIN GRID */}
+                        {/* MAIN GRID ----------------------------------------------------------------------------- */}
                         <div className="dashboardGrid">
-                            {/* LEFT */}
+
+                            {/* LEFT GRID COMPONENTS ---------------------------------------------------------------*/}
+                            {/* UPCOMING SESSION BOX ---------------------------------------------------------------*/}
                             <div className="leftColumn coachDashboardPage">
                                 <div className="chartBox">
                                     <div className="sectionHeader">
@@ -598,14 +599,14 @@ export default function Dashboard() {
                                     }
                                 </div>
 
-                                {/* RPE GRAPH */}
+                                {/* RPE GRAPH BOX --------------------------------------------------------------------- */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel"> SESSIONS RPE </p>
                                         <h3>Planned vs Actual Training Load</h3>
                                     </div>
 
-                                    {/* LINE CHART */}
+                                    {/* LINE CHART COMPONENTS -----------------------------------------------------------*/}
                                     <ResponsiveContainer width="100%" height={320}>
                                         <LineChart
                                             data={weeklyGraphData}
@@ -616,7 +617,7 @@ export default function Dashboard() {
                                                 vertical={false}
                                                 stroke="#f3f4f6"
                                             />
-
+                                            {/* IMPLEMET X-AXIS */}
                                             <XAxis
                                                 dataKey="label"
                                                 tick={({ x, y, payload }) => {
@@ -633,24 +634,24 @@ export default function Dashboard() {
                                                 axisLine={false}
                                             />
 
+                                            {/* IMPLEMET Y-AXIS */}
                                             <YAxis
                                                 tick={{ fill: "#6b7280", fontSize: 12 }}
                                                 tickLine={false}
                                                 axisLine={false}
                                             />
 
+                                            {/* IMPLEMET TOOLTIP */}
                                             <Tooltip content={<CustomTooltip />} />
-
+                                            
+                                            {/* IMPLEMET LEGEND */}
                                             <Legend
+                                                className="rpeLegend"
                                                 verticalAlign="bottom"
                                                 align="center"
-                                                wrapperStyle={{
-                                                    fontFamily: "'DM Sans Light', sans-serif",
-                                                    fontSize: "15px",
-                                                    paddingTop: "10px",
-                                                }}
                                             />
 
+                                            {/* LINE STYLING PLANNED LOAD*/}
                                             <Line
                                                 type="monotone"
                                                 dataKey="plannedLoad"
@@ -661,6 +662,7 @@ export default function Dashboard() {
                                                 name="Planned Load"
                                             />
 
+                                            {/* LINE STYLING ACTUAL LOAD*/}
                                             <Line
                                                 type="monotone"
                                                 dataKey="actualLoad"
@@ -674,53 +676,39 @@ export default function Dashboard() {
                                     </ResponsiveContainer>
                                 </div>
 
-                                {/* INTENSITY CARD */}
+                                {/* INTENSITY CARD BOX ----------------------------------------------------------------- */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel">
                                             TRAINING INTENSITY
                                         </p>
                                         <h3>RPE Intensity Zones</h3>
+
+                                        {/* EASY INTENSITY CARD */}
                                         <div className="intensityCards">
                                             <div className="intensityCard easy"
-                                                onClick={() =>
-                                                    navigate("/PlayerFeedbackSummary", {
-                                                        state: {
-                                                            zone: "easy",
-                                                            player: selectedPlayer
-                                                        }
-                                                    })
-                                                }
+                                                onClick={() => 
+                                                    navigate("/PlayerFeedbackSummary", {state: {zone: "easy",player: selectedPlayer}})}
                                                 style={{ cursor: "pointer" }}>
                                                 <p className="cardLabel">EASY</p>
                                                 <h2>{intensitySummary.easy}</h2>
                                                 <span>1–3 RPE</span>
                                             </div>
-
+                                            
+                                            {/* MEDIUM INTENSITY CARD */}
                                             <div className="intensityCard medium"
                                                 onClick={() =>
-                                                    navigate("/PlayerFeedbackSummary", {
-                                                        state: {
-                                                            zone: "medium",
-                                                            player: selectedPlayer
-                                                        }
-                                                    })
-                                                }
+                                                    navigate("/PlayerFeedbackSummary", {state: {zone: "medium", player: selectedPlayer}})}
                                                 style={{ cursor: "pointer" }}>
                                                 <p className="cardLabel">MEDIUM</p>
                                                 <h2>{intensitySummary.medium}</h2>
                                                 <span>4–6 RPE</span>
                                             </div>
-
+                                            
+                                            {/* HARD INTENSITY CARD */}
                                             <div className="intensityCard hard"
-                                                onClick={() =>
-                                                    navigate("/PlayerFeedbackSummary", {
-                                                        state: {
-                                                            zone: "hard",
-                                                            player: selectedPlayer
-                                                        }
-                                                    })
-                                                }
+                                                onClick={() => 
+                                                    navigate("/PlayerFeedbackSummary", {state: {zone: "hard",player: selectedPlayer}})}
                                                 style={{ cursor: "pointer" }}>
                                                 <p className="cardLabel">HARD</p>
                                                 <h2>{intensitySummary.hard}</h2>
@@ -732,9 +720,10 @@ export default function Dashboard() {
 
                             </div>
 
-                            {/* RIGHT */}
+                            {/* RIGHT GRID COMPONENTS --------------------------------------------------------------- */}
                             <div className="rightColumn coachDashboardPage">
 
+                                {/* WEEKLY ACTIVITY BOX --------------------------------------------------------------- */}
                                 <div className="chartBox">
                                     <div className="sectionHeader">
                                         <p className="dashboardLabel"> WEEKLY ACTIVITY </p>

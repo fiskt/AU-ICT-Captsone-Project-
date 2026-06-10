@@ -406,6 +406,12 @@
     border-color: rgba(236, 120, 66, 0.3);
 }
 
+.rpeLegend{
+    font-family: 'DM Sans Light', sans-serif;
+    font-size: 15px;
+    padding-top: 10px;
+}
+
 /* RESPONSIVE - MOBILE LAYOUT */
 
 /* Mobile */
